@@ -25,7 +25,7 @@ in order for this script to work correctly. The directory is only required
 if you do not have the following packages already available to you global
 environment:
 | Name                          | Version | Source                                                                            |
-| -----                         | ------- | ------                                                                            |
+| ------------------------------| ------- | --------------------------------------------------------------------------------- |
 | pysrt                         | 1.0.1   | https://pypi.python.org/pypi/pysrt/1.0.1                                          |
 | babelfish                     | 0.5.1   | https://pypi.python.org/pypi/babelfish/0.5.1                                      |
 | backports-ssl_match_hostname  | 3.4.0.2 | https://pypi.python.org/pypi/backports.ssl_match_hostname/3.4.0.2                 |
