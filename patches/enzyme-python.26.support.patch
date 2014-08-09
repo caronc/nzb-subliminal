@@ -1,0 +1,13 @@
+diff -Naur enzyme-0.4.1/enzyme/__init__.py enzyme-0.4.1.patched/enzyme/__init__.py
+--- enzyme-0.4.1/enzyme/__init__.py	2013-11-04 14:47:54.000000000 -0500
++++ enzyme-0.4.1.patched/enzyme/__init__.py	2014-07-09 18:42:40.000000000 -0400
+@@ -9,5 +9,8 @@
+ from .exceptions import *
+ from .mkv import *
+ 
++class NullHandler(logging.Handler):
++    def emit(self, record):
++        pass
+ 
+-logging.getLogger(__name__).addHandler(logging.NullHandler())
++logging.getLogger(__name__).addHandler(NullHandler())

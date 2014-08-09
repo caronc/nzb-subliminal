@@ -1,0 +1,1879 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>API &mdash; dogpile.cache 0.5.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/changelog.css" type="text/css" />
+    <link rel="stylesheet" href="_static/sphinx_paramlinks.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="dogpile.cache 0.5.4 documentation" href="index.html" />
+    <link rel="next" title="Changelog" href="changelog.html" />
+    <link rel="prev" title="Usage Guide" href="usage.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="changelog.html" title="Changelog"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Usage Guide"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">dogpile.cache 0.5.4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="api">
+<h1>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-dogpile.cache.region">
+<span id="region"></span><h2>Region<a class="headerlink" href="#module-dogpile.cache.region" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="dogpile.cache.region.CacheRegion">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.region.</tt><tt class="descname">CacheRegion</tt><big>(</big><em>name=None</em>, <em>function_key_generator=&lt;function function_key_generator at 0x102aa29b0&gt;</em>, <em>function_multi_key_generator=&lt;function function_multi_key_generator at 0x102aa2b90&gt;</em>, <em>key_mangler=None</em>, <em>async_creation_runner=None</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion" title="Permalink to this definition">¶</a></dt>
+<dd><p>A front end to a particular cache backend.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.region.CacheRegion.params.name"></span><strong>name</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.params.name">¶</a> &#8211; Optional, a string name for the region.
+This isn&#8217;t used internally
+but can be accessed via the <tt class="docutils literal"><span class="pre">.name</span></tt> parameter, helpful
+for configuring a region from a config file.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.params.function_key_generator"></span><strong>function_key_generator</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.params.function_key_generator">¶</a> &#8211; <p>Optional.  A
+function that will produce a &#8220;cache key&#8221; given
+a data creation function and arguments, when using
+the <a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a> method.
+The structure of this function
+should be two levels: given the data creation function,
+return a new function that generates the key based on
+the given arguments.  Such as:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">my_key_generator</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">__name__</span>
+    <span class="k">def</span> <span class="nf">generate_key</span><span class="p">(</span><span class="o">*</span><span class="n">arg</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">namespace</span> <span class="o">+</span> <span class="s">&quot;_&quot;</span> <span class="o">+</span> <span class="n">fname</span> <span class="o">+</span> <span class="s">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">arg</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">generate_key</span>
+
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">(</span>
+    <span class="n">function_key_generator</span> <span class="o">=</span> <span class="n">my_key_generator</span>
+<span class="p">)</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&quot;dogpile.cache.dbm&quot;</span><span class="p">,</span>
+    <span class="n">expiration_time</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">arguments</span><span class="o">=</span><span class="p">{</span>
+        <span class="s">&quot;filename&quot;</span><span class="p">:</span><span class="s">&quot;file.dbm&quot;</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">namespace</span></tt> is that passed to
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a>.  It&#8217;s not consulted
+outside this function, so in fact can be of any form.
+For example, it can be passed as a tuple, used to specify
+arguments to pluck from **kw:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">my_key_generator</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">generate_key</span><span class="p">(</span><span class="o">*</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;:&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">kw</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">namespace</span><span class="p">]</span> <span class="o">+</span>
+                <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">arg</span><span class="p">]</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">generate_key</span>
+</pre></div>
+</div>
+<p>Where the decorator might be used as:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="nd">@my_region.cache_on_arguments</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;x&#39;</span><span class="p">,</span> <span class="s">&#39;y&#39;</span><span class="p">))</span>
+<span class="k">def</span> <span class="nf">my_function</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">my_data</span><span class="p">()</span>
+</pre></div>
+</div>
+</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.params.function_multi_key_generator"></span><strong>function_multi_key_generator</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.params.function_multi_key_generator">¶</a> &#8211; <p>Optional.
+Similar to <tt class="docutils literal"><span class="pre">function_key_generator</span></tt> parameter, but it&#8217;s used in
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments" title="dogpile.cache.region.CacheRegion.cache_multi_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_multi_on_arguments()</span></tt></a>. Generated function
+should return list of keys. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">my_multi_key_generator</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+    <span class="n">namespace</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">__name__</span> <span class="o">+</span> <span class="p">(</span><span class="n">namespace</span> <span class="ow">or</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">generate_keys</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">namespace</span> <span class="o">+</span> <span class="s">&#39;:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">generate_keys</span>
+</pre></div>
+</div>
+</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.params.key_mangler"></span><strong>key_mangler</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.params.key_mangler">¶</a> &#8211; Function which will be used on all incoming
+keys before passing to the backend.  Defaults to <tt class="docutils literal"><span class="pre">None</span></tt>,
+in which case the key mangling function recommended by
+the cache backend will be used.    A typical mangler
+is the SHA1 mangler found at <a class="reference internal" href="#dogpile.cache.util.sha1_mangle_key" title="dogpile.cache.util.sha1_mangle_key"><tt class="xref py py-func docutils literal"><span class="pre">sha1_mangle_key()</span></tt></a>
+which coerces keys into a SHA1
+hash, so that the string length is fixed.  To
+disable all key mangling, set to <tt class="docutils literal"><span class="pre">False</span></tt>.   Another typical
+mangler is the built-in Python function <tt class="docutils literal"><span class="pre">str</span></tt>, which can be used
+to convert non-string or Unicode keys to bytestrings, which is
+needed when using a backend such as bsddb or dbm under Python 2.x
+in conjunction with Unicode keys.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.params.async_creation_runner"></span><strong>async_creation_runner</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.params.async_creation_runner">¶</a> &#8211; <p>A callable that, when specified,
+will be passed to and called by dogpile.lock when
+there is a stale value present in the cache.  It will be passed the
+mutex and is responsible releasing that mutex when finished.
+This can be used to defer the computation of expensive creator
+functions to later points in the future by way of, for example, a
+background thread, a long-running queue, or a task manager system
+like Celery.</p>
+<p>For a specific example using async_creation_runner, new values can
+be created in a background thread like so:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">threading</span>
+
+<span class="k">def</span> <span class="nf">async_creation_runner</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">somekey</span><span class="p">,</span> <span class="n">creator</span><span class="p">,</span> <span class="n">mutex</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Used by dogpile.core:Lock when appropriate  &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">runner</span><span class="p">():</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">creator</span><span class="p">()</span>
+            <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">somekey</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">mutex</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+
+    <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">runner</span><span class="p">)</span>
+    <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">(</span>
+    <span class="n">async_creation_runner</span><span class="o">=</span><span class="n">async_creation_runner</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.memcached&#39;</span><span class="p">,</span>
+    <span class="n">expiration_time</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">arguments</span><span class="o">=</span><span class="p">{</span>
+        <span class="s">&#39;url&#39;</span><span class="p">:</span> <span class="s">&#39;127.0.0.1:11211&#39;</span><span class="p">,</span>
+        <span class="s">&#39;distributed_lock&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Remember that the first request for a key with no associated
+value will always block; async_creator will not be invoked.
+However, subsequent requests for cached-but-expired values will
+still return promptly.  They will be refreshed by whatever
+asynchronous means the provided async_creation_runner callable
+implements.</p>
+<p>By default the async_creation_runner is disabled and is set
+to <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
+<div class="versionadded">
+<p><span>New in version 0.4.2: </span>added the async_creation_runner
+feature.</p>
+</div>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.cache_multi_on_arguments">
+<tt class="descname">cache_multi_on_arguments</tt><big>(</big><em>namespace=None</em>, <em>expiration_time=None</em>, <em>should_cache_fn=None</em>, <em>asdict=False</em>, <em>to_str=&lt;type 'str'&gt;</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function decorator that will cache multiple return
+values from the function using a sequence of keys derived from the
+function itself and the arguments passed to it.</p>
+<p>This method is the &#8220;multiple key&#8221; analogue to the
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a> method.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="nd">@someregion.cache_multi_on_arguments</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">generate_something</span><span class="p">(</span><span class="o">*</span><span class="n">keys</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">somedatabase</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span>
+    <span class="p">]</span>
+</pre></div>
+</div>
+<p>The decorated function can be called normally.  The decorator
+will produce a list of cache keys using a mechanism similar to that
+of <a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a>, combining the name
+of the function with the optional namespace and with the string form
+of each key.  It will then consult the cache using the same mechanism as that
+of <a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_multi" title="dogpile.cache.region.CacheRegion.get_multi"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_multi()</span></tt></a> to retrieve all current values;
+the originally passed keys corresponding to those values which
+aren&#8217;t generated or need regeneration will
+be assembled into a new argument list, and the decorated function
+is then called with that subset of arguments.</p>
+<p>The returned result is a list:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">result</span> <span class="o">=</span> <span class="n">generate_something</span><span class="p">(</span><span class="s">&quot;key1&quot;</span><span class="p">,</span> <span class="s">&quot;key2&quot;</span><span class="p">,</span> <span class="s">&quot;key3&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The decorator internally makes use of the
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create_multi" title="dogpile.cache.region.CacheRegion.get_or_create_multi"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create_multi()</span></tt></a> method to access the
+cache and conditionally call the function.  See that
+method for additional behavioral details.</p>
+<p>Unlike the <a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a>
+method, <a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments" title="dogpile.cache.region.CacheRegion.cache_multi_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_multi_on_arguments()</span></tt></a> works only
+with a single function signature, one which takes a simple list of keys as
+arguments.</p>
+<p>Like <a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a>, the decorated function
+is also provided with a <tt class="docutils literal"><span class="pre">set()</span></tt> method, which here accepts a
+mapping of keys and values to set in the cache:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">generate_something</span><span class="o">.</span><span class="n">set</span><span class="p">({</span><span class="s">&quot;k1&quot;</span><span class="p">:</span> <span class="s">&quot;value1&quot;</span><span class="p">,</span>
+                        <span class="s">&quot;k2&quot;</span><span class="p">:</span> <span class="s">&quot;value2&quot;</span><span class="p">,</span> <span class="s">&quot;k3&quot;</span><span class="p">:</span> <span class="s">&quot;value3&quot;</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>...an <tt class="docutils literal"><span class="pre">invalidate()</span></tt> method, which has the effect of deleting
+the given sequence of keys using the same mechanism as that of
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.delete_multi" title="dogpile.cache.region.CacheRegion.delete_multi"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.delete_multi()</span></tt></a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">generate_something</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s">&quot;k1&quot;</span><span class="p">,</span> <span class="s">&quot;k2&quot;</span><span class="p">,</span> <span class="s">&quot;k3&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>...a <tt class="docutils literal"><span class="pre">refresh()</span></tt> method, which will call the creation
+function, cache the new values, and return them:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">values</span> <span class="o">=</span> <span class="n">generate_something</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="s">&quot;k1&quot;</span><span class="p">,</span> <span class="s">&quot;k2&quot;</span><span class="p">,</span> <span class="s">&quot;k3&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>...and a <tt class="docutils literal"><span class="pre">get()</span></tt> method, which will return values
+based on the given arguments:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">values</span> <span class="o">=</span> <span class="n">generate_something</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;k1&quot;</span><span class="p">,</span> <span class="s">&quot;k2&quot;</span><span class="p">,</span> <span class="s">&quot;k3&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span>New in version 0.5.3: </span>Added <tt class="docutils literal"><span class="pre">get()</span></tt> method to decorated
+function.</p>
+</div>
+<p>Parameters passed to <a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments" title="dogpile.cache.region.CacheRegion.cache_multi_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_multi_on_arguments()</span></tt></a>
+have the same meaning as those passed to
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.region.CacheRegion.cache_multi_on_arguments.params.namespace"></span><strong>namespace</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments.params.namespace">¶</a> &#8211; optional string argument which will be
+established as part of each cache key.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.cache_multi_on_arguments.params.expiration_time"></span><strong>expiration_time</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments.params.expiration_time">¶</a> &#8211; if not None, will override the normal
+expiration time.  May be passed as an integer or a
+callable.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.cache_multi_on_arguments.params.should_cache_fn"></span><strong>should_cache_fn</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments.params.should_cache_fn">¶</a> &#8211; passed to <a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create_multi" title="dogpile.cache.region.CacheRegion.get_or_create_multi"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create_multi()</span></tt></a>.
+This function is given a value as returned by the creator, and only
+if it returns True will that value be placed in the cache.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.cache_multi_on_arguments.params.asdict"></span><strong>asdict</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments.params.asdict">¶</a> &#8211; <p>if <tt class="docutils literal"><span class="pre">True</span></tt>, the decorated function should return
+its result as a dictionary of keys-&gt;values, and the final result
+of calling the decorated function will also be a dictionary.
+If left at its default value of <tt class="docutils literal"><span class="pre">False</span></tt>, the decorated function
+should return its result as a list of values, and the final
+result of calling the decorated function will also be a list.</p>
+<p>When <tt class="docutils literal"><span class="pre">asdict==True</span></tt> if the dictionary returned by the decorated
+function is missing keys, those keys will not be cached.</p>
+</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.cache_multi_on_arguments.params.to_str"></span><strong>to_str</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments.params.to_str">¶</a> &#8211; callable, will be called on each function argument
+in order to convert to a string.  Defaults to <tt class="docutils literal"><span class="pre">str()</span></tt>.  If the
+function accepts non-ascii unicode arguments on Python 2.x, the
+<tt class="docutils literal"><span class="pre">unicode()</span></tt> builtin can be substituted, but note this will
+produce unicode cache keys which may require key mangling before
+reaching the cache.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a></p>
+<p class="last"><a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create_multi" title="dogpile.cache.region.CacheRegion.get_or_create_multi"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create_multi()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.cache_on_arguments">
+<tt class="descname">cache_on_arguments</tt><big>(</big><em>namespace=None</em>, <em>expiration_time=None</em>, <em>should_cache_fn=None</em>, <em>to_str=&lt;type 'str'&gt;</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function decorator that will cache the return
+value of the function using a key derived from the
+function itself and its arguments.</p>
+<p>The decorator internally makes use of the
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create" title="dogpile.cache.region.CacheRegion.get_or_create"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create()</span></tt></a> method to access the
+cache and conditionally call the function.  See that
+method for additional behavioral details.</p>
+<p>E.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="nd">@someregion.cache_on_arguments</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">generate_something</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">somedatabase</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The decorated function can then be called normally, where
+data will be pulled from the cache region unless a new
+value is needed:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">result</span> <span class="o">=</span> <span class="n">generate_something</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The function is also given an attribute <tt class="docutils literal"><span class="pre">invalidate()</span></tt>, which
+provides for invalidation of the value.  Pass to <tt class="docutils literal"><span class="pre">invalidate()</span></tt>
+the same arguments you&#8217;d pass to the function itself to represent
+a particular value:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">generate_something</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Another attribute <tt class="docutils literal"><span class="pre">set()</span></tt> is added to provide extra caching
+possibilities relative to the function.   This is a convenience
+method for <a class="reference internal" href="#dogpile.cache.region.CacheRegion.set" title="dogpile.cache.region.CacheRegion.set"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.set()</span></tt></a> which will store a given
+value directly without calling the decorated function.
+The value to be cached is passed as the first argument, and the
+arguments which would normally be passed to the function
+should follow:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">generate_something</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above example is equivalent to calling <tt class="docutils literal"><span class="pre">generate_something(5,</span> <span class="pre">6)</span></tt>,
+if the function were to produce the value <tt class="docutils literal"><span class="pre">3</span></tt> as the value to be
+cached.</p>
+<div class="versionadded">
+<p><span>New in version 0.4.1: </span>Added <tt class="docutils literal"><span class="pre">set()</span></tt> method to decorated function.</p>
+</div>
+<p>Similar to <tt class="docutils literal"><span class="pre">set()</span></tt> is <tt class="docutils literal"><span class="pre">refresh()</span></tt>.   This attribute will
+invoke the decorated function and populate a new value into
+the cache with the new value, as well as returning that value:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">newvalue</span> <span class="o">=</span> <span class="n">generate_something</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span>New in version 0.5.0: </span>Added <tt class="docutils literal"><span class="pre">refresh()</span></tt> method to decorated
+function.</p>
+</div>
+<p>Lastly, the <tt class="docutils literal"><span class="pre">get()</span></tt> method returns either the value cached
+for the given key, or the token <tt class="docutils literal"><span class="pre">NO_VALUE</span></tt> if no such key
+exists:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">value</span> <span class="o">=</span> <span class="n">generate_something</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span>New in version 0.5.3: </span>Added <tt class="docutils literal"><span class="pre">get()</span></tt> method to decorated
+function.</p>
+</div>
+<p>The default key generation will use the name
+of the function, the module name for the function,
+the arguments passed, as well as an optional &#8220;namespace&#8221;
+parameter in order to generate a cache key.</p>
+<p>Given a function <tt class="docutils literal"><span class="pre">one</span></tt> inside the module
+<tt class="docutils literal"><span class="pre">myapp.tools</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="nd">@region.cache_on_arguments</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s">&quot;foo&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">one</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+</pre></div>
+</div>
+<p>Above, calling <tt class="docutils literal"><span class="pre">one(3,</span> <span class="pre">4)</span></tt> will produce a
+cache key as follows:</p>
+<div class="highlight-python"><pre>myapp.tools:one|foo|3 4</pre>
+</div>
+<p>The key generator will ignore an initial argument
+of <tt class="docutils literal"><span class="pre">self</span></tt> or <tt class="docutils literal"><span class="pre">cls</span></tt>, making the decorator suitable
+(with caveats) for use with instance or class methods.
+Given the example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MyClass</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="nd">@region.cache_on_arguments</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s">&quot;foo&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">one</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+</pre></div>
+</div>
+<p>The cache key above for <tt class="docutils literal"><span class="pre">MyClass().one(3,</span> <span class="pre">4)</span></tt> will
+again produce the same cache key of <tt class="docutils literal"><span class="pre">myapp.tools:one|foo|3</span> <span class="pre">4</span></tt> -
+the name <tt class="docutils literal"><span class="pre">self</span></tt> is skipped.</p>
+<p>The <tt class="docutils literal"><span class="pre">namespace</span></tt> parameter is optional, and is used
+normally to disambiguate two functions of the same
+name within the same module, as can occur when decorating
+instance or class methods as below:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MyClass</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="nd">@region.cache_on_arguments</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s">&#39;MC&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">somemethod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="s">&quot;&quot;</span>
+
+<span class="k">class</span> <span class="nc">MyOtherClass</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="nd">@region.cache_on_arguments</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s">&#39;MOC&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">somemethod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="s">&quot;&quot;</span>
+</pre></div>
+</div>
+<p>Above, the <tt class="docutils literal"><span class="pre">namespace</span></tt> parameter disambiguates
+between <tt class="docutils literal"><span class="pre">somemethod</span></tt> on <tt class="docutils literal"><span class="pre">MyClass</span></tt> and <tt class="docutils literal"><span class="pre">MyOtherClass</span></tt>.
+Python class declaration mechanics otherwise prevent
+the decorator from having awareness of the <tt class="docutils literal"><span class="pre">MyClass</span></tt>
+and <tt class="docutils literal"><span class="pre">MyOtherClass</span></tt> names, as the function is received
+by the decorator before it becomes an instance method.</p>
+<p>The function key generation can be entirely replaced
+on a per-region basis using the <tt class="docutils literal"><span class="pre">function_key_generator</span></tt>
+argument present on <a class="reference internal" href="#dogpile.cache.region.make_region" title="dogpile.cache.region.make_region"><tt class="xref py py-func docutils literal"><span class="pre">make_region()</span></tt></a> and
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>. If defaults to
+<a class="reference internal" href="#dogpile.cache.util.function_key_generator" title="dogpile.cache.util.function_key_generator"><tt class="xref py py-func docutils literal"><span class="pre">function_key_generator()</span></tt></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.region.CacheRegion.cache_on_arguments.params.namespace"></span><strong>namespace</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments.params.namespace">¶</a> &#8211; optional string argument which will be
+established as part of the cache key.   This may be needed
+to disambiguate functions of the same name within the same
+source file, such as those
+associated with classes - note that the decorator itself
+can&#8217;t see the parent class on a function as the class is
+being declared.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.cache_on_arguments.params.expiration_time"></span><strong>expiration_time</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments.params.expiration_time">¶</a> &#8211; <p>if not None, will override the normal
+expiration time.</p>
+<p>May be specified as a callable, taking no arguments, that
+returns a value to be used as the <tt class="docutils literal"><span class="pre">expiration_time</span></tt>. This callable
+will be called whenever the decorated function itself is called, in
+caching or retrieving. Thus, this can be used to
+determine a <em>dynamic</em> expiration time for the cached function
+result.  Example use cases include &#8220;cache the result until the
+end of the day, week or time period&#8221; and &#8220;cache until a certain date
+or time passes&#8221;.</p>
+<div class="versionchanged">
+<p><span>Changed in version 0.5.0: </span><tt class="docutils literal"><span class="pre">expiration_time</span></tt> may be passed as a callable to
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a>.</p>
+</div>
+</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.cache_on_arguments.params.should_cache_fn"></span><strong>should_cache_fn</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments.params.should_cache_fn">¶</a> &#8211; <p>passed to <a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create" title="dogpile.cache.region.CacheRegion.get_or_create"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create()</span></tt></a>.</p>
+<div class="versionadded">
+<p><span>New in version 0.4.3.</span></p>
+</div>
+</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.cache_on_arguments.params.to_str"></span><strong>to_str</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments.params.to_str">¶</a> &#8211; <p>callable, will be called on each function argument
+in order to convert to a string.  Defaults to <tt class="docutils literal"><span class="pre">str()</span></tt>.  If the
+function accepts non-ascii unicode arguments on Python 2.x, the
+<tt class="docutils literal"><span class="pre">unicode()</span></tt> builtin can be substituted, but note this will
+produce unicode cache keys which may require key mangling before
+reaching the cache.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments" title="dogpile.cache.region.CacheRegion.cache_multi_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_multi_on_arguments()</span></tt></a></p>
+<p class="last"><a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create" title="dogpile.cache.region.CacheRegion.get_or_create"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.configure">
+<tt class="descname">configure</tt><big>(</big><em>backend</em>, <em>expiration_time=None</em>, <em>arguments=None</em>, <em>_config_argument_dict=None</em>, <em>_config_prefix=None</em>, <em>wrap=None</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.configure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure a <a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>.</p>
+<p>The <a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a> itself
+is returned.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.region.CacheRegion.configure.params.backend"></span><strong>backend</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.configure.params.backend">¶</a> &#8211; Required.  This is the name of the
+<a class="reference internal" href="#dogpile.cache.api.CacheBackend" title="dogpile.cache.api.CacheBackend"><tt class="xref py py-class docutils literal"><span class="pre">CacheBackend</span></tt></a> to use, and is resolved by loading
+the class from the <tt class="docutils literal"><span class="pre">dogpile.cache</span></tt> entrypoint.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.configure.params.expiration_time"></span><strong>expiration_time</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.configure.params.expiration_time">¶</a> &#8211; <p>Optional.  The expiration time passed
+to the dogpile system.  May be passed as an integer number
+of seconds, or as a <tt class="docutils literal"><span class="pre">datetime.timedelta</span></tt> value.</p>
+<p>The <a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create" title="dogpile.cache.region.CacheRegion.get_or_create"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create()</span></tt></a>
+method as well as the <a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a>
+decorator (though note:  <strong>not</strong> the <a class="reference internal" href="#dogpile.cache.region.CacheRegion.get" title="dogpile.cache.region.CacheRegion.get"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get()</span></tt></a>
+method) will call upon the value creation function after this
+time period has passed since the last generation.</p>
+</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.configure.params.arguments"></span><strong>arguments</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.configure.params.arguments">¶</a> &#8211; Optional.  The structure here is passed
+directly to the constructor of the <a class="reference internal" href="#dogpile.cache.api.CacheBackend" title="dogpile.cache.api.CacheBackend"><tt class="xref py py-class docutils literal"><span class="pre">CacheBackend</span></tt></a>
+in use, though is typically a dictionary.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.configure.params.wrap"></span><strong>wrap</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.configure.params.wrap">¶</a> &#8211; <p>Optional.  A list of <a class="reference internal" href="#dogpile.cache.proxy.ProxyBackend" title="dogpile.cache.proxy.ProxyBackend"><tt class="xref py py-class docutils literal"><span class="pre">ProxyBackend</span></tt></a>
+classes and/or instances, each of which will be applied
+in a chain to ultimately wrap the original backend,
+so that custom functionality augmentation can be applied.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="usage.html#changing-backend-behavior"><em>Changing Backend Behavior</em></a></p>
+</div>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.configure_from_config">
+<tt class="descname">configure_from_config</tt><big>(</big><em>config_dict</em>, <em>prefix</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.configure_from_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configure from a configuration dictionary
+and a prefix.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">local_region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span>
+<span class="n">memcached_region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span>
+
+<span class="c"># regions are ready to use for function</span>
+<span class="c"># decorators, but not yet for actual caching</span>
+
+<span class="c"># later, when config is available</span>
+<span class="n">myconfig</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;cache.local.backend&quot;</span><span class="p">:</span><span class="s">&quot;dogpile.cache.dbm&quot;</span><span class="p">,</span>
+    <span class="s">&quot;cache.local.arguments.filename&quot;</span><span class="p">:</span><span class="s">&quot;/path/to/dbmfile.dbm&quot;</span><span class="p">,</span>
+    <span class="s">&quot;cache.memcached.backend&quot;</span><span class="p">:</span><span class="s">&quot;dogpile.cache.pylibmc&quot;</span><span class="p">,</span>
+    <span class="s">&quot;cache.memcached.arguments.url&quot;</span><span class="p">:</span><span class="s">&quot;127.0.0.1, 10.0.0.1&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">local_region</span><span class="o">.</span><span class="n">configure_from_config</span><span class="p">(</span><span class="n">myconfig</span><span class="p">,</span> <span class="s">&quot;cache.local.&quot;</span><span class="p">)</span>
+<span class="n">memcached_region</span><span class="o">.</span><span class="n">configure_from_config</span><span class="p">(</span><span class="n">myconfig</span><span class="p">,</span>
+                                    <span class="s">&quot;cache.memcached.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.delete">
+<tt class="descname">delete</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a value from the cache.</p>
+<p>This operation is idempotent (can be called multiple times, or on a
+non-existent key, safely)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.delete_multi">
+<tt class="descname">delete_multi</tt><big>(</big><em>keys</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.delete_multi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove multiple values from the cache.</p>
+<p>This operation is idempotent (can be called multiple times, or on a
+non-existent key, safely)</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.get">
+<tt class="descname">get</tt><big>(</big><em>key</em>, <em>expiration_time=None</em>, <em>ignore_expiration=False</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a value from the cache, based on the given key.</p>
+<p>If the value is not present, the method returns the token
+<tt class="docutils literal"><span class="pre">NO_VALUE</span></tt>. <tt class="docutils literal"><span class="pre">NO_VALUE</span></tt> evaluates to False, but is separate from
+<tt class="docutils literal"><span class="pre">None</span></tt> to distinguish between a cached value of <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
+<p>By default, the configured expiration time of the
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>, or alternatively the expiration
+time supplied by the <tt class="docutils literal"><span class="pre">expiration_time</span></tt> argument,
+is tested against the creation time of the retrieved
+value versus the current time (as reported by <tt class="docutils literal"><span class="pre">time.time()</span></tt>).
+If stale, the cached value is ignored and the <tt class="docutils literal"><span class="pre">NO_VALUE</span></tt>
+token is returned.  Passing the flag <tt class="docutils literal"><span class="pre">ignore_expiration=True</span></tt>
+bypasses the expiration time check.</p>
+<div class="versionchanged">
+<p><span>Changed in version 0.3.0: </span><a class="reference internal" href="#dogpile.cache.region.CacheRegion.get" title="dogpile.cache.region.CacheRegion.get"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get()</span></tt></a> now checks the value&#8217;s creation time
+against the expiration time, rather than returning
+the value unconditionally.</p>
+</div>
+<p>The method also interprets the cached value in terms
+of the current &#8220;invalidation&#8221; time as set by
+the <a class="reference internal" href="#dogpile.cache.region.CacheRegion.invalidate" title="dogpile.cache.region.CacheRegion.invalidate"><tt class="xref py py-meth docutils literal"><span class="pre">invalidate()</span></tt></a> method.   If a value is present,
+but its creation time is older than the current
+invalidation time, the <tt class="docutils literal"><span class="pre">NO_VALUE</span></tt> token is returned.
+Passing the flag <tt class="docutils literal"><span class="pre">ignore_expiration=True</span></tt> bypasses
+the invalidation time check.</p>
+<div class="versionadded">
+<p><span>New in version 0.3.0: </span>Support for the <a class="reference internal" href="#dogpile.cache.region.CacheRegion.invalidate" title="dogpile.cache.region.CacheRegion.invalidate"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.invalidate()</span></tt></a>
+method.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get.params.key"></span><strong>key</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get.params.key">¶</a> &#8211; Key to be retrieved. While it&#8217;s typical for a key to be a
+string, it is ultimately passed directly down to the cache backend,
+before being optionally processed by the key_mangler function, so can
+be of any type recognized by the backend or by the key_mangler
+function, if present.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get.params.expiration_time"></span><strong>expiration_time</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get.params.expiration_time">¶</a> &#8211; <p>Optional expiration time value
+which will supersede that configured on the <a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>
+itself.</p>
+<div class="versionadded">
+<p><span>New in version 0.3.0.</span></p>
+</div>
+</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get.params.ignore_expiration"></span><strong>ignore_expiration</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get.params.ignore_expiration">¶</a> &#8211; <p>if <tt class="docutils literal"><span class="pre">True</span></tt>, the value is returned
+from the cache if present, regardless of configured
+expiration times or whether or not <a class="reference internal" href="#dogpile.cache.region.CacheRegion.invalidate" title="dogpile.cache.region.CacheRegion.invalidate"><tt class="xref py py-meth docutils literal"><span class="pre">invalidate()</span></tt></a>
+was called.</p>
+<div class="versionadded">
+<p><span>New in version 0.3.0.</span></p>
+</div>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.get_multi">
+<tt class="descname">get_multi</tt><big>(</big><em>keys</em>, <em>expiration_time=None</em>, <em>ignore_expiration=False</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.get_multi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return multiple values from the cache, based on the given keys.</p>
+<p>Returns values as a list matching the keys given.</p>
+<p>E.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">values</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">get_multi</span><span class="p">([</span><span class="s">&quot;one&quot;</span><span class="p">,</span> <span class="s">&quot;two&quot;</span><span class="p">,</span> <span class="s">&quot;three&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>To convert values to a dictionary, use <tt class="docutils literal"><span class="pre">zip()</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;one&quot;</span><span class="p">,</span> <span class="s">&quot;two&quot;</span><span class="p">,</span> <span class="s">&quot;three&quot;</span><span class="p">]</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">get_multi</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+<span class="n">dictionary</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Keys which aren&#8217;t present in the list are returned as
+the <tt class="docutils literal"><span class="pre">NO_VALUE</span></tt> token.  <tt class="docutils literal"><span class="pre">NO_VALUE</span></tt> evaluates to False,
+but is separate from
+<tt class="docutils literal"><span class="pre">None</span></tt> to distinguish between a cached value of <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
+<p>By default, the configured expiration time of the
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>, or alternatively the expiration
+time supplied by the <tt class="docutils literal"><span class="pre">expiration_time</span></tt> argument,
+is tested against the creation time of the retrieved
+value versus the current time (as reported by <tt class="docutils literal"><span class="pre">time.time()</span></tt>).
+If stale, the cached value is ignored and the <tt class="docutils literal"><span class="pre">NO_VALUE</span></tt>
+token is returned.  Passing the flag <tt class="docutils literal"><span class="pre">ignore_expiration=True</span></tt>
+bypasses the expiration time check.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.get_or_create">
+<tt class="descname">get_or_create</tt><big>(</big><em>key</em>, <em>creator</em>, <em>expiration_time=None</em>, <em>should_cache_fn=None</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.get_or_create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a cached value based on the given key.</p>
+<p>If the value does not exist or is considered to be expired
+based on its creation time, the given
+creation function may or may not be used to recreate the value
+and persist the newly generated value in the cache.</p>
+<p>Whether or not the function is used depends on if the
+<em>dogpile lock</em> can be acquired or not.  If it can&#8217;t, it means
+a different thread or process is already running a creation
+function for this key against the cache.  When the dogpile
+lock cannot be acquired, the method will block if no
+previous value is available, until the lock is released and
+a new value available.  If a previous value
+is available, that value is returned immediately without blocking.</p>
+<p>If the <a class="reference internal" href="#dogpile.cache.region.CacheRegion.invalidate" title="dogpile.cache.region.CacheRegion.invalidate"><tt class="xref py py-meth docutils literal"><span class="pre">invalidate()</span></tt></a> method has been called, and
+the retrieved value&#8217;s timestamp is older than the invalidation
+timestamp, the value is unconditionally prevented from
+being returned.  The method will attempt to acquire the dogpile
+lock to generate a new value, or will wait
+until the lock is released to return the new value.</p>
+<div class="versionchanged">
+<p><span>Changed in version 0.3.0: </span>The value is unconditionally regenerated if the creation
+time is older than the last call to <a class="reference internal" href="#dogpile.cache.region.CacheRegion.invalidate" title="dogpile.cache.region.CacheRegion.invalidate"><tt class="xref py py-meth docutils literal"><span class="pre">invalidate()</span></tt></a>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get_or_create.params.key"></span><strong>key</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create.params.key">¶</a> &#8211; Key to be retrieved. While it&#8217;s typical for a key to be a
+string, it is ultimately passed directly down to the cache backend,
+before being optionally processed by the key_mangler function, so can
+be of any type recognized by the backend or by the key_mangler
+function, if present.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get_or_create.params.creator"></span><strong>creator</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create.params.creator">¶</a> &#8211; function which creates a new value.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get_or_create.params.expiration_time"></span><strong>expiration_time</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create.params.expiration_time">¶</a> &#8211; optional expiration time which will overide
+the expiration time already configured on this <a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>
+if not None.   To set no expiration, use the value -1.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get_or_create.params.should_cache_fn"></span><strong>should_cache_fn</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create.params.should_cache_fn">¶</a> &#8211; <p>optional callable function which will receive the
+value returned by the &#8220;creator&#8221;, and will then return True or False,
+indicating if the value should actually be cached or not.  If it
+returns False, the value is still returned, but isn&#8217;t cached.
+E.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">dont_cache_none</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span>
+
+<span class="n">value</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">get_or_create</span><span class="p">(</span><span class="s">&quot;some key&quot;</span><span class="p">,</span>
+                    <span class="n">create_value</span><span class="p">,</span>
+                    <span class="n">should_cache_fn</span><span class="o">=</span><span class="n">dont_cache_none</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Above, the function returns the value of create_value() if
+the cache is invalid, however if the return value is None,
+it won&#8217;t be cached.</p>
+<div class="versionadded">
+<p><span>New in version 0.4.3.</span></p>
+</div>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a> - applies
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create" title="dogpile.cache.region.CacheRegion.get_or_create"><tt class="xref py py-meth docutils literal"><span class="pre">get_or_create()</span></tt></a> to any function using a decorator.</p>
+<p class="last"><a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create_multi" title="dogpile.cache.region.CacheRegion.get_or_create_multi"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create_multi()</span></tt></a> - multiple key/value version</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.get_or_create_multi">
+<tt class="descname">get_or_create_multi</tt><big>(</big><em>keys</em>, <em>creator</em>, <em>expiration_time=None</em>, <em>should_cache_fn=None</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.get_or_create_multi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a sequence of cached values based on a sequence of keys.</p>
+<p>The behavior for generation of values based on keys corresponds
+to that of <tt class="xref py py-meth docutils literal"><span class="pre">Region.get_or_create()</span></tt>, with the exception that
+the <tt class="docutils literal"><span class="pre">creator()</span></tt> function may be asked to generate any subset of
+the given keys.   The list of keys to be generated is passed to
+<tt class="docutils literal"><span class="pre">creator()</span></tt>, and <tt class="docutils literal"><span class="pre">creator()</span></tt> should return the generated values
+as a sequence corresponding to the order of the keys.</p>
+<p>The method uses the same approach as <tt class="xref py py-meth docutils literal"><span class="pre">Region.get_multi()</span></tt>
+and <tt class="xref py py-meth docutils literal"><span class="pre">Region.set_multi()</span></tt> to get and set values from the
+backend.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get_or_create_multi.params.keys"></span><strong>keys</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create_multi.params.keys">¶</a> &#8211; Sequence of keys to be retrieved.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get_or_create_multi.params.creator"></span><strong>creator</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create_multi.params.creator">¶</a> &#8211; function which accepts a sequence of keys and
+returns a sequence of new values.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get_or_create_multi.params.expiration_time"></span><strong>expiration_time</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create_multi.params.expiration_time">¶</a> &#8211; optional expiration time which will overide
+the expiration time already configured on this <a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>
+if not None.   To set no expiration, use the value -1.</li>
+<li><span class="target" id="dogpile.cache.region.CacheRegion.get_or_create_multi.params.should_cache_fn"></span><strong>should_cache_fn</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create_multi.params.should_cache_fn">¶</a> &#8211; optional callable function which will receive
+each value returned by the &#8220;creator&#8221;, and will then return True or False,
+indicating if the value should actually be cached or not.  If it
+returns False, the value is still returned, but isn&#8217;t cached.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p><a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_multi_on_arguments" title="dogpile.cache.region.CacheRegion.cache_multi_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_multi_on_arguments()</span></tt></a></p>
+<p class="last"><a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create" title="dogpile.cache.region.CacheRegion.get_or_create"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.invalidate">
+<tt class="descname">invalidate</tt><big>(</big><em>hard=True</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.invalidate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invalidate this <a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>.</p>
+<p>Invalidation works by setting a current timestamp
+(using <tt class="docutils literal"><span class="pre">time.time()</span></tt>)
+representing the &#8220;minimum creation time&#8221; for
+a value.  Any retrieved value whose creation
+time is prior to this timestamp
+is considered to be stale.  It does not
+affect the data in the cache in any way, and is also
+local to this instance of <a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>.</p>
+<p>Once set, the invalidation time is honored by
+the <a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create" title="dogpile.cache.region.CacheRegion.get_or_create"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create()</span></tt></a>,
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create_multi" title="dogpile.cache.region.CacheRegion.get_or_create_multi"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create_multi()</span></tt></a> and
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.get" title="dogpile.cache.region.CacheRegion.get"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get()</span></tt></a> methods.</p>
+<p>The method
+supports both &#8220;hard&#8221; and &#8220;soft&#8221; invalidation options.  With &#8220;hard&#8221;
+invalidation, <a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create" title="dogpile.cache.region.CacheRegion.get_or_create"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create()</span></tt></a> will force an immediate
+regeneration of the value which all getters will wait for.  With
+&#8220;soft&#8221; invalidation, subsequent getters will return the &#8220;old&#8221; value until
+the new one is available.</p>
+<p>Usage of &#8220;soft&#8221; invalidation requires that the region or the method
+is given a non-None expiration time.</p>
+<div class="versionadded">
+<p><span>New in version 0.3.0.</span></p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><span class="target" id="dogpile.cache.region.CacheRegion.invalidate.params.hard"></span><strong>hard</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.region.CacheRegion.invalidate.params.hard">¶</a> &#8211; <p>if True, cache values will all require immediate
+regeneration; dogpile logic won&#8217;t be used.  If False, the
+creation time of existing values will be pushed back before
+the expiration time so that a return+regen will be invoked.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.1.</span></p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dogpile.cache.region.CacheRegion.is_configured">
+<tt class="descname">is_configured</tt><a class="headerlink" href="#dogpile.cache.region.CacheRegion.is_configured" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return True if the backend has been configured via the
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.configure" title="dogpile.cache.region.CacheRegion.configure"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.configure()</span></tt></a> method already.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.1.</span></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.set">
+<tt class="descname">set</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Place a new value in the cache under the given key.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.set_multi">
+<tt class="descname">set_multi</tt><big>(</big><em>mapping</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.set_multi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Place new values in the cache under the given keys.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.region.CacheRegion.wrap">
+<tt class="descname">wrap</tt><big>(</big><em>proxy</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.CacheRegion.wrap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a ProxyBackend instance or class and wraps the
+attached backend.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="dogpile.cache.region.make_region">
+<tt class="descclassname">dogpile.cache.region.</tt><tt class="descname">make_region</tt><big>(</big><em>*arg</em>, <em>**kw</em><big>)</big><a class="headerlink" href="#dogpile.cache.region.make_region" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate a new <a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>.</p>
+<p>Currently, <a class="reference internal" href="#dogpile.cache.region.make_region" title="dogpile.cache.region.make_region"><tt class="xref py py-func docutils literal"><span class="pre">make_region()</span></tt></a> is a passthrough
+to <a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>.  See that class for
+constructor arguments.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="dogpile.cache.region.value_version">
+<tt class="descclassname">dogpile.cache.region.</tt><tt class="descname">value_version</tt><em class="property"> = 1</em><a class="headerlink" href="#dogpile.cache.region.value_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>An integer placed in the <a class="reference internal" href="#dogpile.cache.api.CachedValue" title="dogpile.cache.api.CachedValue"><tt class="xref py py-class docutils literal"><span class="pre">CachedValue</span></tt></a>
+so that new versions of dogpile.cache can detect cached
+values from a previous, backwards-incompatible version.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dogpile.cache.util.function_key_generator">
+<tt class="descclassname">dogpile.cache.util.</tt><tt class="descname">function_key_generator</tt><big>(</big><em>namespace</em>, <em>fn</em>, <em>to_str=&lt;type 'str'&gt;</em><big>)</big><a class="headerlink" href="#dogpile.cache.util.function_key_generator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a function that generates a string
+key, based on a given function as well as
+arguments to the returned function itself.</p>
+<p>This is used by <a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a>
+to generate a cache key from a decorated function.</p>
+<p>It can be replaced using the <tt class="docutils literal"><span class="pre">function_key_generator</span></tt>
+argument passed to <a class="reference internal" href="#dogpile.cache.region.make_region" title="dogpile.cache.region.make_region"><tt class="xref py py-func docutils literal"><span class="pre">make_region()</span></tt></a>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="backend-api">
+<h2>Backend API<a class="headerlink" href="#backend-api" title="Permalink to this headline">¶</a></h2>
+<p>See the section <a class="reference internal" href="usage.html#creating-backends"><em>Creating Backends</em></a> for details on how to
+register new backends or <a class="reference internal" href="usage.html#changing-backend-behavior"><em>Changing Backend Behavior</em></a> for details on
+how to alter the behavior of existing backends.</p>
+<span class="target" id="module-dogpile.cache.api"></span><dl class="class">
+<dt id="dogpile.cache.api.CacheBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.api.</tt><tt class="descname">CacheBackend</tt><big>(</big><em>arguments</em><big>)</big><a class="headerlink" href="#dogpile.cache.api.CacheBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for backend implementations.</p>
+<dl class="method">
+<dt id="dogpile.cache.api.CacheBackend.delete">
+<tt class="descname">delete</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#dogpile.cache.api.CacheBackend.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a value from the cache.</p>
+<p>The key will be whatever was passed
+to the registry, processed by the
+&#8220;key mangling&#8221; function, if any.</p>
+<p>The behavior here should be idempotent,
+that is, can be called any number of times
+regardless of whether or not the
+key exists.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.api.CacheBackend.delete_multi">
+<tt class="descname">delete_multi</tt><big>(</big><em>keys</em><big>)</big><a class="headerlink" href="#dogpile.cache.api.CacheBackend.delete_multi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete multiple values from the cache.</p>
+<p>The key will be whatever was passed
+to the registry, processed by the
+&#8220;key mangling&#8221; function, if any.</p>
+<p>The behavior here should be idempotent,
+that is, can be called any number of times
+regardless of whether or not the
+key exists.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.api.CacheBackend.get">
+<tt class="descname">get</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#dogpile.cache.api.CacheBackend.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve a value from the cache.</p>
+<p>The returned value should be an instance of
+<a class="reference internal" href="#dogpile.cache.api.CachedValue" title="dogpile.cache.api.CachedValue"><tt class="xref py py-class docutils literal"><span class="pre">CachedValue</span></tt></a>, or <tt class="docutils literal"><span class="pre">NO_VALUE</span></tt> if
+not present.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.api.CacheBackend.get_multi">
+<tt class="descname">get_multi</tt><big>(</big><em>keys</em><big>)</big><a class="headerlink" href="#dogpile.cache.api.CacheBackend.get_multi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve multiple values from the cache.</p>
+<p>The returned value should be a list, corresponding
+to the list of keys given.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.api.CacheBackend.get_mutex">
+<tt class="descname">get_mutex</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#dogpile.cache.api.CacheBackend.get_mutex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an optional mutexing object for the given key.</p>
+<p>This object need only provide an <tt class="docutils literal"><span class="pre">acquire()</span></tt>
+and <tt class="docutils literal"><span class="pre">release()</span></tt> method.</p>
+<p>May return <tt class="docutils literal"><span class="pre">None</span></tt>, in which case the dogpile
+lock will use a regular <tt class="docutils literal"><span class="pre">threading.Lock</span></tt>
+object to mutex concurrent threads for
+value creation.   The default implementation
+returns <tt class="docutils literal"><span class="pre">None</span></tt>.</p>
+<p>Different backends may want to provide various
+kinds of &#8220;mutex&#8221; objects, such as those which
+link to lock files, distributed mutexes,
+memcached semaphores, etc.  Whatever
+kind of system is best suited for the scope
+and behavior of the caching backend.</p>
+<p>A mutex that takes the key into account will
+allow multiple regenerate operations across
+keys to proceed simultaneously, while a mutex
+that does not will serialize regenerate operations
+to just one at a time across all keys in the region.
+The latter approach, or a variant that involves
+a modulus of the given key&#8217;s hash value,
+can be used as a means of throttling the total
+number of value recreation operations that may
+proceed at one time.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dogpile.cache.api.CacheBackend.key_mangler">
+<tt class="descname">key_mangler</tt><em class="property"> = None</em><a class="headerlink" href="#dogpile.cache.api.CacheBackend.key_mangler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Key mangling function.</p>
+<p>May be None, or otherwise declared
+as an ordinary instance method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.api.CacheBackend.set">
+<tt class="descname">set</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#dogpile.cache.api.CacheBackend.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a value in the cache.</p>
+<p>The key will be whatever was passed
+to the registry, processed by the
+&#8220;key mangling&#8221; function, if any.
+The value will always be an instance
+of <a class="reference internal" href="#dogpile.cache.api.CachedValue" title="dogpile.cache.api.CachedValue"><tt class="xref py py-class docutils literal"><span class="pre">CachedValue</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.api.CacheBackend.set_multi">
+<tt class="descname">set_multi</tt><big>(</big><em>mapping</em><big>)</big><a class="headerlink" href="#dogpile.cache.api.CacheBackend.set_multi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set multiple values in the cache.</p>
+<p>The key will be whatever was passed
+to the registry, processed by the
+&#8220;key mangling&#8221; function, if any.
+The value will always be an instance
+of <a class="reference internal" href="#dogpile.cache.api.CachedValue" title="dogpile.cache.api.CachedValue"><tt class="xref py py-class docutils literal"><span class="pre">CachedValue</span></tt></a>.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dogpile.cache.api.CachedValue">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.api.</tt><tt class="descname">CachedValue</tt><a class="headerlink" href="#dogpile.cache.api.CachedValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent a value stored in the cache.</p>
+<p><a class="reference internal" href="#dogpile.cache.api.CachedValue" title="dogpile.cache.api.CachedValue"><tt class="xref py py-class docutils literal"><span class="pre">CachedValue</span></tt></a> is a two-tuple of
+<tt class="docutils literal"><span class="pre">(payload,</span> <span class="pre">metadata)</span></tt>, where <tt class="docutils literal"><span class="pre">metadata</span></tt>
+is dogpile.cache&#8217;s tracking information (
+currently the creation time).  The metadata
+and tuple structure is pickleable, if
+the backend requires serialization.</p>
+<dl class="attribute">
+<dt id="dogpile.cache.api.CachedValue.metadata">
+<tt class="descname">metadata</tt><a class="headerlink" href="#dogpile.cache.api.CachedValue.metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Named accessor for the dogpile.cache metadata dictionary.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dogpile.cache.api.CachedValue.payload">
+<tt class="descname">payload</tt><a class="headerlink" href="#dogpile.cache.api.CachedValue.payload" title="Permalink to this definition">¶</a></dt>
+<dd><p>Named accessor for the payload.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt id="dogpile.cache.api.NO_VALUE">
+<tt class="descclassname">dogpile.cache.api.</tt><tt class="descname">NO_VALUE</tt><em class="property"> = &lt;dogpile.cache.api.NoValue object at 0x102aa50d0&gt;</em><a class="headerlink" href="#dogpile.cache.api.NO_VALUE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value returned from <tt class="docutils literal"><span class="pre">get()</span></tt> that describes
+a  key not present.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dogpile.cache.api.NoValue">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.api.</tt><tt class="descname">NoValue</tt><a class="headerlink" href="#dogpile.cache.api.NoValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describe a missing cache value.</p>
+<p>The <tt class="xref py py-attr docutils literal"><span class="pre">NO_VALUE</span></tt> module global
+should be used.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-dogpile.cache.backends.memory">
+<span id="backends"></span><h2>Backends<a class="headerlink" href="#module-dogpile.cache.backends.memory" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="memory-backends">
+<h3>Memory Backends<a class="headerlink" href="#memory-backends" title="Permalink to this headline">¶</a></h3>
+<p>Provides simple dictionary-based backends.</p>
+<p>The two backends are <a class="reference internal" href="#dogpile.cache.backends.memory.MemoryBackend" title="dogpile.cache.backends.memory.MemoryBackend"><tt class="xref py py-class docutils literal"><span class="pre">MemoryBackend</span></tt></a> and <a class="reference internal" href="#dogpile.cache.backends.memory.MemoryPickleBackend" title="dogpile.cache.backends.memory.MemoryPickleBackend"><tt class="xref py py-class docutils literal"><span class="pre">MemoryPickleBackend</span></tt></a>;
+the latter applies a serialization step to cached values while the former
+places the value as given into the dictionary.</p>
+<dl class="class">
+<dt id="dogpile.cache.backends.memory.MemoryBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.memory.</tt><tt class="descname">MemoryBackend</tt><big>(</big><em>arguments</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.memory.MemoryBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>A backend that uses a plain dictionary.</p>
+<p>There is no size management, and values which
+are placed into the dictionary will remain
+until explicitly removed.   Note that
+Dogpile&#8217;s expiration of items is based on
+timestamps and does not remove them from
+the cache.</p>
+<p>E.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.memory&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>To use a Python dictionary of your choosing,
+it can be passed in with the <tt class="docutils literal"><span class="pre">cache_dict</span></tt>
+argument:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">my_dictionary</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.memory&#39;</span><span class="p">,</span>
+    <span class="n">arguments</span><span class="o">=</span><span class="p">{</span>
+        <span class="s">&quot;cache_dict&quot;</span><span class="p">:</span><span class="n">my_dictionary</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="dogpile.cache.backends.memory.MemoryPickleBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.memory.</tt><tt class="descname">MemoryPickleBackend</tt><big>(</big><em>arguments</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.memory.MemoryPickleBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>A backend that uses a plain dictionary, but serializes objects on
+<tt class="xref py py-meth docutils literal"><span class="pre">MemoryBackend.set()</span></tt> and deserializes <tt class="xref py py-meth docutils literal"><span class="pre">MemoryBackend.get()</span></tt>.</p>
+<p>E.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.memory_pickle&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The usage of pickle to serialize cached values allows an object
+as placed in the cache to be a copy of the original given object, so
+that any subsequent changes to the given object aren&#8217;t reflected
+in the cached value, thus making the backend behave the same way
+as other backends which make use of serialization.</p>
+<p>The serialization is performed via pickle, and incurs the same
+performance hit in doing so as that of other backends; in this way
+the <a class="reference internal" href="#dogpile.cache.backends.memory.MemoryPickleBackend" title="dogpile.cache.backends.memory.MemoryPickleBackend"><tt class="xref py py-class docutils literal"><span class="pre">MemoryPickleBackend</span></tt></a> performance is somewhere in between
+that of the pure <a class="reference internal" href="#dogpile.cache.backends.memory.MemoryBackend" title="dogpile.cache.backends.memory.MemoryBackend"><tt class="xref py py-class docutils literal"><span class="pre">MemoryBackend</span></tt></a> and the remote server oriented
+backends such as that of Memcached or Redis.</p>
+<p>Pickle behavior here is the same as that of the Redis backend, using
+either <tt class="docutils literal"><span class="pre">cPickle</span></tt> or <tt class="docutils literal"><span class="pre">pickle</span></tt> and specifying <tt class="docutils literal"><span class="pre">HIGHEST_PROTOCOL</span></tt>
+upon serialize.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.3.</span></p>
+</div>
+</dd></dl>
+
+</div>
+<span class="target" id="module-dogpile.cache.backends.memcached"></span><div class="section" id="memcached-backends">
+<h3>Memcached Backends<a class="headerlink" href="#memcached-backends" title="Permalink to this headline">¶</a></h3>
+<p>Provides backends for talking to <a class="reference external" href="http://memcached.org">memcached</a>.</p>
+<dl class="class">
+<dt id="dogpile.cache.backends.memcached.GenericMemcachedBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.memcached.</tt><tt class="descname">GenericMemcachedBackend</tt><big>(</big><em>arguments</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.memcached.GenericMemcachedBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for memcached backends.</p>
+<p>This base class accepts a number of paramters
+common to all backends.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.backends.memcached.GenericMemcachedBackend.params.url"></span><strong>url</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.memcached.GenericMemcachedBackend.params.url">¶</a> &#8211; the string URL to connect to.  Can be a single
+string or a list of strings.  This is the only argument
+that&#8217;s required.</li>
+<li><span class="target" id="dogpile.cache.backends.memcached.GenericMemcachedBackend.params.distributed_lock"></span><strong>distributed_lock</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.memcached.GenericMemcachedBackend.params.distributed_lock">¶</a> &#8211; boolean, when True, will use a
+memcached-lock as the dogpile lock (see <a class="reference internal" href="#dogpile.cache.backends.memcached.MemcachedLock" title="dogpile.cache.backends.memcached.MemcachedLock"><tt class="xref py py-class docutils literal"><span class="pre">MemcachedLock</span></tt></a>).
+Use this when multiple
+processes will be talking to the same memcached instance.
+When left at False, dogpile will coordinate on a regular
+threading mutex.</li>
+<li><span class="target" id="dogpile.cache.backends.memcached.GenericMemcachedBackend.params.memcached_expire_time"></span><strong>memcached_expire_time</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.memcached.GenericMemcachedBackend.params.memcached_expire_time">¶</a> &#8211; <p>integer, when present will
+be passed as the <tt class="docutils literal"><span class="pre">time</span></tt> parameter to <tt class="docutils literal"><span class="pre">pylibmc.Client.set</span></tt>.
+This is used to set the memcached expiry time for a value.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This parameter is <strong>different</strong> from Dogpile&#8217;s own
+<tt class="docutils literal"><span class="pre">expiration_time</span></tt>, which is the number of seconds after
+which Dogpile will consider the value to be expired.
+When Dogpile considers a value to be expired,
+it <strong>continues to use the value</strong> until generation
+of a new value is complete, when using
+<a class="reference internal" href="#dogpile.cache.region.CacheRegion.get_or_create" title="dogpile.cache.region.CacheRegion.get_or_create"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.get_or_create()</span></tt></a>.
+Therefore, if you are setting <tt class="docutils literal"><span class="pre">memcached_expire_time</span></tt>, you&#8217;ll
+want to make sure it is greater than <tt class="docutils literal"><span class="pre">expiration_time</span></tt>
+by at least enough seconds for new values to be generated,
+else the value won&#8217;t be available during a regeneration,
+forcing all threads to wait for a regeneration each time
+a value expires.</p>
+</div>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The <tt class="xref py py-class docutils literal"><span class="pre">GenericMemachedBackend</span></tt> uses a <tt class="docutils literal"><span class="pre">threading.local()</span></tt>
+object to store individual client objects per thread,
+as most modern memcached clients do not appear to be inherently
+threadsafe.</p>
+<p>In particular, <tt class="docutils literal"><span class="pre">threading.local()</span></tt> has the advantage over pylibmc&#8217;s
+built-in thread pool in that it automatically discards objects
+associated with a particular thread when that thread ends.</p>
+<dl class="attribute">
+<dt id="dogpile.cache.backends.memcached.GenericMemcachedBackend.client">
+<tt class="descname">client</tt><a class="headerlink" href="#dogpile.cache.backends.memcached.GenericMemcachedBackend.client" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the memcached client.</p>
+<p>This uses a threading.local by
+default as it appears most modern
+memcached libs aren&#8217;t inherently
+threadsafe.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dogpile.cache.backends.memcached.GenericMemcachedBackend.set_arguments">
+<tt class="descname">set_arguments</tt><em class="property"> = {}</em><a class="headerlink" href="#dogpile.cache.backends.memcached.GenericMemcachedBackend.set_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional arguments which will be passed
+to the <tt class="xref py py-meth docutils literal"><span class="pre">set()</span></tt> method.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dogpile.cache.backends.memcached.MemcachedBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.memcached.</tt><tt class="descname">MemcachedBackend</tt><big>(</big><em>arguments</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.memcached.MemcachedBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>A backend using the standard <a class="reference external" href="http://www.tummy.com/Community/software/python-memcached/">Python-memcached</a>
+library.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.memcached&#39;</span><span class="p">,</span>
+    <span class="n">expiration_time</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">,</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;url&#39;</span><span class="p">:</span><span class="s">&quot;127.0.0.1:11211&quot;</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="dogpile.cache.backends.memcached.PylibmcBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.memcached.</tt><tt class="descname">PylibmcBackend</tt><big>(</big><em>arguments</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.memcached.PylibmcBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>A backend for the
+<a class="reference external" href="http://sendapatch.se/projects/pylibmc/index.html">pylibmc</a>
+memcached client.</p>
+<p>A configuration illustrating several of the optional
+arguments described in the pylibmc documentation:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.pylibmc&#39;</span><span class="p">,</span>
+    <span class="n">expiration_time</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">,</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;url&#39;</span><span class="p">:[</span><span class="s">&quot;127.0.0.1&quot;</span><span class="p">],</span>
+        <span class="s">&#39;binary&#39;</span><span class="p">:</span><span class="bp">True</span><span class="p">,</span>
+        <span class="s">&#39;behaviors&#39;</span><span class="p">:{</span><span class="s">&quot;tcp_nodelay&quot;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span><span class="s">&quot;ketama&quot;</span><span class="p">:</span><span class="bp">True</span><span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Arguments accepted here include those of
+<a class="reference internal" href="#dogpile.cache.backends.memcached.GenericMemcachedBackend" title="dogpile.cache.backends.memcached.GenericMemcachedBackend"><tt class="xref py py-class docutils literal"><span class="pre">GenericMemcachedBackend</span></tt></a>, as well as
+those below.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.backends.memcached.PylibmcBackend.params.binary"></span><strong>binary</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.memcached.PylibmcBackend.params.binary">¶</a> &#8211; sets the <tt class="docutils literal"><span class="pre">binary</span></tt> flag understood by
+<tt class="docutils literal"><span class="pre">pylibmc.Client</span></tt>.</li>
+<li><span class="target" id="dogpile.cache.backends.memcached.PylibmcBackend.params.behaviors"></span><strong>behaviors</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.memcached.PylibmcBackend.params.behaviors">¶</a> &#8211; a dictionary which will be passed to
+<tt class="docutils literal"><span class="pre">pylibmc.Client</span></tt> as the <tt class="docutils literal"><span class="pre">behaviors</span></tt> parameter.</li>
+<li><span class="target" id="dogpile.cache.backends.memcached.PylibmcBackend.params.min_compress_len"></span><strong>min_compress_len</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.memcached.PylibmcBackend.params.min_compress_len">¶</a> &#8211; Integer, will be passed as the
+<tt class="docutils literal"><span class="pre">min_compress_len</span></tt> parameter to the <tt class="docutils literal"><span class="pre">pylibmc.Client.set</span></tt>
+method.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="dogpile.cache.backends.memcached.BMemcachedBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.memcached.</tt><tt class="descname">BMemcachedBackend</tt><big>(</big><em>arguments</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.memcached.BMemcachedBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>A backend for the
+<a class="reference external" href="https://github.com/jaysonsantos/python-binary-memcached">python-binary-memcached</a>
+memcached client.</p>
+<p>This is a pure Python memcached client which
+includes the ability to authenticate with a memcached
+server using SASL.</p>
+<p>A typical configuration using username/password:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.bmemcached&#39;</span><span class="p">,</span>
+    <span class="n">expiration_time</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">,</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;url&#39;</span><span class="p">:[</span><span class="s">&quot;127.0.0.1&quot;</span><span class="p">],</span>
+        <span class="s">&#39;username&#39;</span><span class="p">:</span><span class="s">&#39;scott&#39;</span><span class="p">,</span>
+        <span class="s">&#39;password&#39;</span><span class="p">:</span><span class="s">&#39;tiger&#39;</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Arguments which can be passed to the <tt class="docutils literal"><span class="pre">arguments</span></tt>
+dictionary include:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.backends.memcached.BMemcachedBackend.params.username"></span><strong>username</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.memcached.BMemcachedBackend.params.username">¶</a> &#8211; optional username, will be used for
+SASL authentication.</li>
+<li><span class="target" id="dogpile.cache.backends.memcached.BMemcachedBackend.params.password"></span><strong>password</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.memcached.BMemcachedBackend.params.password">¶</a> &#8211; optional password, will be used for
+SASL authentication.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dogpile.cache.backends.memcached.BMemcachedBackend.delete_multi">
+<tt class="descname">delete_multi</tt><big>(</big><em>keys</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.memcached.BMemcachedBackend.delete_multi" title="Permalink to this definition">¶</a></dt>
+<dd><p>python-binary-memcached api does not implements delete_multi</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dogpile.cache.backends.memcached.MemcachedLock">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.memcached.</tt><tt class="descname">MemcachedLock</tt><big>(</big><em>client_fn</em>, <em>key</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.memcached.MemcachedLock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple distributed lock using memcached.</p>
+<p>This is an adaptation of the lock featured at
+<a class="reference external" href="http://amix.dk/blog/post/19386">http://amix.dk/blog/post/19386</a></p>
+</dd></dl>
+
+</div>
+<span class="target" id="module-dogpile.cache.backends.redis"></span><div class="section" id="redis-backends">
+<h3>Redis Backends<a class="headerlink" href="#redis-backends" title="Permalink to this headline">¶</a></h3>
+<p>Provides backends for talking to <a class="reference external" href="http://redis.io">Redis</a>.</p>
+<dl class="class">
+<dt id="dogpile.cache.backends.redis.RedisBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.redis.</tt><tt class="descname">RedisBackend</tt><big>(</big><em>arguments</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.redis.RedisBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference external" href="http://redis.io/">Redis</a> backend, using the
+<a class="reference external" href="http://pypi.python.org/pypi/redis/">redis-py</a> backend.</p>
+<p>Example configuration:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.redis&#39;</span><span class="p">,</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;host&#39;</span><span class="p">:</span> <span class="s">&#39;localhost&#39;</span><span class="p">,</span>
+        <span class="s">&#39;port&#39;</span><span class="p">:</span> <span class="mi">6379</span><span class="p">,</span>
+        <span class="s">&#39;db&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s">&#39;redis_expiration_time&#39;</span><span class="p">:</span> <span class="mi">60</span><span class="o">*</span><span class="mi">60</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span>   <span class="c"># 2 hours</span>
+        <span class="s">&#39;distributed_lock&#39;</span><span class="p">:</span><span class="bp">True</span>
+        <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Arguments accepted in the arguments dictionary:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.url"></span><strong>url</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.url">¶</a> &#8211; <p>string. If provided, will override separate host/port/db
+params.  The format is that accepted by <tt class="docutils literal"><span class="pre">StrictRedis.from_url()</span></tt>.</p>
+<div class="versionadded">
+<p><span>New in version 0.4.1.</span></p>
+</div>
+</li>
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.host"></span><strong>host</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.host">¶</a> &#8211; string, default is <tt class="docutils literal"><span class="pre">localhost</span></tt>.</li>
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.password"></span><strong>password</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.password">¶</a> &#8211; <p>string, default is no password.</p>
+<div class="versionadded">
+<p><span>New in version 0.4.1.</span></p>
+</div>
+</li>
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.port"></span><strong>port</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.port">¶</a> &#8211; integer, default is <tt class="docutils literal"><span class="pre">6379</span></tt>.</li>
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.db"></span><strong>db</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.db">¶</a> &#8211; integer, default is <tt class="docutils literal"><span class="pre">0</span></tt>.</li>
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.redis_expiration_time"></span><strong>redis_expiration_time</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.redis_expiration_time">¶</a> &#8211; integer, number of seconds after setting
+a value that Redis should expire it.  This should be larger than dogpile&#8217;s
+cache expiration.  By default no expiration is set.</li>
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.distributed_lock"></span><strong>distributed_lock</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.distributed_lock">¶</a> &#8211; boolean, when True, will use a
+redis-lock as the dogpile lock.
+Use this when multiple
+processes will be talking to the same redis instance.
+When left at False, dogpile will coordinate on a regular
+threading mutex.</li>
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.lock_timeout"></span><strong>lock_timeout</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.lock_timeout">¶</a> &#8211; <p>integer, number of seconds after acquiring a lock that
+Redis should expire it.  This argument is only valid when
+<tt class="docutils literal"><span class="pre">distributed_lock</span></tt> is <tt class="docutils literal"><span class="pre">True</span></tt>.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+</li>
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.socket_timeout"></span><strong>socket_timeout</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.socket_timeout">¶</a> &#8211; <p>float, seconds for socket timeout.
+Default is None (no timeout).</p>
+<div class="versionadded">
+<p><span>New in version 0.5.4.</span></p>
+</div>
+</li>
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.lock_sleep"></span><strong>lock_sleep</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.lock_sleep">¶</a> &#8211; <p>integer, number of seconds to sleep when failed to
+acquire a lock.  This argument is only valid when
+<tt class="docutils literal"><span class="pre">distributed_lock</span></tt> is <tt class="docutils literal"><span class="pre">True</span></tt>.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+</li>
+<li><span class="target" id="dogpile.cache.backends.redis.RedisBackend.params.connection_pool"></span><strong>connection_pool</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.redis.RedisBackend.params.connection_pool">¶</a> &#8211; <p><tt class="docutils literal"><span class="pre">redis.ConnectionPool</span></tt> object.  If provided,
+this object supersedes other connection arguments passed to the
+<tt class="docutils literal"><span class="pre">redis.StrictRedis</span></tt> instance, including url and/or host as well as
+socket_timeout, and will be passed to <tt class="docutils literal"><span class="pre">redis.StrictRedis</span></tt> as the
+source of connectivity.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.4.</span></p>
+</div>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<span class="target" id="module-dogpile.cache.backends.file"></span><div class="section" id="file-backends">
+<h3>File Backends<a class="headerlink" href="#file-backends" title="Permalink to this headline">¶</a></h3>
+<p>Provides backends that deal with local filesystem access.</p>
+<dl class="class">
+<dt id="dogpile.cache.backends.file.DBMBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.file.</tt><tt class="descname">DBMBackend</tt><big>(</big><em>arguments</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.DBMBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>A file-backend using a dbm file to store keys.</p>
+<p>Basic usage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.dbm&#39;</span><span class="p">,</span>
+    <span class="n">expiration_time</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">,</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&quot;filename&quot;</span><span class="p">:</span><span class="s">&quot;/path/to/cachefile.dbm&quot;</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>DBM access is provided using the Python <tt class="docutils literal"><span class="pre">anydbm</span></tt> module,
+which selects a platform-specific dbm module to use.
+This may be made to be more configurable in a future
+release.</p>
+<p>Note that different dbm modules have different behaviors.
+Some dbm implementations handle their own locking, while
+others don&#8217;t.  The <a class="reference internal" href="#dogpile.cache.backends.file.DBMBackend" title="dogpile.cache.backends.file.DBMBackend"><tt class="xref py py-class docutils literal"><span class="pre">DBMBackend</span></tt></a> uses a read/write
+lockfile by default, which is compatible even with those
+DBM implementations for which this is unnecessary,
+though the behavior can be disabled.</p>
+<p>The DBM backend by default makes use of two lockfiles.
+One is in order to protect the DBM file itself from
+concurrent writes, the other is to coordinate
+value creation (i.e. the dogpile lock).  By default,
+these lockfiles use the <tt class="docutils literal"><span class="pre">flock()</span></tt> system call
+for locking; this is <strong>only available on Unix
+platforms</strong>.   An alternative lock implementation, such as one
+which is based on threads or uses a third-party system
+such as <a class="reference external" href="https://pypi.python.org/pypi/portalocker">portalocker</a>,
+can be dropped in using the <tt class="docutils literal"><span class="pre">lock_factory</span></tt> argument
+in conjunction with the <a class="reference internal" href="#dogpile.cache.backends.file.AbstractFileLock" title="dogpile.cache.backends.file.AbstractFileLock"><tt class="xref py py-class docutils literal"><span class="pre">AbstractFileLock</span></tt></a> base class.</p>
+<p>Currently, the dogpile lock is against the entire
+DBM file, not per key.   This means there can
+only be one &#8220;creator&#8221; job running at a time
+per dbm file.</p>
+<p>A future improvement might be to have the dogpile lock
+using a filename that&#8217;s based on a modulus of the key.
+Locking on a filename that uniquely corresponds to the
+key is problematic, since it&#8217;s not generally safe to
+delete lockfiles as the application runs, implying an
+unlimited number of key-based files would need to be
+created and never deleted.</p>
+<p>Parameters to the <tt class="docutils literal"><span class="pre">arguments</span></tt> dictionary are
+below.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><span class="target" id="dogpile.cache.backends.file.DBMBackend.params.filename"></span><strong>filename</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.file.DBMBackend.params.filename">¶</a> &#8211; path of the filename in which to
+create the DBM file.  Note that some dbm backends
+will change this name to have additional suffixes.</li>
+<li><span class="target" id="dogpile.cache.backends.file.DBMBackend.params.rw_lockfile"></span><strong>rw_lockfile</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.file.DBMBackend.params.rw_lockfile">¶</a> &#8211; the name of the file to use for
+read/write locking.  If omitted, a default name
+is used by appending the suffix &#8221;.rw.lock&#8221; to the
+DBM filename.  If False, then no lock is used.</li>
+<li><span class="target" id="dogpile.cache.backends.file.DBMBackend.params.dogpile_lockfile"></span><strong>dogpile_lockfile</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.file.DBMBackend.params.dogpile_lockfile">¶</a> &#8211; the name of the file to use
+for value creation, i.e. the dogpile lock.  If
+omitted, a default name is used by appending the
+suffix &#8221;.dogpile.lock&#8221; to the DBM filename. If
+False, then dogpile.cache uses the default dogpile
+lock, a plain thread-based mutex.</li>
+<li><span class="target" id="dogpile.cache.backends.file.DBMBackend.params.lock_factory"></span><strong>lock_factory</strong><a class="paramlink headerlink reference internal" href="#dogpile.cache.backends.file.DBMBackend.params.lock_factory">¶</a> &#8211; <p>a function or class which provides
+for a read/write lock.  Defaults to <a class="reference internal" href="#dogpile.cache.backends.file.FileLock" title="dogpile.cache.backends.file.FileLock"><tt class="xref py py-class docutils literal"><span class="pre">FileLock</span></tt></a>.
+Custom implementations need to implement context-manager
+based <tt class="docutils literal"><span class="pre">read()</span></tt> and <tt class="docutils literal"><span class="pre">write()</span></tt> functions - the
+<a class="reference internal" href="#dogpile.cache.backends.file.AbstractFileLock" title="dogpile.cache.backends.file.AbstractFileLock"><tt class="xref py py-class docutils literal"><span class="pre">AbstractFileLock</span></tt></a> class is provided as a base class
+which provides these methods based on individual read/write lock
+functions.  E.g. to replace the lock with the dogpile.core
+<tt class="xref py py-class docutils literal"><span class="pre">ReadWriteMutex</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.core.readwrite_lock</span> <span class="kn">import</span> <span class="n">ReadWriteMutex</span>
+<span class="kn">from</span> <span class="nn">dogpile.cache.backends.file</span> <span class="kn">import</span> <span class="n">AbstractFileLock</span>
+
+<span class="k">class</span> <span class="nc">MutexLock</span><span class="p">(</span><span class="n">AbstractFileLock</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span> <span class="o">=</span> <span class="n">ReadWriteMutex</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">acquire_read_lock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wait</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span><span class="o">.</span><span class="n">acquire_read_lock</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wait</span> <span class="ow">or</span> <span class="n">ret</span>
+
+    <span class="k">def</span> <span class="nf">acquire_write_lock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wait</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span><span class="o">.</span><span class="n">acquire_write_lock</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wait</span> <span class="ow">or</span> <span class="n">ret</span>
+
+    <span class="k">def</span> <span class="nf">release_read_lock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span><span class="o">.</span><span class="n">release_read_lock</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">release_write_lock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutex</span><span class="o">.</span><span class="n">release_write_lock</span><span class="p">()</span>
+
+<span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&quot;dogpile.cache.dbm&quot;</span><span class="p">,</span>
+    <span class="n">expiration_time</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">arguments</span><span class="o">=</span><span class="p">{</span>
+        <span class="s">&quot;filename&quot;</span><span class="p">:</span> <span class="s">&quot;file.dbm&quot;</span><span class="p">,</span>
+        <span class="s">&quot;lock_factory&quot;</span><span class="p">:</span> <span class="n">MutexLock</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>While the included <a class="reference internal" href="#dogpile.cache.backends.file.FileLock" title="dogpile.cache.backends.file.FileLock"><tt class="xref py py-class docutils literal"><span class="pre">FileLock</span></tt></a> uses <tt class="docutils literal"><span class="pre">os.flock()</span></tt>, a
+windows-compatible implementation can be built using a library
+such as <a class="reference external" href="https://pypi.python.org/pypi/portalocker">portalocker</a>.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.2.</span></p>
+</div>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="dogpile.cache.backends.file.FileLock">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.file.</tt><tt class="descname">FileLock</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.FileLock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use lockfiles to coordinate read/write access to a file.</p>
+<p>Only works on Unix systems, using
+<a class="reference external" href="http://docs.python.org/library/fcntl.html">fcntl.flock()</a>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dogpile.cache.backends.file.AbstractFileLock">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.file.</tt><tt class="descname">AbstractFileLock</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.AbstractFileLock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Coordinate read/write access to a file.</p>
+<p>typically is a file-based lock but doesn&#8217;t necessarily have to be.</p>
+<p>The default implementation here is <a class="reference internal" href="#dogpile.cache.backends.file.FileLock" title="dogpile.cache.backends.file.FileLock"><tt class="xref py py-class docutils literal"><span class="pre">FileLock</span></tt></a>.</p>
+<p>Implementations should provide the following methods:</p>
+<div class="highlight-python"><pre>* __init__()
+* acquire_read_lock()
+* acquire_write_lock()
+* release_read_lock()
+* release_write_lock()</pre>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">__init__()</span></tt> method accepts a single argument &#8220;filename&#8221;, which
+may be used as the &#8220;lock file&#8221;, for those implementations that use a lock
+file.</p>
+<p>Note that multithreaded environments must provide a thread-safe
+version of this lock.  The recommended approach for file-descriptor-based
+locks is to use a Python <tt class="docutils literal"><span class="pre">threading.local()</span></tt> so that a unique file descriptor
+is held per thread.  See the source code of <a class="reference internal" href="#dogpile.cache.backends.file.FileLock" title="dogpile.cache.backends.file.FileLock"><tt class="xref py py-class docutils literal"><span class="pre">FileLock</span></tt></a> for an
+implementation example.</p>
+<dl class="method">
+<dt id="dogpile.cache.backends.file.AbstractFileLock.acquire">
+<tt class="descname">acquire</tt><big>(</big><em>wait=True</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.AbstractFileLock.acquire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Acquire the &#8220;write&#8221; lock.</p>
+<p>This is a direct call to <a class="reference internal" href="#dogpile.cache.backends.file.AbstractFileLock.acquire_write_lock" title="dogpile.cache.backends.file.AbstractFileLock.acquire_write_lock"><tt class="xref py py-meth docutils literal"><span class="pre">AbstractFileLock.acquire_write_lock()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.backends.file.AbstractFileLock.acquire_read_lock">
+<tt class="descname">acquire_read_lock</tt><big>(</big><em>wait</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.AbstractFileLock.acquire_read_lock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Acquire a &#8216;reader&#8217; lock.</p>
+<p>Raises <tt class="docutils literal"><span class="pre">NotImplementedError</span></tt> by default, must be
+implemented by subclasses.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.backends.file.AbstractFileLock.acquire_write_lock">
+<tt class="descname">acquire_write_lock</tt><big>(</big><em>wait</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.AbstractFileLock.acquire_write_lock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Acquire a &#8216;write&#8217; lock.</p>
+<p>Raises <tt class="docutils literal"><span class="pre">NotImplementedError</span></tt> by default, must be
+implemented by subclasses.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dogpile.cache.backends.file.AbstractFileLock.is_open">
+<tt class="descname">is_open</tt><a class="headerlink" href="#dogpile.cache.backends.file.AbstractFileLock.is_open" title="Permalink to this definition">¶</a></dt>
+<dd><p>optional method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.backends.file.AbstractFileLock.read">
+<tt class="descname">read</tt><big>(</big><em>*args</em>, <em>**kwds</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.AbstractFileLock.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide a context manager for the &#8220;read&#8221; lock.</p>
+<p>This method makes use of <a class="reference internal" href="#dogpile.cache.backends.file.AbstractFileLock.acquire_read_lock" title="dogpile.cache.backends.file.AbstractFileLock.acquire_read_lock"><tt class="xref py py-meth docutils literal"><span class="pre">AbstractFileLock.acquire_read_lock()</span></tt></a>
+and <a class="reference internal" href="#dogpile.cache.backends.file.AbstractFileLock.release_read_lock" title="dogpile.cache.backends.file.AbstractFileLock.release_read_lock"><tt class="xref py py-meth docutils literal"><span class="pre">AbstractFileLock.release_read_lock()</span></tt></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.backends.file.AbstractFileLock.release">
+<tt class="descname">release</tt><big>(</big><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.AbstractFileLock.release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Release the &#8220;write&#8221; lock.</p>
+<p>This is a direct call to <a class="reference internal" href="#dogpile.cache.backends.file.AbstractFileLock.release_write_lock" title="dogpile.cache.backends.file.AbstractFileLock.release_write_lock"><tt class="xref py py-meth docutils literal"><span class="pre">AbstractFileLock.release_write_lock()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.backends.file.AbstractFileLock.release_read_lock">
+<tt class="descname">release_read_lock</tt><big>(</big><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.AbstractFileLock.release_read_lock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Release a &#8216;reader&#8217; lock.</p>
+<p>Raises <tt class="docutils literal"><span class="pre">NotImplementedError</span></tt> by default, must be
+implemented by subclasses.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.backends.file.AbstractFileLock.release_write_lock">
+<tt class="descname">release_write_lock</tt><big>(</big><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.AbstractFileLock.release_write_lock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Release a &#8216;writer&#8217; lock.</p>
+<p>Raises <tt class="docutils literal"><span class="pre">NotImplementedError</span></tt> by default, must be
+implemented by subclasses.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dogpile.cache.backends.file.AbstractFileLock.write">
+<tt class="descname">write</tt><big>(</big><em>*args</em>, <em>**kwds</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.file.AbstractFileLock.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide a context manager for the &#8220;write&#8221; lock.</p>
+<p>This method makes use of <a class="reference internal" href="#dogpile.cache.backends.file.AbstractFileLock.acquire_write_lock" title="dogpile.cache.backends.file.AbstractFileLock.acquire_write_lock"><tt class="xref py py-meth docutils literal"><span class="pre">AbstractFileLock.acquire_write_lock()</span></tt></a>
+and <a class="reference internal" href="#dogpile.cache.backends.file.AbstractFileLock.release_write_lock" title="dogpile.cache.backends.file.AbstractFileLock.release_write_lock"><tt class="xref py py-meth docutils literal"><span class="pre">AbstractFileLock.release_write_lock()</span></tt></a></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<span class="target" id="module-dogpile.cache.proxy"></span><div class="section" id="proxy-backends">
+<h3>Proxy Backends<a class="headerlink" href="#proxy-backends" title="Permalink to this headline">¶</a></h3>
+<p>Provides a utility and a decorator class that allow for modifying the behavior
+of different backends without altering the class itself or having to extend the
+base backend.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0: </span>Added support for the <a class="reference internal" href="#dogpile.cache.proxy.ProxyBackend" title="dogpile.cache.proxy.ProxyBackend"><tt class="xref py py-class docutils literal"><span class="pre">ProxyBackend</span></tt></a> class.</p>
+</div>
+<dl class="class">
+<dt id="dogpile.cache.proxy.ProxyBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.proxy.</tt><tt class="descname">ProxyBackend</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#dogpile.cache.proxy.ProxyBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator class for altering the functionality of backends.</p>
+<p>Basic usage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+<span class="kn">from</span> <span class="nn">dogpile.cache.proxy</span> <span class="kn">import</span> <span class="n">ProxyBackend</span>
+
+<span class="k">class</span> <span class="nc">MyFirstProxy</span><span class="p">(</span><span class="n">ProxyBackend</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="c"># ... custom code goes here ...</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">proxied</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="c"># ... custom code goes here ...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proxied</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">MySecondProxy</span><span class="p">(</span><span class="n">ProxyBackend</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="c"># ... custom code goes here ...</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">proxied</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.dbm&#39;</span><span class="p">,</span>
+    <span class="n">expiration_time</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">,</span>
+    <span class="n">arguments</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&quot;filename&quot;</span><span class="p">:</span><span class="s">&quot;/path/to/cachefile.dbm&quot;</span>
+    <span class="p">},</span>
+    <span class="n">wrap</span> <span class="o">=</span> <span class="p">[</span> <span class="n">MyFirstProxy</span><span class="p">,</span> <span class="n">MySecondProxy</span> <span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Classes that extend <a class="reference internal" href="#dogpile.cache.proxy.ProxyBackend" title="dogpile.cache.proxy.ProxyBackend"><tt class="xref py py-class docutils literal"><span class="pre">ProxyBackend</span></tt></a> can be stacked
+together.  The <tt class="docutils literal"><span class="pre">.proxied</span></tt> property will always
+point to either the concrete backend instance or
+the next proxy in the chain that a method can be
+delegated towards.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.0.</span></p>
+</div>
+<dl class="method">
+<dt id="dogpile.cache.proxy.ProxyBackend.wrap">
+<tt class="descname">wrap</tt><big>(</big><em>backend</em><big>)</big><a class="headerlink" href="#dogpile.cache.proxy.ProxyBackend.wrap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a backend as an argument and setup the self.proxied property.
+Return an object that be used as a backend by a <a class="reference internal" href="#dogpile.cache.region.CacheRegion" title="dogpile.cache.region.CacheRegion"><tt class="xref py py-class docutils literal"><span class="pre">CacheRegion</span></tt></a>
+object.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<span class="target" id="module-dogpile.cache.backends.null"></span><div class="section" id="null-backend">
+<h3>Null Backend<a class="headerlink" href="#null-backend" title="Permalink to this headline">¶</a></h3>
+<p>The Null backend does not do any caching at all.  It can be
+used to test behavior without caching, or as a means of disabling
+caching for a region that is otherwise used normally.</p>
+<div class="versionadded">
+<p><span>New in version 0.5.4.</span></p>
+</div>
+<dl class="class">
+<dt id="dogpile.cache.backends.null.NullBackend">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.backends.null.</tt><tt class="descname">NullBackend</tt><big>(</big><em>arguments</em><big>)</big><a class="headerlink" href="#dogpile.cache.backends.null.NullBackend" title="Permalink to this definition">¶</a></dt>
+<dd><p>A &#8220;null&#8221; backend that effectively disables all cache operations.</p>
+<p>Basic usage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+
+<span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+    <span class="s">&#39;dogpile.cache.null&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="module-dogpile.cache.plugins.mako_cache">
+<span id="plugins"></span><h2>Plugins<a class="headerlink" href="#module-dogpile.cache.plugins.mako_cache" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="mako-integration">
+<h3>Mako Integration<a class="headerlink" href="#mako-integration" title="Permalink to this headline">¶</a></h3>
+<p>dogpile.cache includes a <a class="reference external" href="http://www.makotemplates.org">Mako</a> plugin that replaces <a class="reference external" href="http://beaker.groovie.org">Beaker</a>
+as the cache backend.
+Setup a Mako template lookup using the &#8220;dogpile.cache&#8221; cache implementation
+and a region dictionary:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.cache</span> <span class="kn">import</span> <span class="n">make_region</span>
+<span class="kn">from</span> <span class="nn">mako.lookup</span> <span class="kn">import</span> <span class="n">TemplateLookup</span>
+
+<span class="n">my_regions</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&quot;local&quot;</span><span class="p">:</span><span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+                <span class="s">&quot;dogpile.cache.dbm&quot;</span><span class="p">,</span>
+                <span class="n">expiration_time</span><span class="o">=</span><span class="mi">360</span><span class="p">,</span>
+                <span class="n">arguments</span><span class="o">=</span><span class="p">{</span><span class="s">&quot;filename&quot;</span><span class="p">:</span><span class="s">&quot;file.dbm&quot;</span><span class="p">}</span>
+            <span class="p">),</span>
+    <span class="s">&quot;memcached&quot;</span><span class="p">:</span><span class="n">make_region</span><span class="p">()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+                <span class="s">&quot;dogpile.cache.pylibmc&quot;</span><span class="p">,</span>
+                <span class="n">expiration_time</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>
+                <span class="n">arguments</span><span class="o">=</span><span class="p">{</span><span class="s">&quot;url&quot;</span><span class="p">:[</span><span class="s">&quot;127.0.0.1&quot;</span><span class="p">]}</span>
+            <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">mako_lookup</span> <span class="o">=</span> <span class="n">TemplateLookup</span><span class="p">(</span>
+    <span class="n">directories</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;/myapp/templates&quot;</span><span class="p">],</span>
+    <span class="n">cache_impl</span><span class="o">=</span><span class="s">&quot;dogpile.cache&quot;</span><span class="p">,</span>
+    <span class="n">cache_args</span><span class="o">=</span><span class="p">{</span>
+        <span class="s">&#39;regions&#39;</span><span class="p">:</span><span class="n">my_regions</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>To use the above configuration in a template, use the <tt class="docutils literal"><span class="pre">cached=True</span></tt> argument on any
+Mako tag which accepts it, in conjunction with the name of the desired region
+as the <tt class="docutils literal"><span class="pre">cache_region</span></tt> argument:</p>
+<div class="highlight-python"><pre>&lt;%def name="mysection()" cached="True" cache_region="memcached"&gt;
+    some content that's cached
+&lt;/%def&gt;</pre>
+</div>
+<dl class="class">
+<dt id="dogpile.cache.plugins.mako_cache.MakoPlugin">
+<em class="property">class </em><tt class="descclassname">dogpile.cache.plugins.mako_cache.</tt><tt class="descname">MakoPlugin</tt><big>(</big><em>cache</em><big>)</big><a class="headerlink" href="#dogpile.cache.plugins.mako_cache.MakoPlugin" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Mako <tt class="docutils literal"><span class="pre">CacheImpl</span></tt> which talks to dogpile.cache.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="utilities">
+<h2>Utilities<a class="headerlink" href="#utilities" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt>
+<tt class="descclassname">dogpile.cache.util.</tt><tt class="descname">function_key_generator</tt><big>(</big><em>namespace</em>, <em>fn</em>, <em>to_str=&lt;type 'str'&gt;</em><big>)</big></dt>
+<dd><p>Return a function that generates a string
+key, based on a given function as well as
+arguments to the returned function itself.</p>
+<p>This is used by <a class="reference internal" href="#dogpile.cache.region.CacheRegion.cache_on_arguments" title="dogpile.cache.region.CacheRegion.cache_on_arguments"><tt class="xref py py-meth docutils literal"><span class="pre">CacheRegion.cache_on_arguments()</span></tt></a>
+to generate a cache key from a decorated function.</p>
+<p>It can be replaced using the <tt class="docutils literal"><span class="pre">function_key_generator</span></tt>
+argument passed to <a class="reference internal" href="#dogpile.cache.region.make_region" title="dogpile.cache.region.make_region"><tt class="xref py py-func docutils literal"><span class="pre">make_region()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dogpile.cache.util.sha1_mangle_key">
+<tt class="descclassname">dogpile.cache.util.</tt><tt class="descname">sha1_mangle_key</tt><big>(</big><em>key</em><big>)</big><a class="headerlink" href="#dogpile.cache.util.sha1_mangle_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>a SHA1 key mangler.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dogpile.cache.util.length_conditional_mangler">
+<tt class="descclassname">dogpile.cache.util.</tt><tt class="descname">length_conditional_mangler</tt><big>(</big><em>length</em>, <em>mangler</em><big>)</big><a class="headerlink" href="#dogpile.cache.util.length_conditional_mangler" title="Permalink to this definition">¶</a></dt>
+<dd><p>a key mangler that mangles if the length of the key is
+past a certain threshold.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">API</a><ul>
+<li><a class="reference internal" href="#module-dogpile.cache.region">Region</a></li>
+<li><a class="reference internal" href="#backend-api">Backend API</a></li>
+<li><a class="reference internal" href="#module-dogpile.cache.backends.memory">Backends</a><ul>
+<li><a class="reference internal" href="#memory-backends">Memory Backends</a></li>
+<li><a class="reference internal" href="#memcached-backends">Memcached Backends</a></li>
+<li><a class="reference internal" href="#redis-backends">Redis Backends</a></li>
+<li><a class="reference internal" href="#file-backends">File Backends</a></li>
+<li><a class="reference internal" href="#proxy-backends">Proxy Backends</a></li>
+<li><a class="reference internal" href="#null-backend">Null Backend</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-dogpile.cache.plugins.mako_cache">Plugins</a><ul>
+<li><a class="reference internal" href="#mako-integration">Mako Integration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#utilities">Utilities</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="usage.html"
+                        title="previous chapter">Usage Guide</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="changelog.html"
+                        title="next chapter">Changelog</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/api.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="changelog.html" title="Changelog"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Usage Guide"
+             >previous</a> |</li>
+        <li><a href="index.html">dogpile.cache 0.5.4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011-2014 Mike Bayer.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+  </body>
+</html>

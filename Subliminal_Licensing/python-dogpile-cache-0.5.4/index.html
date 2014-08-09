@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to dogpile.cache’s documentation! &mdash; dogpile.cache 0.5.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/changelog.css" type="text/css" />
+    <link rel="stylesheet" href="_static/sphinx_paramlinks.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="dogpile.cache 0.5.4 documentation" href="#" />
+    <link rel="next" title="Front Matter" href="front.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="front.html" title="Front Matter"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">dogpile.cache 0.5.4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="welcome-to-dogpile-cache-s-documentation">
+<h1>Welcome to dogpile.cache&#8217;s documentation!<a class="headerlink" href="#welcome-to-dogpile-cache-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="http://bitbucket.org/zzzeek/dogpile.cache">dogpile.cache</a> provides a simple
+caching pattern based on the <a class="reference external" href="http://pypi.python.org/pypi/dogpile.core">dogpile.core</a>
+locking system, including rudimentary backends. It effectively completes the
+replacement of <a class="reference external" href="http://beaker.groovie.org">Beaker</a> as far as caching (though <strong>not</strong> HTTP sessions)
+is concerned, providing an open-ended, simple, and higher-performing pattern to configure and use
+cache backends. New backends are very easy to create
+and use; users are encouraged to adapt the provided backends for their own
+needs, as high volume caching requires lots of tweaks and adjustments specific
+to an application and its environment.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="front.html">Front Matter</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="front.html#project-homepage">Project Homepage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="front.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="front.html#community">Community</a></li>
+<li class="toctree-l2"><a class="reference internal" href="front.html#bugs">Bugs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#rudimentary-usage">Rudimentary Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#region-configuration">Region Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#using-a-region">Using a Region</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#creating-backends">Creating Backends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#changing-backend-behavior">Changing Backend Behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#recipes">Recipes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dogpile.cache.region">Region</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#backend-api">Backend API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dogpile.cache.backends.memory">Backends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-dogpile.cache.plugins.mako_cache">Plugins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#utilities">Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.5.4">0.5.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.5.3">0.5.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.5.2">0.5.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.5.1">0.5.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.5.0">0.5.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.4.3">0.4.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.4.2">0.4.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.4.1">0.4.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.4.0">0.4.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.3.1">0.3.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.3.0">0.3.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.2.4">0.2.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.2.3">0.2.3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.2.2">0.2.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.2.1">0.2.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.2.0">0.2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.1.1">0.1.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#change-0.1.0">0.1.0</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to dogpile.cache&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="front.html"
+                        title="next chapter">Front Matter</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="front.html" title="Front Matter"
+             >next</a> |</li>
+        <li><a href="#">dogpile.cache 0.5.4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011-2014 Mike Bayer.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+  </body>
+</html>

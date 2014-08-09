@@ -1,0 +1,351 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Usage Guide &mdash; dogpile.core 0.4.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="dogpile.core 0.4.1 documentation" href="index.html" />
+    <link rel="next" title="API" href="api.html" />
+    <link rel="prev" title="Front Matter" href="front.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="api.html" title="API"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="front.html" title="Front Matter"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">dogpile.core 0.4.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="usage-guide">
+<h1>Usage Guide<a class="headerlink" href="#usage-guide" title="Permalink to this headline">¶</a></h1>
+<p>dogpile.core provides a locking interface around a &#8220;value creation&#8221; and
+&#8220;value retrieval&#8221; pair of functions.</p>
+<p>The primary interface is the <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> object, which provides for
+the invocation of the creation function by only one thread and/or process at
+a time, deferring all other threads/processes to the &#8220;value retrieval&#8221; function
+until the single creation thread is completed.</p>
+<div class="section" id="do-i-need-to-learn-the-dogpile-core-api-directly">
+<h2>Do I Need to Learn the dogpile.core API Directly?<a class="headerlink" href="#do-i-need-to-learn-the-dogpile-core-api-directly" title="Permalink to this headline">¶</a></h2>
+<p>It&#8217;s anticipated that most users of dogpile.core will be using it indirectly via the
+<a class="reference external" href="http://bitbucket.org/zzzeek/dogpile.cache">dogpile.cache</a> caching
+front-end.  If you fall into this category, then the short answer is no.</p>
+<p>dogpile.core provides core internals to the
+<a class="reference external" href="http://bitbucket.org/zzzeek/dogpile.cache">dogpile.cache</a>
+package, which provides a simple-to-use caching API, rudimental
+backends for Memcached and others, and easy hooks to add new backends.
+Users of dogpile.cache
+don&#8217;t need to know or access dogpile.core&#8217;s APIs directly, though a rough understanding
+the general idea is always helpful.</p>
+<p>Using the core dogpile.core APIs described here directly implies you&#8217;re building your own
+resource-usage system outside, or in addition to, the one
+<a class="reference external" href="http://bitbucket.org/zzzeek/dogpile.cache">dogpile.cache</a> provides.</p>
+</div>
+<div class="section" id="rudimentary-usage">
+<h2>Rudimentary Usage<a class="headerlink" href="#rudimentary-usage" title="Permalink to this headline">¶</a></h2>
+<p>The primary API dogpile provides is the <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> object.   This object allows for
+functions that provide mutexing, value creation, as well as value retrieval.</p>
+<p class="versionchanged">
+<span class="versionmodified">Changed in version 0.4.0: </span>The <a class="reference internal" href="api.html#dogpile.core.Dogpile" title="dogpile.core.Dogpile"><tt class="xref py py-class docutils literal"><span class="pre">Dogpile</span></tt></a> class is no longer the primary API of dogpile,
+replaced by the more straightforward <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> object.</p>
+<p>An example usage is as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dogpile.core</span> <span class="kn">import</span> <span class="n">Lock</span><span class="p">,</span> <span class="n">NeedRegenerationException</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="c"># store a reference to a &quot;resource&quot;, some</span>
+<span class="c"># object that is expensive to create.</span>
+<span class="n">the_resource</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">some_creation_function</span><span class="p">():</span>
+    <span class="c"># call a value creation function</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">create_some_resource</span><span class="p">()</span>
+
+    <span class="c"># get creationtime using time.time()</span>
+    <span class="n">creationtime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="c"># keep track of the value and creation time in the &quot;cache&quot;</span>
+    <span class="n">the_resource</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">tup</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">creationtime</span><span class="p">)</span>
+
+    <span class="c"># return the tuple of (value, creationtime)</span>
+    <span class="k">return</span> <span class="n">tup</span>
+
+<span class="k">def</span> <span class="nf">retrieve_resource</span><span class="p">():</span>
+    <span class="c"># function that retrieves the resource and</span>
+    <span class="c"># creation time.</span>
+
+    <span class="c"># if no resource, then raise NeedRegenerationException</span>
+    <span class="k">if</span> <span class="n">the_resource</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NeedRegenerationException</span><span class="p">()</span>
+
+    <span class="c"># else return the tuple of (value, creationtime)</span>
+    <span class="k">return</span> <span class="n">the_resource</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c"># a mutex, which needs here to be shared across all invocations</span>
+<span class="c"># of this particular creation function</span>
+<span class="n">mutex</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+<span class="k">with</span> <span class="n">Lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">,</span> <span class="n">some_creation_function</span><span class="p">,</span> <span class="n">retrieve_resource</span><span class="p">,</span> <span class="mi">3600</span><span class="p">)</span> <span class="k">as</span> <span class="n">value</span><span class="p">:</span>
+      <span class="c"># some function that uses</span>
+      <span class="c"># the resource.  Won&#39;t reach</span>
+      <span class="c"># here until some_creation_function()</span>
+      <span class="c"># has completed at least once.</span>
+      <span class="n">value</span><span class="o">.</span><span class="n">do_something</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Above, <tt class="docutils literal"><span class="pre">some_creation_function()</span></tt> will be called
+when <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> is first invoked as a context manager.   The value returned by this
+function is then passed into the <tt class="docutils literal"><span class="pre">with</span></tt> block, where it can be used
+by application code.  Concurrent threads which
+call <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> during this initial period
+will be blocked until <tt class="docutils literal"><span class="pre">some_creation_function()</span></tt> completes.</p>
+<p>Once the creation function has completed successfully the first time,
+new calls to <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> will call <tt class="docutils literal"><span class="pre">retrieve_resource()</span></tt>
+in order to get the current cached value as well as its creation
+time; if the creation time is older than the current time minus
+an expiration time of 3600, then <tt class="docutils literal"><span class="pre">some_creation_function()</span></tt>
+will be called again, but only by one thread/process, using the given
+mutex object as a source of synchronization.  Concurrent threads/processes
+which call <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> during this period will fall through,
+and not be blocked; instead, the &#8220;stale&#8221; value just returned by
+<tt class="docutils literal"><span class="pre">retrieve_resource()</span></tt> will continue to be returned until the creation
+function has finished.</p>
+<p>The <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> API is designed to work with simple cache backends
+like Memcached.   It addresses such issues as:</p>
+<ul class="simple">
+<li>Values can disappear from the cache at any time, before our expiration
+time is reached.  The <a class="reference internal" href="api.html#dogpile.core.NeedRegenerationException" title="dogpile.core.NeedRegenerationException"><tt class="xref py py-class docutils literal"><span class="pre">NeedRegenerationException</span></tt></a> class is used
+to alert the <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> object that a value needs regeneration ahead
+of the usual expiration time.</li>
+<li>There&#8217;s no function in a Memcached-like system to &#8220;check&#8221; for a key without
+actually retrieving it.  The usage of the <tt class="docutils literal"><span class="pre">retrieve_resource()</span></tt> function
+allows that we check for an existing key and also return the existing value,
+if any, at the same time, without the need for two separate round trips.</li>
+<li>The &#8220;creation&#8221; function used by <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> is expected to store the
+newly created value in the cache, as well as to return it.   This is also
+more efficient than using two separate round trips to separately store,
+and re-retrieve, the object.</li>
+</ul>
+</div>
+<div class="section" id="using-dogpile-core-for-caching">
+<span id="caching-decorator"></span><h2>Using dogpile.core for Caching<a class="headerlink" href="#using-dogpile-core-for-caching" title="Permalink to this headline">¶</a></h2>
+<p>dogpile.core is part of an effort to &#8220;break up&#8221; the Beaker
+package into smaller, simpler components (which also work better). Here, we
+illustrate how to approximate Beaker&#8217;s &#8220;cache decoration&#8221;
+function, to decorate any function and store the value in
+Memcached.  We create a Python decorator function called <tt class="docutils literal"><span class="pre">cached()</span></tt> which
+will provide caching for the output of a single function.  It&#8217;s given
+the &#8220;key&#8221; which we&#8217;d like to use in Memcached, and internally it makes
+usage of <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a>, along with a thread based mutex (we&#8217;ll see a distributed mutex
+in the next section):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pylibmc</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">dogpile.core</span> <span class="kn">import</span> <span class="n">Lock</span><span class="p">,</span> <span class="n">NeedRegenerationException</span>
+
+<span class="n">mc_pool</span> <span class="o">=</span> <span class="n">pylibmc</span><span class="o">.</span><span class="n">ThreadMappedPool</span><span class="p">(</span><span class="n">pylibmc</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="s">&quot;localhost&quot;</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">cached</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">expiration_time</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A decorator that will cache the return value of a function</span>
+<span class="sd">    in memcached given a key.&quot;&quot;&quot;</span>
+
+    <span class="n">mutex</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_value</span><span class="p">():</span>
+         <span class="k">with</span> <span class="n">mc_pool</span><span class="o">.</span><span class="n">reserve</span><span class="p">()</span> <span class="k">as</span> <span class="n">mc</span><span class="p">:</span>
+            <span class="n">value_plus_time</span> <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">value_plus_time</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">NeedRegenerationException</span><span class="p">()</span>
+            <span class="c"># return a tuple (value, createdtime)</span>
+            <span class="k">return</span> <span class="n">value_plus_time</span>
+
+    <span class="k">def</span> <span class="nf">decorate</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">gen_cached</span><span class="p">():</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">fn</span><span class="p">()</span>
+            <span class="k">with</span> <span class="n">mc_pool</span><span class="o">.</span><span class="n">reserve</span><span class="p">()</span> <span class="k">as</span> <span class="n">mc</span><span class="p">:</span>
+                <span class="c"># create a tuple (value, createdtime)</span>
+                <span class="n">value_plus_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+                <span class="n">mc</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value_plus_time</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">value_plus_time</span>
+
+        <span class="k">def</span> <span class="nf">invoke</span><span class="p">():</span>
+            <span class="k">with</span> <span class="n">Lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">,</span> <span class="n">gen_cached</span><span class="p">,</span> <span class="n">get_value</span><span class="p">,</span> <span class="n">expiration_time</span><span class="p">)</span> <span class="k">as</span> <span class="n">value</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="n">invoke</span>
+
+    <span class="k">return</span> <span class="n">decorate</span>
+</pre></div>
+</div>
+<p>Using the above, we can decorate any function as:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="nd">@cached</span><span class="p">(</span><span class="s">&quot;some key&quot;</span><span class="p">,</span> <span class="mi">3600</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">generate_my_expensive_value</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">slow_database</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="s">&quot;stuff&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> object will ensure that only one thread at a time performs <tt class="docutils literal"><span class="pre">slow_database.lookup()</span></tt>,
+and only every 3600 seconds, unless Memcached has removed the value, in which case it will
+be called again as needed.</p>
+<p>In particular, dogpile.core&#8217;s system allows us to call the memcached get() function at most
+once per access, instead of Beaker&#8217;s system which calls it twice, and doesn&#8217;t make us call
+get() when we just created the value.</p>
+<p>For the mutex object, we keep a <tt class="docutils literal"><span class="pre">threading.Lock</span></tt> object that&#8217;s local
+to the decorated function, rather than using a global lock.   This localizes
+the in-process locking to be local to this one decorated function.   In the next section,
+we&#8217;ll see the usage of a cross-process lock that accomplishes this differently.</p>
+</div>
+<div class="section" id="using-a-file-or-distributed-lock-with-dogpile">
+<h2>Using a File or Distributed Lock with Dogpile<a class="headerlink" href="#using-a-file-or-distributed-lock-with-dogpile" title="Permalink to this headline">¶</a></h2>
+<p>The examples thus far use a <tt class="docutils literal"><span class="pre">threading.Lock()</span></tt> object for synchronization.
+If our application uses multiple processes, we will want to coordinate creation
+operations not just on threads, but on some mutex that other processes can access.</p>
+<p>In this example
+we&#8217;ll use a file-based lock as provided by the <a class="reference external" href="http://pypi.python.org/pypi/lockfile">lockfile</a>
+package, which uses a unix-symlink concept to provide a filesystem-level lock (which also
+has been made threadsafe).  Another strategy may base itself directly off the Unix <tt class="docutils literal"><span class="pre">os.flock()</span></tt>
+call, or use an NFS-safe file lock like <a class="reference external" href="http://pypi.python.org/pypi/flufl.lock">flufl.lock</a>,
+and still another approach is to lock against a cache server, using a recipe
+such as that described at <a class="reference external" href="http://www.regexprn.com/2010/05/using-memcached-as-distributed-locking.html">Using Memcached as a Distributed Locking Service</a>.</p>
+<p>What all of these locking schemes have in common is that unlike the Python <tt class="docutils literal"><span class="pre">threading.Lock</span></tt>
+object, they all need access to an actual key which acts as the symbol that all processes
+will coordinate upon.   So here, we will also need to create the &#8220;mutex&#8221; which we
+pass to <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> using the <tt class="docutils literal"><span class="pre">key</span></tt> argument:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">lockfile</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">sha1</span>
+
+<span class="c"># ... other imports and setup from the previous example</span>
+
+<span class="k">def</span> <span class="nf">cached</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">expiration_time</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A decorator that will cache the return value of a function</span>
+<span class="sd">    in memcached given a key.&quot;&quot;&quot;</span>
+
+    <span class="n">lock_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&quot;/tmp&quot;</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">.lock&quot;</span> <span class="o">%</span> <span class="n">sha1</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">())</span>
+
+    <span class="c"># ... get_value() from the previous example goes here</span>
+
+    <span class="k">def</span> <span class="nf">decorate</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="c"># ... gen_cached() from the previous example goes here</span>
+
+        <span class="k">def</span> <span class="nf">invoke</span><span class="p">():</span>
+            <span class="c"># create an ad-hoc FileLock</span>
+            <span class="n">mutex</span> <span class="o">=</span> <span class="n">lockfile</span><span class="o">.</span><span class="n">FileLock</span><span class="p">(</span><span class="n">lock_path</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">Lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">,</span> <span class="n">gen_cached</span><span class="p">,</span> <span class="n">get_value</span><span class="p">,</span> <span class="n">expiration_time</span><span class="p">)</span> <span class="k">as</span> <span class="n">value</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="n">invoke</span>
+
+    <span class="k">return</span> <span class="n">decorate</span>
+</pre></div>
+</div>
+<p>For a given key &#8220;some_key&#8221;, we generate a hex digest of the key,
+then use <tt class="docutils literal"><span class="pre">lockfile.FileLock()</span></tt> to create a lock against the file
+<tt class="docutils literal"><span class="pre">/tmp/53def077a4264bd3183d4eb21b1f56f883e1b572.lock</span></tt>.   Any number of <a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a>
+objects in various processes will now coordinate with each other, using this common
+filename as the &#8220;baton&#8221; against which creation of a new value proceeds.</p>
+<p>Unlike when we used <tt class="docutils literal"><span class="pre">threading.Lock</span></tt>, the file lock is ultimately locking
+on a file, so multiple instances of <tt class="docutils literal"><span class="pre">FileLock()</span></tt> will all coordinate on
+that same file - it&#8217;s often the case that file locks that rely upon <tt class="docutils literal"><span class="pre">flock()</span></tt>
+require non-threaded usage, so a unique filesystem lock per thread is often a good
+idea in any case.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Usage Guide</a><ul>
+<li><a class="reference internal" href="#do-i-need-to-learn-the-dogpile-core-api-directly">Do I Need to Learn the dogpile.core API Directly?</a></li>
+<li><a class="reference internal" href="#rudimentary-usage">Rudimentary Usage</a></li>
+<li><a class="reference internal" href="#using-dogpile-core-for-caching">Using dogpile.core for Caching</a></li>
+<li><a class="reference internal" href="#using-a-file-or-distributed-lock-with-dogpile">Using a File or Distributed Lock with Dogpile</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="front.html"
+                        title="previous chapter">Front Matter</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="api.html"
+                        title="next chapter">API</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/usage.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="api.html" title="API"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="front.html" title="Front Matter"
+             >previous</a> |</li>
+        <li><a href="index.html">dogpile.core 0.4.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011-2013 Mike Bayer.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

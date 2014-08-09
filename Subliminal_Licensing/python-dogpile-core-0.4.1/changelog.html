@@ -1,0 +1,234 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Changelog &mdash; dogpile.core 0.4.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="dogpile.core 0.4.1 documentation" href="index.html" />
+    <link rel="prev" title="API" href="api.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="api.html" title="API"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">dogpile.core 0.4.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="changelog">
+<h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="change-0.4.1">
+<h2>0.4.1<a class="headerlink" href="#change-0.4.1" title="Permalink to this headline">¶</a></h2>
+Released: Sat Jan 19 2013<ul class="simple">
+<li><p id="change-0.4.1-0"><span class="target" id="change-337b3ff47fefe3baf7580fe1c45b2ac9"></span>An &#8220;async creator&#8221; function can be specified to
+<a class="reference internal" href="api.html#dogpile.core.Lock" title="dogpile.core.Lock"><tt class="xref py py-class docutils literal"><span class="pre">Lock</span></tt></a> which allows the &#8220;creation&#8221; function
+to be called asynchronously or be subsituted for
+another asynchronous creation scheme.  Courtesy
+Ralph Bean.<a class="changeset-link reference internal" href="#change-337b3ff47fefe3baf7580fe1c45b2ac9">(link)</a><p> <a class="reference external" href="https://bitbucket.org/zzzeek/dogpile.core/pull-request/2">pull request 2</a></p>
+</p>
+</li>
+</ul>
+</div>
+<div class="section" id="change-0.4.0">
+<h2>0.4.0<a class="headerlink" href="#change-0.4.0" title="Permalink to this headline">¶</a></h2>
+Released: Tue Oct 30 2012<ul class="simple">
+<li><p id="change-0.4.0-0"><span class="target" id="change-a3274c88ecad76ec58e1f794684f871a"></span>reworked Dogpile&#8217;s API into a new object called Lock.
+Lock presents just one set of arguments for locking within
+one constructor call, and provides the &#8220;comprehensive&#8221; caching
+pattern that is what&#8217;s desired in the vast majority of cases.
+The Dogpile class is now legacy, and
+builds its various usage patterns on top of Lock.<a class="changeset-link reference internal" href="#change-a3274c88ecad76ec58e1f794684f871a">(link)</a><p></p>
+</p>
+</li>
+<li><p id="change-0.4.0-1"><span class="target" id="change-f54d70851942c393c57e117f0554190d"></span>Fixed the dependency on storing &#8220;creationtime&#8221; locally in memory;
+this caused dogpile pileups for a missing cache value when used in multiple-process
+environments.  The new Lock object now checks the value_and_created_fn()
+an extra time within the &#8220;lock acquired&#8221; phase so that multiple writers
+who entered the block don&#8217;t rely upon a memory-only version of creation
+time.<a class="changeset-link reference internal" href="#change-f54d70851942c393c57e117f0554190d">(link)</a><p> <a class="reference external" href="https://bitbucket.org/zzzeek/dogpile.core/issue/1">#1</a></p>
+</p>
+</li>
+</ul>
+</div>
+<div class="section" id="change-0.3.3">
+<h2>0.3.3<a class="headerlink" href="#change-0.3.3" title="Permalink to this headline">¶</a></h2>
+Released: Tue Sep 25 2012<ul class="simple">
+<li><p id="change-0.3.3-0"><span class="target" id="change-a51c70611b10fa0aa100386edfcdadeb"></span>repair setup.py so that tests don&#8217;t install,
+courtesy Ben Hayden.<a class="changeset-link reference internal" href="#change-a51c70611b10fa0aa100386edfcdadeb">(link)</a><p></p>
+</p>
+</li>
+</ul>
+</div>
+<div class="section" id="change-0.3.2">
+<h2>0.3.2<a class="headerlink" href="#change-0.3.2" title="Permalink to this headline">¶</a></h2>
+Released: Wed Jun 13 2012<ul class="simple">
+<li><p id="change-0.3.2-0"><span class="target" id="change-cd579c47c07759e58bb4da443ccdb81b"></span>upgrade to beta.<a class="changeset-link reference internal" href="#change-cd579c47c07759e58bb4da443ccdb81b">(link)</a><p></p>
+</p>
+</li>
+</ul>
+</div>
+<div class="section" id="change-0.3.1">
+<h2>0.3.1<a class="headerlink" href="#change-0.3.1" title="Permalink to this headline">¶</a></h2>
+Released: Sun Apr 15 2012<ul class="simple">
+<li><p id="change-0.3.1-0"><span class="target" id="change-8d96e8e73dc4e4f77d74984231804650"></span>py3k compatibility is in-place now, no
+2to3 needed.<a class="changeset-link reference internal" href="#change-8d96e8e73dc4e4f77d74984231804650">(link)</a><p></p>
+</p>
+</li>
+</ul>
+</div>
+<div class="section" id="change-0.3.0">
+<h2>0.3.0<a class="headerlink" href="#change-0.3.0" title="Permalink to this headline">¶</a></h2>
+Released: Sat Apr 14 2012<ul class="simple">
+<li><p id="change-0.3.0-0"><span class="target" id="change-4ed8af60e651be045c1f1d8a47a76a0f"></span>Renamed the project again - to dogpile.core.
+Package has been reorganized so that &#8220;dogpile&#8221;
+is a pure namespace package.  The base dogpile
+features are now in &#8220;dogpile.core&#8221;.<a class="changeset-link reference internal" href="#change-4ed8af60e651be045c1f1d8a47a76a0f">(link)</a><p></p>
+</p>
+</li>
+</ul>
+</div>
+<div class="section" id="change-0.2.2">
+<h2>0.2.2<a class="headerlink" href="#change-0.2.2" title="Permalink to this headline">¶</a></h2>
+Released: Fri Mar 30 2012<ul class="simple">
+<li><p id="change-0.2.2-0"><span class="target" id="change-e359a6f2e99bf2e8b8d55bbae439e9c3"></span>expire time of None means &#8220;never expire&#8221;.<a class="changeset-link reference internal" href="#change-e359a6f2e99bf2e8b8d55bbae439e9c3">(link)</a><p></p>
+</p>
+</li>
+</ul>
+</div>
+<div class="section" id="change-0.2.1">
+<h2>0.2.1<a class="headerlink" href="#change-0.2.1" title="Permalink to this headline">¶</a></h2>
+Released: Fri Dec 23 2011<ul class="simple">
+<li><p id="change-0.2.1-0"><span class="target" id="change-a8f61d52a1a19064910e59fe3bd60264"></span>Add new &#8220;nameregistry&#8221; helper.  Another fixture
+derived from Beaker, this allows the ad-hoc creation of
+a new Dogpile lock based on a name, where all other
+threads calling that name at the same time will get
+the same Dogpile lock.  Allows any number of
+logical &#8220;dogpile&#8221; actions to carry on concurrently
+without any memory taken up outside of those operations.<a class="changeset-link reference internal" href="#change-a8f61d52a1a19064910e59fe3bd60264">(link)</a><p></p>
+</p>
+</li>
+<li><p id="change-0.2.1-1"><span class="target" id="change-0596b3f60903048badf249c224e78ae7"></span>To support the use case supported by nameregistry, added
+value_and_created_fn to dogpile.acquire().  The idea
+is that the value_and_created_fn can return
+(value, createdtime), so that the creation time of the
+value can come from the cache, thus eliminating the
+need for the dogpile lock to hang around persistently.<a class="changeset-link reference internal" href="#change-0596b3f60903048badf249c224e78ae7">(link)</a><p></p>
+</p>
+</li>
+</ul>
+</div>
+<div class="section" id="change-0.2.0">
+<h2>0.2.0<a class="headerlink" href="#change-0.2.0" title="Permalink to this headline">¶</a></h2>
+Released: Sun Oct 23 2011<ul class="simple">
+<li><p id="change-0.2.0-0"><span class="target" id="change-03196c73d08d2b4c45396108242b7db4"></span>change name to lowercase &#8220;dogpile&#8221;.<a class="changeset-link reference internal" href="#change-03196c73d08d2b4c45396108242b7db4">(link)</a><p></p>
+</p>
+</li>
+</ul>
+</div>
+<div class="section" id="change-0.1.0">
+<h2>0.1.0<a class="headerlink" href="#change-0.1.0" title="Permalink to this headline">¶</a></h2>
+no release date<ul class="simple">
+<li><p id="change-0.1.0-0"><span class="target" id="change-3e42d6ddc5e1701dd16fa2423cae4362"></span>initial revision.<a class="changeset-link reference internal" href="#change-3e42d6ddc5e1701dd16fa2423cae4362">(link)</a><p></p>
+</p>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Changelog</a><ul>
+<li><a class="reference internal" href="#change-0.4.1">0.4.1</a></li>
+<li><a class="reference internal" href="#change-0.4.0">0.4.0</a></li>
+<li><a class="reference internal" href="#change-0.3.3">0.3.3</a></li>
+<li><a class="reference internal" href="#change-0.3.2">0.3.2</a></li>
+<li><a class="reference internal" href="#change-0.3.1">0.3.1</a></li>
+<li><a class="reference internal" href="#change-0.3.0">0.3.0</a></li>
+<li><a class="reference internal" href="#change-0.2.2">0.2.2</a></li>
+<li><a class="reference internal" href="#change-0.2.1">0.2.1</a></li>
+<li><a class="reference internal" href="#change-0.2.0">0.2.0</a></li>
+<li><a class="reference internal" href="#change-0.1.0">0.1.0</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="api.html"
+                        title="previous chapter">API</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/changelog.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="api.html" title="API"
+             >previous</a> |</li>
+        <li><a href="index.html">dogpile.core 0.4.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011-2013 Mike Bayer.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

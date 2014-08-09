@@ -1,0 +1,441 @@
+diff -Naur subliminal-0.7.4/subliminal/api.py subliminal-0.7.4.py26/subliminal/api.py
+--- subliminal-0.7.4/subliminal/api.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/api.py	2014-07-09 18:36:32.000000000 -0400
+@@ -92,11 +92,12 @@
+     """
+     provider_configs = provider_configs or {}
+     discarded_providers = set()
+-    providers_by_name = {ep.name: ep.load() for ep in pkg_resources.iter_entry_points(PROVIDERS_ENTRY_POINT)}
++    providers_by_name = dict([(ep.name, ep.load()) for ep in pkg_resources.iter_entry_points(PROVIDERS_ENTRY_POINT)])
++
+     initialized_providers = {}
+     try:
+         for video, video_subtitles in subtitles.items():
+-            languages = {subtitle.language for subtitle in video_subtitles}
++            languages = dict([subtitle.language for subtitle in video_subtitles])
+             downloaded_languages = set()
+             for subtitle in video_subtitles:
+                 # filter
+diff -Naur subliminal-0.7.4/subliminal/cli.py subliminal-0.7.4.py26/subliminal/cli.py
+--- subliminal-0.7.4/subliminal/cli.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/cli.py	2014-07-09 23:29:18.000000000 -0400
+@@ -81,7 +81,7 @@
+ 
+     # parse languages
+     try:
+-        args.languages = {babelfish.Language.fromietf(l) for l in args.languages}
++        args.languages = set( babelfish.Language.fromietf(l) for l in args.languages )
+     except babelfish.Error:
+         parser.error('argument -l/--languages: codes are not IETF: %r' % args.languages)
+ 
+@@ -90,7 +90,7 @@
+         match = re.match(r'^(?:(?P<weeks>\d+?)w)?(?:(?P<days>\d+?)d)?(?:(?P<hours>\d+?)h)?$', args.age)
+         if not match:
+             parser.error('argument -a/--age: invalid age: %r' % args.age)
+-        args.age = datetime.timedelta(**{k: int(v) for k, v in match.groupdict(0).items()})
++        args.age = datetime.timedelta(**dict([(k, int(v)) for k, v in match.groupdict(0).items()]))
+ 
+     # parse cache-file
+     args.cache_file = os.path.abspath(os.path.expanduser(args.cache_file))
+diff -Naur subliminal-0.7.4/subliminal/converters/addic7ed.py subliminal-0.7.4.py26/subliminal/converters/addic7ed.py
+--- subliminal-0.7.4/subliminal/converters/addic7ed.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/converters/addic7ed.py	2014-07-09 23:32:28.000000000 -0400
+@@ -1,11 +1,11 @@
+ # -*- coding: utf-8 -*-
+ from __future__ import unicode_literals
+-from babelfish import LanguageReverseConverter, get_language_converter
++from babelfish import LanguageReverseConverter, language_converters
+ 
+ 
+ class Addic7edConverter(LanguageReverseConverter):
+     def __init__(self):
+-        self.name_converter = get_language_converter('name')
++        self.name_converter = language_converters['name']
+         self.from_addic7ed = {'Català': ('cat',), 'Chinese (Simplified)': ('zho',), 'Chinese (Traditional)': ('zho',),
+                               'Euskera': ('eus',), 'Galego': ('glg',), 'Greek': ('ell',), 'Malay': ('msa',),
+                               'Portuguese (Brazilian)': ('por', 'BR'), 'Serbian (Cyrillic)': ('srp', None, 'Cyrl'),
+diff -Naur subliminal-0.7.4/subliminal/converters/podnapisi.py subliminal-0.7.4.py26/subliminal/converters/podnapisi.py
+--- subliminal-0.7.4/subliminal/converters/podnapisi.py	2014-01-26 06:29:48.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/converters/podnapisi.py	2014-07-09 22:34:15.000000000 -0400
+@@ -14,7 +14,7 @@
+                                11: ('jpn',), 4: ('kor',), 29: ('sqi',), 6: ('isl',), 19: ('lit',), 46: ('ukr',),
+                                44: ('tha',), 53: ('cat',), 56: ('sin',), 21: ('lav',), 40: ('cmn',), 55: ('msa',),
+                                42: ('hin',), 50: ('bel',)}
+-        self.to_podnapisi = {v: k for k, v in self.from_podnapisi.items()}
++        self.to_podnapisi = dict([(v, k) for k, v in self.from_podnapisi.items()])
+         self.codes = set(self.from_podnapisi.keys())
+ 
+     def convert(self, alpha3, country=None, script=None):
+diff -Naur subliminal-0.7.4/subliminal/converters/tvsubtitles.py subliminal-0.7.4.py26/subliminal/converters/tvsubtitles.py
+--- subliminal-0.7.4/subliminal/converters/tvsubtitles.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/converters/tvsubtitles.py	2014-07-09 23:32:34.000000000 -0400
+@@ -1,14 +1,14 @@
+ # -*- coding: utf-8 -*-
+ from __future__ import unicode_literals
+-from babelfish import LanguageReverseConverter, get_language_converter
++from babelfish import LanguageReverseConverter, language_converters
+ 
+ 
+ class TVsubtitlesConverter(LanguageReverseConverter):
+     def __init__(self):
+-        self.alpha2_converter = get_language_converter('alpha2')
++        self.alpha2_converter = language_converters['alpha2']
+         self.from_tvsubtitles = {'br': ('por', 'BR'), 'ua': ('ukr',), 'gr': ('ell',), 'cn': ('zho',), 'jp': ('jpn',),
+                                  'cz': ('ces',)}
+-        self.to_tvsubtitles = {v: k for k, v in self.from_tvsubtitles}
++        self.to_tvsubtitles = set([(v, k) for k, v in self.from_tvsubtitles])
+         self.codes = self.alpha2_converter.codes | set(self.from_tvsubtitles.keys())
+ 
+     def convert(self, alpha3, country=None, script=None):
+diff -Naur subliminal-0.7.4/subliminal/__init__.py subliminal-0.7.4.py26/subliminal/__init__.py
+--- subliminal-0.7.4/subliminal/__init__.py	2014-01-27 16:21:33.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/__init__.py	2014-07-09 18:46:34.000000000 -0400
+@@ -12,5 +12,8 @@
+ from .subtitle import Subtitle
+ from .video import VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, Video, Episode, Movie, scan_videos, scan_video
+ 
++class NullHandler(logging.Handler):
++    def emit(self, record):
++        pass
+ 
+-logging.getLogger(__name__).addHandler(logging.NullHandler())
++logging.getLogger(__name__).addHandler(NullHandler())
+diff -Naur subliminal-0.7.4/subliminal/providers/addic7ed.py subliminal-0.7.4.py26/subliminal/providers/addic7ed.py
+--- subliminal-0.7.4/subliminal/providers/addic7ed.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/providers/addic7ed.py	2014-08-03 12:38:26.000000000 -0400
+@@ -53,11 +53,11 @@
+ 
+ 
+ class Addic7edProvider(Provider):
+-    languages = {babelfish.Language('por', 'BR')} | {babelfish.Language(l)
++    languages = set([babelfish.Language('por', 'BR')]) | set([babelfish.Language(l)
+                  for l in ['ara', 'aze', 'ben', 'bos', 'bul', 'cat', 'ces', 'dan', 'deu', 'ell', 'eng', 'eus', 'fas',
+                            'fin', 'fra', 'glg', 'heb', 'hrv', 'hun', 'hye', 'ind', 'ita', 'jpn', 'kor', 'mkd', 'msa',
+                            'nld', 'nor', 'pol', 'por', 'ron', 'rus', 'slk', 'slv', 'spa', 'sqi', 'srp', 'swe', 'tha',
+-                           'tur', 'ukr', 'vie', 'zho']}
++                           'tur', 'ukr', 'vie', 'zho']])
+     video_types = (Episode,)
+     server = 'http://www.addic7ed.com'
+ 
+diff -Naur subliminal-0.7.4/subliminal/providers/bierdopje.py subliminal-0.7.4.py26/subliminal/providers/bierdopje.py
+--- subliminal-0.7.4/subliminal/providers/bierdopje.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/providers/bierdopje.py	2014-07-10 00:02:08.000000000 -0400
+@@ -49,7 +49,7 @@
+ 
+ 
+ class BierDopjeProvider(Provider):
+-    languages = {babelfish.Language(l) for l in ['eng', 'nld']}
++    languages = set([babelfish.Language(l) for l in ['eng', 'nld']])
+     video_types = (Episode,)
+ 
+     def initialize(self):
+@@ -93,7 +93,11 @@
+         if root.find('response/status').text == 'false':
+             logger.info('Series %r not found', series)
+             return None
+-        return int(root.find('response/results/result[1]/showid').text)
++        try:
++            return int(root.find('response/results/result[1]/showid').text)
++        except SyntaxError:
++            # Python < 2.7; fail gracefully
++            return None
+ 
+     def query(self, language, season, episode, tvdb_id=None, series=None):
+         params = {'language': language.alpha2, 'season': season, 'episode': episode}
+diff -Naur subliminal-0.7.4/subliminal/providers/opensubtitles.py subliminal-0.7.4.py26/subliminal/providers/opensubtitles.py
+--- subliminal-0.7.4/subliminal/providers/opensubtitles.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/providers/opensubtitles.py	2014-07-09 22:18:15.000000000 -0400
+@@ -83,7 +83,7 @@
+ 
+ 
+ class OpenSubtitlesProvider(Provider):
+-    languages = {babelfish.Language.fromopensubtitles(l) for l in babelfish.get_language_converter('opensubtitles').codes}
++    languages = set([babelfish.Language.fromopensubtitles(l) for l in babelfish.language_converters['opensubtitles'].codes])
+ 
+     def __init__(self):
+         self.server = xmlrpclib.ServerProxy('http://api.opensubtitles.org/xml-rpc')
+diff -Naur subliminal-0.7.4/subliminal/providers/podnapisi.py subliminal-0.7.4.py26/subliminal/providers/podnapisi.py
+--- subliminal-0.7.4/subliminal/providers/podnapisi.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/providers/podnapisi.py	2014-07-13 23:03:18.000000000 -0400
+@@ -3,6 +3,7 @@
+ import io
+ import logging
+ import re
++import contextlib
+ import xml.etree.ElementTree
+ import zipfile
+ import babelfish
+@@ -67,7 +68,7 @@
+ 
+ 
+ class PodnapisiProvider(Provider):
+-    languages = {babelfish.Language.frompodnapisi(l) for l in babelfish.get_language_converter('podnapisi').codes}
++    languages = set([babelfish.Language.frompodnapisi(l) for l in babelfish.language_converters['podnapisi'].codes])
+     video_types = (Episode, Movie)
+     server = 'http://simple.podnapisi.net'
+     link_re = re.compile('^.*(?P<link>/ppodnapisi/download/i/\d+/k/.*$)')
+@@ -153,7 +154,7 @@
+             raise ProviderNotAvailable('Timeout after 10 seconds')
+         if r.status_code != 200:
+             raise ProviderNotAvailable('Request failed with status code %d' % r.status_code)
+-        with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
++        with contextlib.closing(zipfile.ZipFile(io.BytesIO(r.content))) as zf:
+             if len(zf.namelist()) > 1:
+                 raise ProviderError('More than one file to unzip')
+             subtitle_bytes = zf.read(zf.namelist()[0])
+diff -Naur subliminal-0.7.4/subliminal/providers/thesubdb.py subliminal-0.7.4.py26/subliminal/providers/thesubdb.py
+--- subliminal-0.7.4/subliminal/providers/thesubdb.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/providers/thesubdb.py	2014-07-09 22:26:23.000000000 -0400
+@@ -29,7 +29,7 @@
+ 
+ 
+ class TheSubDBProvider(Provider):
+-    languages = {babelfish.Language.fromalpha2(l) for l in ['en', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ro', 'sv', 'tr']}
++    languages = set([babelfish.Language.fromalpha2(l) for l in ['en', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ro', 'sv', 'tr']])
+     required_hash = 'thesubdb'
+ 
+     def initialize(self):
+@@ -65,7 +65,7 @@
+         elif r.status_code != 200:
+             raise ProviderError('Request failed with status code %d' % r.status_code)
+         return [TheSubDBSubtitle(language, hash) for language in
+-                {babelfish.Language.fromalpha2(l) for l in r.content.split(',')}]
++                set([babelfish.Language.fromalpha2(l) for l in r.content.split(',')])]
+ 
+     def list_subtitles(self, video, languages):
+         return [s for s in self.query(video.hashes['thesubdb']) if s.language in languages]
+diff -Naur subliminal-0.7.4/subliminal/providers/tvsubtitles.py subliminal-0.7.4.py26/subliminal/providers/tvsubtitles.py
+--- subliminal-0.7.4/subliminal/providers/tvsubtitles.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/providers/tvsubtitles.py	2014-07-13 23:04:01.000000000 -0400
+@@ -3,6 +3,7 @@
+ import io
+ import logging
+ import re
++import contextlib
+ import zipfile
+ import babelfish
+ import bs4
+@@ -56,9 +57,9 @@
+ 
+ 
+ class TVsubtitlesProvider(Provider):
+-    languages = {babelfish.Language('por', 'BR')} | {babelfish.Language(l)
++    languages = set([babelfish.Language('por', 'BR')]) | set([babelfish.Language(l)
+                  for l in ['ara', 'bul', 'ces', 'dan', 'deu', 'ell', 'eng', 'fin', 'fra', 'hun', 'ita', 'jpn', 'kor',
+-                           'nld', 'pol', 'por', 'ron', 'rus', 'spa', 'swe', 'tur', 'ukr', 'zho']}
++                           'nld', 'pol', 'por', 'ron', 'rus', 'spa', 'swe', 'tur', 'ukr', 'zho']])
+     video_types = (Episode,)
+     server = 'http://www.tvsubtitles.net'
+     episode_id_re = re.compile('^episode-\d+\.html$')
+@@ -165,7 +166,7 @@
+             raise ProviderNotAvailable('Timeout after 10 seconds')
+         if r.status_code != 200:
+             raise ProviderNotAvailable('Request failed with status code %d' % r.status_code)
+-        with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
++        with contextlib.closing(zipfile.ZipFile(io.BytesIO(r.content))) as zf:
+             if len(zf.namelist()) > 1:
+                 raise ProviderError('More than one file to unzip')
+             subtitle_bytes = zf.read(zf.namelist()[0])
+diff -Naur subliminal-0.7.4/subliminal/subtitle.py subliminal-0.7.4.py26/subliminal/subtitle.py
+--- subliminal-0.7.4/subliminal/subtitle.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/subtitle.py	2014-07-09 23:50:57.000000000 -0400
+@@ -62,13 +62,13 @@
+             # remove equivalences
+             if isinstance(video, Episode):
+                 if 'imdb_id' in matches:
+-                    matches -= {'series', 'tvdb_id', 'season', 'episode', 'title'}
++                    matches -= set(['series', 'tvdb_id', 'season', 'episode', 'title'])
+                 if 'tvdb_id' in matches:
+-                    matches -= {'series'}
++                    matches -= set(['series',])
+                 if 'title' in matches:
+-                    matches -= {'season', 'episode'}
++                    matches -= set(['season', 'episode'])
+             # add other scores
+-            score += sum((video.scores[match] for match in matches))
++            score += sum([video.scores[match] for match in matches])
+         logger.info('Computed score %d with matches %r', score, initial_matches)
+         return score
+ 
+diff -Naur subliminal-0.7.4/subliminal/tests/test_providers.py subliminal-0.7.4.py26/subliminal/tests/test_providers.py
+--- subliminal-0.7.4/subliminal/tests/test_providers.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/tests/test_providers.py	2014-07-09 22:47:10.000000000 -0400
+@@ -40,51 +40,51 @@
+ 
+     def test_query_episode_0(self):
+         video = EPISODES[0]
+-        languages = {Language('tur'), Language('rus'), Language('heb'), Language('ita'), Language('fra'),
++        languages = (Language('tur'), Language('rus'), Language('heb'), Language('ita'), Language('fra'),
+                      Language('ron'), Language('nld'), Language('eng'), Language('deu'), Language('ell'),
+-                     Language('por', 'BR'), Language('bul')}
+-        matches = {frozenset(['episode', 'release_group', 'title', 'series', 'resolution', 'season']),
++                     Language('por', 'BR'), Language('bul'))
++        matches = (frozenset(['episode', 'release_group', 'title', 'series', 'resolution', 'season']),
+                    frozenset(['series', 'resolution', 'season']),
+                    frozenset(['series', 'episode', 'season', 'title']),
+                    frozenset(['series', 'release_group', 'season']),
+                    frozenset(['series', 'episode', 'season', 'release_group', 'title']),
+-                   frozenset(['series', 'season'])}
++                   frozenset(['series', 'season']))
+         with self.Provider() as provider:
+             subtitles = provider.query(video.series, video.season)
+-        self.assertEqual({frozenset(subtitle.compute_matches(video)) for subtitle in subtitles}, matches)
+-        self.assertEqual({subtitle.language for subtitle in subtitles}, languages)
++        self.assertEqual(set([frozenset(subtitle.compute_matches(video)) for subtitle in subtitles]), matches)
++        self.assertEqual(set([subtitle.language for subtitle in subtitles]), languages)
+ 
+     def test_query_episode_1(self):
+         video = EPISODES[1]
+-        languages = {Language('ind'), Language('spa'), Language('hrv'), Language('ita'), Language('fra'),
++        languages = (Language('ind'), Language('spa'), Language('hrv'), Language('ita'), Language('fra'),
+                      Language('cat'), Language('ell'), Language('nld'), Language('eng'), Language('fas'),
+                      Language('por'), Language('nor'), Language('deu'), Language('ron'), Language('por', 'BR'),
+-                     Language('bul')}
+-        matches = {frozenset(['series', 'episode', 'resolution', 'season', 'title']),
++                     Language('bul'))
++        matches = (frozenset(['series', 'episode', 'resolution', 'season', 'title']),
+                    frozenset(['series', 'resolution', 'season']),
+                    frozenset(['series', 'episode', 'season', 'title']),
+                    frozenset(['series', 'release_group', 'season']),
+                    frozenset(['series', 'resolution', 'release_group', 'season']),
+                    frozenset(['series', 'episode', 'season', 'release_group', 'title']),
+-                   frozenset(['series', 'season'])}
++                   frozenset(['series', 'season']))
+         with self.Provider() as provider:
+             subtitles = provider.query(video.series, video.season)
+-        self.assertEqual({frozenset(subtitle.compute_matches(video)) for subtitle in subtitles}, matches)
+-        self.assertEqual({subtitle.language for subtitle in subtitles}, languages)
++        self.assertEqual(set([frozenset(subtitle.compute_matches(video)) for subtitle in subtitles]), matches)
++        self.assertEqual(set([subtitle.language for subtitle in subtitles]), languages)
+ 
+     def test_list_subtitles(self):
+         video = EPISODES[0]
+-        languages = {Language('eng'), Language('fra')}
+-        matches = {frozenset(['series', 'episode', 'season', 'release_group', 'title']),
+-                   frozenset(['series', 'episode', 'season', 'title'])}
++        languages = (Language('eng'), Language('fra'))
++        matches = (frozenset(['series', 'episode', 'season', 'release_group', 'title']),
++                   frozenset(['series', 'episode', 'season', 'title']))
+         with self.Provider() as provider:
+             subtitles = provider.list_subtitles(video, languages)
+-        self.assertEqual({frozenset(subtitle.compute_matches(video)) for subtitle in subtitles}, matches)
+-        self.assertEqual({subtitle.language for subtitle in subtitles}, languages)
++        self.assertEqual(set([frozenset(subtitle.compute_matches(video)) for subtitle in subtitles]), matches)
++        self.assertEqual(set([subtitle.language for subtitle in subtitles]), languages)
+ 
+     def test_download_subtitle(self):
+         video = EPISODES[0]
+-        languages = {Language('eng'), Language('fra')}
++        languages = (Language('eng'), Language('fra'))
+         with self.Provider() as provider:
+             subtitles = provider.list_subtitles(video, languages)
+             subtitle_text = provider.download_subtitle(subtitles[0])
+@@ -107,54 +107,54 @@
+     def test_query_episode_0(self):
+         video = EPISODES[0]
+         language = Language('eng')
+-        matches = {frozenset(['series', 'video_codec', 'resolution', 'episode', 'season']),
++        matches = (frozenset(['series', 'video_codec', 'resolution', 'episode', 'season']),
+                    frozenset(['season', 'video_codec', 'episode', 'series']),
+-                   frozenset(['episode', 'video_codec', 'season', 'series', 'resolution', 'release_group'])}
++                   frozenset(['episode', 'video_codec', 'season', 'series', 'resolution', 'release_group']))
+         with self.Provider() as provider:
+             subtitles = provider.query(language, video.season, video.episode, series=video.series)
+-        self.assertEqual({frozenset(subtitle.compute_matches(video)) for subtitle in subtitles}, matches)
+-        self.assertEqual({subtitle.language for subtitle in subtitles}, {language})
++        self.assertEqual(set([frozenset(subtitle.compute_matches(video)) for subtitle in subtitles]), matches)
++        self.assertEqual(set([subtitle.language for subtitle in subtitles]), (language,))
+ 
+     def test_query_episode_1(self):
+         video = EPISODES[1]
+         language = Language('nld')
+-        matches = {frozenset(['series', 'video_codec', 'resolution', 'episode', 'season']),
++        matches = (frozenset(['series', 'video_codec', 'resolution', 'episode', 'season']),
+                    frozenset(['season', 'video_codec', 'episode', 'series']),
+                    frozenset(['series', 'episode', 'season']),
+                    frozenset(['season', 'video_codec', 'episode', 'release_group', 'series']),
+-                   frozenset(['episode', 'video_codec', 'season', 'series', 'resolution', 'release_group'])}
++                   frozenset(['episode', 'video_codec', 'season', 'series', 'resolution', 'release_group']))
+         with self.Provider() as provider:
+             subtitles = provider.query(language, video.season, video.episode, series=video.series)
+-        self.assertEqual({frozenset(subtitle.compute_matches(video)) for subtitle in subtitles}, matches)
+-        self.assertEqual({subtitle.language for subtitle in subtitles}, {language})
++        self.assertEqual(set([frozenset(subtitle.compute_matches(video)) for subtitle in subtitles]), matches)
++        self.assertEqual(set([subtitle.language for subtitle in subtitles]), (language,))
+ 
+     def test_query_episode_0_tvdb_id(self):
+         video = EPISODES[0]
+         language = Language('eng')
+-        matches = {frozenset(['video_codec', 'tvdb_id', 'episode', 'season', 'series']),
++        matches = (frozenset(['video_codec', 'tvdb_id', 'episode', 'season', 'series']),
+                    frozenset(['episode', 'video_codec', 'series', 'season', 'tvdb_id', 'resolution', 'release_group']),
+-                   frozenset(['episode', 'series', 'video_codec', 'tvdb_id', 'resolution', 'season'])}
++                   frozenset(['episode', 'series', 'video_codec', 'tvdb_id', 'resolution', 'season']))
+         with self.Provider() as provider:
+             subtitles = provider.query(language, video.season, video.episode, tvdb_id=video.tvdb_id)
+-        self.assertEqual({frozenset(subtitle.compute_matches(video)) for subtitle in subtitles}, matches)
+-        self.assertEqual({subtitle.language for subtitle in subtitles}, {language})
++        self.assertEqual(set([frozenset(subtitle.compute_matches(video)) for subtitle in subtitles]), matches)
++        self.assertEqual(set([subtitle.language for subtitle in subtitles]), (language,))
+ 
+     def test_list_subtitles(self):
+         video = EPISODES[1]
+-        languages = {Language('eng'), Language('nld')}
+-        matches = {frozenset(['series', 'video_codec', 'tvdb_id', 'episode', 'season']),
++        languages = (Language('eng'), Language('nld'))
++        matches = (frozenset(['series', 'video_codec', 'tvdb_id', 'episode', 'season']),
+                    frozenset(['episode', 'video_codec', 'season', 'series', 'tvdb_id', 'resolution', 'release_group']),
+                    frozenset(['season', 'tvdb_id', 'episode', 'series']),
+                    frozenset(['episode', 'video_codec', 'season', 'series', 'tvdb_id', 'resolution']),
+-                   frozenset(['episode', 'video_codec', 'season', 'series', 'tvdb_id', 'release_group'])}
++                   frozenset(['episode', 'video_codec', 'season', 'series', 'tvdb_id', 'release_group']))
+         with self.Provider() as provider:
+             subtitles = provider.list_subtitles(video, languages)
+-        self.assertEqual({frozenset(subtitle.compute_matches(video)) for subtitle in subtitles}, matches)
+-        self.assertEqual({subtitle.language for subtitle in subtitles}, languages)
++        self.assertEqual(set([frozenset(subtitle.compute_matches(video)) for subtitle in subtitles]), matches)
++        self.assertEqual(set([subtitle.language for subtitle in subtitles]), languages)
+ 
+     def test_download_subtitle(self):
+         video = EPISODES[0]
+-        languages = {Language('eng'), Language('nld')}
++        languages = (Language('eng'), Language('nld'))
+         with self.Provider() as provider:
+             subtitles = provider.list_subtitles(video, languages)
+             subtitle_text = provider.download_subtitle(subtitles[0])
+diff -Naur subliminal-0.7.4/subliminal/video.py subliminal-0.7.4.py26/subliminal/video.py
+--- subliminal-0.7.4/subliminal/video.py	2014-01-27 16:17:14.000000000 -0500
++++ subliminal-0.7.4.py26/subliminal/video.py	2014-08-03 12:41:37.000000000 -0400
+@@ -156,7 +156,7 @@
+     :rtype: set
+ 
+     """
+-    language_extensions = tuple('.' + c for c in babelfish.get_language_converter('alpha2').codes)
++    language_extensions = tuple('.' + c for c in babelfish.language_converters['alpha2'].codes)
+     dirpath, filename = os.path.split(path)
+     subtitles = set()
+     for p in os.listdir(dirpath):
+@@ -292,12 +292,12 @@
+         for dirpath, dirnames, filenames in os.walk(path):
+             # skip badly encoded directories
+             if isinstance(dirpath, bytes):
+-                logger.error('Skipping badly encoded directory %r', dirpath.decode('utf-8', errors='replace'))
++                logger.error('Skipping badly encoded directory %r', dirpath.decode('utf-8', 'replace'))
+                 continue
+             # skip badly encoded and hidden sub directories
+             for dirname in list(dirnames):
+                 if isinstance(dirname, bytes):
+-                    logger.error('Skipping badly encoded dirname %r in %r', dirname.decode('utf-8', errors='replace'),
++                    logger.error('Skipping badly encoded dirname %r in %r', dirname.decode('utf-8', 'replace'),
+                                  dirpath)
+                     dirnames.remove(dirname)
+                 elif dirname.startswith('.'):
+@@ -307,7 +307,7 @@
+             for filename in filenames:
+                 # skip badly encoded files
+                 if isinstance(filename, bytes):
+-                    logger.error('Skipping badly encoded filename %r in %r', filename.decode('utf-8', errors='replace'),
++                    logger.error('Skipping badly encoded filename %r in %r', filename.decode('utf-8', 'replace'),
+                                  dirpath)
+                     continue
+                 # filter videos
