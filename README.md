@@ -8,6 +8,8 @@ associated with it.
 
 Installation Instructions
 =========================
+* Ensure you have a copy of NZBGet v11 or higher which can be retrieved from http://nzbget.net
+* Ensure you have Python v2.6 or higher installed onto your system.
 * Simply place the _Subliminal.py_ and _Subliminal_ directory together inside
   of your _nzbget/scripts_ directory.
 
@@ -32,8 +34,6 @@ location that content is retrieved from.
 
 Dependencies
 ============
-This script requires Python v2.6+ to be installed on your system.
-
 The following dependencies are already provided for you within the
 _Subliminal_ directory and no further effort is required by you. However, it
 should be known that Subliminal.py depends on the following packages:
