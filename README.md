@@ -60,6 +60,9 @@ should be known that Subliminal.py depends on the following packages:
 | urllib3 **[P]**              | 1.9     | https://pypi.python.org/pypi/urllib3/1.9                                         |
 | pyxdg                        | 0.25    | https://pypi.python.org/pypi/pyxdg/0.25                                          |
 | ordereddict                  | 1.1     | https://pypi.python.org/pypi/ordereddict/1.1                                     |
+| ndg-httpsclient              | 0.3.2   | https://pypi.python.org/pypi/ndg-httpsclient/0.3.2                               |
+| pyasn1                       | 0.1.7   | https://pypi.python.org/pypi/pyasn1/0.1.7                                        |
+| pyOpenSSL                    | 0.14    | https://pypi.python.org/pypi/pyOpenSSL/0.14                                      |
 
 **Note:** I patched (denoted with a **[P]** above) the some of the libraries
 mentioned above in efforts to make them compatible with python 2.6.
