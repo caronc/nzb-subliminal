@@ -31,17 +31,11 @@
 # a python library to search and download subtitles, written
 # by Antoine Bertin (Diaoul Ael). All credit goes to the original author.
 #
-# Info about Subliminal:
-# Author: Antoine Bertin (diaoulael@gmail.com).
-# Web-site: http://subliminal.readthedocs.org.
-# Source code: http://github.com/Diaoul/subliminal.
+# Info about this Subliminal NZB Script:
+# Author: Chris Caron (lead2gold@gmail.com).
+# Date: Fri, Aug 8th, 2014.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-# Version: 0.7.4 (release date: 2014-01-27).
-#
-# Info about this NZB Script
-# Author: Chris Caron (lead2gold@gmail.com)
-# Date: Fri, Aug 8th, 2014
-# Script Version: 0.7.4.1.0
+# Script Version: 0.5.0.
 #
 # NOTE: This script requires Python to be installed on your system.
 
@@ -85,7 +79,7 @@
 # separated by a comma and or space. The default (if none is
 # specified then the following defaults are used: opensubtitles, tvsubtitles,
 # podnapisi, addic7ed, bierdopje, thesubdb
-#Providers=
+#Providers=opensubtitles, tvsubtitles, podnapisi, addic7ed, bierdopje, thesubdb
 
 # File extensions for video files.
 #
@@ -436,7 +430,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 srt_file_re = re.escape(srt_file)
                 srt_lang = str(l)
                 srt_regex = '^(%s\.srt|%s\.%s.srt)$' % (
-                    srt_file, srt_file, srt_lang
+                    srt_file_re, srt_file_re, srt_lang
                 )
 
                 # look in the directory and extract all matches

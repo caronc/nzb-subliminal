@@ -1,17 +1,10 @@
 Subliminal Processing script for NZBGet
 =======================================
-This is an NZB  _post-processing_ and _scan_ script wrapper for "Subliminal",
-Subliminal was written by Antoine Bertin (Diaoul Ael). It' is a fantastic
-tool that can take a file, parse it of it's meta information and attempt
-to fetch subtitles for it.
-
-Subliminal Details
-==================
-* Author: Antoine Bertin (diaoulael@gmail.com).
-* Web-site: http://subliminal.readthedocs.org.
-* Source code: http://github.com/Diaoul/subliminal.
-* License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-* Version: 0.7.4 (release date: 2014-01-27).
+This is an NZB  _post-processing_ and _scheduling_ script wrapper for
+_Subliminal_. Subliminal was written by Antoine Bertin (Diaoul Ael).
+Subliminal is a fantastic tool that can take a file you provide to it and
+makes use of a series of websites in efforts to obtain the subtitles
+associated with it.
 
 Installation Instructions
 =========================
@@ -22,6 +15,20 @@ Note: The _Subliminal_ directory provides all of the nessisary dependencies
 in order for this script to work correctly. The directory is only required
 if you do not have the following packages already available to you global
 environment:
+
+Supported Subtitle Sites
+========================
+The table below identifies the provider _Subliminal.py_ supports and the
+location that content is retrieved from.
+
+| Provider | Source |
+| -------- | ------ |
+| addic7ed | http://www.addic7ed.com/
+| opensubtitles | http://www.opensubtitles.org/
+| tvsubtitles | http://www.tvsubtitles.net/
+| podnapisi | http://www.podnapisi.net/
+| bierdopje | http://www.bierdopje.com/
+| thesubdb | http://thesubdb.com/
 
 Dependencies
 ============
