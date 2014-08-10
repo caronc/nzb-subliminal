@@ -9,9 +9,9 @@ associated with it.
 Installation Instructions
 =========================
 * Simply place the _Subliminal.py_ and _Subliminal_ directory together inside
-  of your NZBGets nzbget/scripts directory.
+  of your _nzbget/scripts_ directory.
 
-Note: The _Subliminal_ directory provides all of the nessisary dependencies
+**Note:** The _Subliminal_ directory provides all of the nessisary dependencies
 in order for this script to work correctly. The directory is only required
 if you do not have the following packages already available to you global
 environment:
