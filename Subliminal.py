@@ -73,6 +73,19 @@
 # download hearing impaired subtitles
 #HearingImpaired=no
 
+# Search Mode (basic, advanced).
+#
+# basic    - presumed subtitles are guessed based on the (deobsfucated)
+#            filename alone.
+# advanced - presumed subtiltes are guessed based on the (deobsfucated)
+#            filename (same as basic).  But further processing occurs to
+#            help obtain more accurate results. Meta data extracted from
+#            the actual video in question such as it's length, FPS, and
+#            encoding (including if subs are already included or not).
+#            This mode yields the best results but at the cost of additional
+#            time and CPU.
+#SearchMode=advanced
+
 # Subtitle Providers
 #
 # Supply a list of providers you want to include in your query
@@ -114,7 +127,6 @@
 #TvCategories=tv, tv2
 
 ### SCHEDULER MODE                                                         ###
-
 
 # Directories to Scan
 #
@@ -170,6 +182,10 @@ from nzbget import SchedulerScript
 from nzbget import EXIT_CODE
 from nzbget import SCRIPT_MODE
 
+class SEARCH_MODE(object):
+    BASIC = "basic"
+    ADVANCED = "advanced"
+
 # Some Default Environment Variables (used with CLI)
 DEFAULT_EXTENSIONS = \
         '.mkv,.avi,.divx,.xvid,.mov,.wmv,.mp4,.mpg,.mpeg,.vob,.iso'
@@ -186,6 +202,7 @@ DEFAULT_PROVIDERS = [
 DEFAULT_SINGLE = 'yes'
 DEFAULT_FORCE = 'no'
 DEFAULT_HEARING_IMPAIRED = 'no'
+DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 
 # stat is used to filter files by age
 from stat import ST_MTIME
@@ -358,6 +375,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         cache_dir = self.get('CACHEDIR', self.get('TEMPDIR'))
         cache_file = join(cache_dir, 'subliminal.cache.dbm')
 
+        # Search Mode
+        search_mode = self.get('SEARCHMODE', DEFAULT_SEARCH_MODE)
+
         if not isdir(cache_dir):
             try:
                 makedirs(cache_dir)
@@ -421,6 +441,10 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         f_count = 0
         for entry in files:
+            full_path = entry
+            if search_mode == SEARCH_MODE.BASIC:
+                full_path = join(cache_dir, basename(entry))
+
             # Create a copy of the lang object
             _lang = set(lang)
             for l in lang:
@@ -458,13 +482,15 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             if len(_lang) == 0:
                 continue
 
-            self.logger.debug('Scanning using %s lang=%s' % (
-                entry, ', '.join([ str(l) for l in _lang ])
+            self.logger.debug('Scanning [%s] using %s lang=%s' % (
+                search_mode,
+                full_path,
+                ', '.join([ str(l) for l in _lang ]),
             ))
 
             # Scan videos
             videos = scan_videos(
-                [entry, ],
+                [full_path, ],
                 subtitles=not overwrite,
                 embedded_subtitles=not overwrite,
             )
@@ -542,12 +568,19 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                         except:
                             pass
 
-                elif isfile(basename(expected_file)):
-                    # If we reach here, we just downloaded it to our local
-                    # directory. We want to move it to the same path as our final
-                    # directory instead
-                    self.logger.info('Successfully retrieved %s' % \
-                                     basename(expected_file))
+                else:
+                    if isfile(basename(expected_file)):
+                        expected_file = basename(expected_file)
+
+                    elif isfile(join(cache_dir, basename(expected_file))):
+                        expected_file = join(cache_dir, basename(expected_file))
+
+                    else:
+                        self.logger.error(
+                            'Could not locate subtitle previously fetched!',
+                        )
+                        continue
+
 
                     final_path = None
                     if isfile(entry):
@@ -588,6 +621,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                             basename(expected_file),
                             join(final_path, basename(expected_file)),
                         )
+                        # Move our expected file to it's final destination
+                        self.logger.info('Successfully retrieved %s' % \
+                                         basename(expected_file))
                     except OSError, e:
                         if e[0] != errno.ENOENT:
                             self.logger.error(
@@ -603,13 +639,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                                 pass
                             return False
 
-                    self.logger.info(
-                        'Moved %s to %s' % (
-                            basename(expected_file),
-                            final_path,
-                        ),
-                    )
-
         # When you're all done handling the file, just return
         # the error code that best represents how everything worked
         if f_count is None:
@@ -623,6 +652,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         if not self.validate(keys=(
             'SINGLE',
             'PROVIDERS',
+            'SEARCHMODE',
             'HEARINGIMPAIRED',
             'TVCATEGORIES',
             'VIDEOEXTENSIONS',
@@ -653,6 +683,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MAXAGE',
             'SINGLE',
             'PROVIDERS',
+            'SEARCHMODE',
             'HEARINGIMPAIRED',
             'SCANDIRECTORIES',
             'VIDEOEXTENSIONS',
@@ -771,7 +802,18 @@ if __name__ == "__main__":
         "--single",
         action="store_true",
         dest="single_mode",
-        help="Download content without the language code in the subtitle filename.",
+        help="Download content without the language code in the subtitle " + \
+            "filename.",
+    )
+    parser.add_option(
+        "-b",
+        "--basic",
+        action="store_true",
+        dest="basic_mode",
+        help="Do not attempt to parse additional information from the " + \
+            "video file. Running in a basic mode is much faster but can " + \
+            "make it more difficult to determine the correct subtitle if " + \
+            "more then one is matched."
     )
     parser.add_option(
         "-f",
@@ -842,6 +884,7 @@ if __name__ == "__main__":
     _maxage = options.maxage
     _single_mode = options.single_mode is True
     _overwrite = options.overwrite is True
+    _basic_mode = options.basic_mode is True
     _force = options.force is True
     _providers = options.providers
     _hearingimpaired = options.hearingimpaired
@@ -858,6 +901,9 @@ if __name__ == "__main__":
 
     if _overwrite:
         script.set('OVERWRITE', True)
+
+    if _basic_mode:
+        script.set('SEARCHMODE', SEARCH_MODE.BASIC)
 
     if _single_mode:
         script.set('SINGLE', True)
