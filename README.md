@@ -15,7 +15,7 @@ Installation Instructions
 
 **Note:** The _Subliminal_ directory provides all of the nessisary dependencies
 in order for this script to work correctly. The directory is only required
-if you do not have the packages already available to you global
+if you do not have the packages already available to your global
 environment. These packages are all identified under the _Dependencies_ section
 below.
 
