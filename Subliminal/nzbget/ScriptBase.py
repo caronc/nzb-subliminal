@@ -218,6 +218,10 @@ NZBGET_MSG_PREFIX = '[NZB] '
 SYS_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SYS_ENVIRO_ID)
 CFG_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % CFG_ENVIRO_ID)
 SHR_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SHR_ENVIRO_ID)
+DNZB_OPTS_RE = re.compile('^%s%s([A-Z0-9_]+)$' % (
+    SHR_ENVIRO_ID,
+    SHR_ENVIRO_DNZB_ID,
+))
 
 # Precompile Guess Fetching
 SHR_GUESS_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SHR_ENVIRO_GUESS_ID)
@@ -343,8 +347,8 @@ class ScriptBase(object):
         self.shared = dict([(SHR_OPTS_RE.match(k).group(1), v.strip()) \
             for (k, v) in environ.items() if SHR_OPTS_RE.match(k)])
 
-        # Initialize information fetched from NZB-File
-        self.nzbheaders = {}
+        # Preload nzbheaders based on any DNZB environment variables
+        self.nzbheaders = self.pull_dnzb()
 
         if 'TEMPDIR' not in self.system:
             self.system['TEMPDIR'] = join(
@@ -500,7 +504,7 @@ class ScriptBase(object):
         # No reason to fail if we make it this far
         return True
 
-    def push(self, key, value):
+    def push(self, key, value, use_env=True):
         """Pushes a key/value pair to NZBGet Server
 
         The content pushed can be retrieved from
@@ -519,11 +523,40 @@ class ScriptBase(object):
         elif not isinstance(value, basestring):
             value = str(value)
 
-        # Save environment variable
-        environ['%s%s' % (SHR_ENVIRO_ID, key)] = value
+        if use_env:
+            # Save environment variable
+            environ['%s%s' % (SHR_ENVIRO_ID, key)] = value
 
         # Alert NZBGet of variable being set
         return self._push('%s%s' % (SHR_ENVIRO_ID, key), value)
+
+    def push_dnzb(self, nzbheaders=None):
+        """pushes meta information to NZBGet Server as DNZB content
+           if no `nzbheaders` (dictionary) is defined, then the
+           default one is used instead.
+        """
+        if nzbheaders is None:
+            nzbheaders = self.nzbheaders
+
+        if not isinstance(nzbheaders, dict):
+            return False
+
+        for k, v in nzbheaders.items():
+            # Push content to NZB Server
+            self.push('%s%s' % (
+                SHR_ENVIRO_DNZB_ID,
+                k.upper(),
+            ), v.strip())
+
+        return True
+
+    def pull_dnzb(self):
+        """pulls meta information stored in the DNZB environment
+           variables and returns a dictionary
+        """
+        # Preload nzbheaders based on any DNZB environment variables
+        return dict([(DNZB_OPTS_RE.match(k).group(1).upper(), v.strip()) \
+            for (k, v) in environ.items() if DNZB_OPTS_RE.match(k)])
 
     def push_guess(self, guess):
         """pushes guess results to NZBGet Server. The function was
@@ -551,23 +584,74 @@ class ScriptBase(object):
         """Retrieves guess content in a dictionary
         """
         # Fetch/Load Guess Specific Content
-        guess = dict([
+        return dict([
             (GUESS_KEY_MAP[SHR_GUESS_OPTS_RE.match(k).group(1)], v.strip()) \
             for (k, v) in self.shared.items() \
                 if SHR_GUESS_OPTS_RE.match(k) and \
                 SHR_GUESS_OPTS_RE.match(k).group(1) in GUESS_KEY_MAP])
 
-        return guess
-
-    def parse_nzbfile(self, nzbfile, push_dnzb=True):
+    def parse_nzbfile(self, nzbfile, check_queued=False):
         """Parse an nzbfile specified and return just the
         meta information within the <head></head> tags
 
-        if push_dnzb is set to true, then the shared environment
-        variables are pushed to the NZBGet server if parsing
-        is successful
         """
         results = {}
+        if not isinstance(nzbfile, basestring):
+            # Simple check for nothing found
+            self.logger.debug('NZB-File not defined; parse skipped.')
+            return results
+
+        if isfile(nzbfile):
+            # Nothing expensive to do with i/o; just move along
+            pass
+
+        elif check_queued and isdir(dirname(nzbfile)):
+            # the specified nzbfile doesn't exist, but that doesn't mean
+            # it hasn't been picked up and is been picked up and nzbget
+            # renamed it to .queued
+            file_escaped = re.escape(basename(nzbfile))
+            file_regex = '^(%s|%s\.queued|%s\.[0-9]+\.queued)$' % (
+                file_escaped, file_escaped, file_escaped,
+            )
+
+            # look in the directory and extract all matches
+            _filenames = self.get_files(
+                search_dir=dirname(nzbfile),
+                regex_filter=file_regex,
+                fullstats=True,
+                max_depth=1,
+            )
+            if len(_filenames):
+                # sort our results by access time
+                _files = sorted (
+                    _filenames.iterkeys(),
+                    key=lambda k: (
+                        # Sort by Accessed time first
+                        _filenames[k]['accessed'],
+                        # Then sort by Created Date
+                        _filenames[k]['created'],
+                        # Then sort by filename length
+                        # file.nzb.2.queued > file.nzb.queued
+                        len(k)),
+                    reverse=True,
+                )
+                if self.debug:
+                    for _file in _files:
+                        self.logger.debug('NZB-Files located: %s (%s)' % (
+                            basename(_file),
+                            _filenames[_file]['accessed']\
+                                .strftime('%Y-%m-%d %H:%M:%S'),
+                        ))
+                # Assign first file (since we've listed by access time)
+                nzbfile = _files[0]
+                self.logger.info(
+                    'NZB-File detected: %s' % basename(nzbfile),
+                )
+        else:
+            self.logger.warning(
+                'NZB-File not found: %s' % basename(nzbfile),
+            )
+
         try:
             for event, element in etree.iterparse(
                 nzbfile, tag="{http://www.newzbin.com/DTD/2003/nzb}head"):
@@ -577,13 +661,6 @@ class ScriptBase(object):
                             # Only store entries with content
                             results[child.attrib['type'].upper()] = \
                                 child.text.strip()
-
-                            if push_dnzb:
-                                # Push content to NZB Server
-                                self.push('%s%s' % (
-                                    SHR_ENVIRO_DNZB_ID,
-                                    child.attrib['type'].upper(),
-                                ), child.text.strip())
 
                 element.clear()
             self.logger.info(
@@ -708,8 +785,10 @@ class ScriptBase(object):
             # they should want to)
             if key in self.config:
                 del self.config[key]
+                self.logger.debug('unset(config) %s' % key)
             if key in self.shared:
                 del self.shared[key]
+                self.logger.debug('unset(shared) %s' % key)
 
         else:
             # Set config variables
@@ -808,9 +887,99 @@ class ScriptBase(object):
                 self.logger.debug('get(shared) %s="%s"' % (key, value))
                 return value
 
-        self.logger.debug('get(default) %s=%s' % (key, str(default)))
+        if default is not None:
+            self.logger.debug('get(default) %s="%s"' % (key, str(default)))
+        else:
+            self.logger.debug('get(default) %s=None' % key)
+
         return default
 
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # nzb_set() and nzb_get() wrappers
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def nzb_unset(self, key, use_env=True, use_db=True):
+        """Unset a variable, this also occurs if you call nzb_set() with a
+            value set to None.
+        """
+        return self.nzb_set(key, None, use_env=use_env)
+
+    def nzb_set(self, key, value, use_env=True):
+        """Sets a key/value pair into the nzb headers
+
+            if use_env is True, then content is additionaly set in the
+            local environment variables.
+        """
+        # clean key
+        key = VALID_KEY_RE.sub('', key).upper()
+        if not key:
+            return False
+
+        if value is None:
+            # Remove Entry if it's set to None
+            # This also touches the shared dictionary as well.
+            # This is intentional as it gives people who push() content
+            # a way of unsettting the local variable the set (in the event
+            # they should want to)
+            if key in self.nzbheaders:
+                del self.nzbheaders[key]
+                self.logger.debug('nzb_unset(config) %s' % key)
+
+            # Remove entry from environment too
+            if use_env and '%s%s%s' % (
+                    CFG_ENVIRO_ID,
+                    SHR_ENVIRO_DNZB_ID,
+                    key) in environ:
+                del environ['%s%s%s' % (
+                    SHR_ENVIRO_ID,
+                    SHR_ENVIRO_DNZB_ID,
+                    key)]
+                self.logger.debug('nzb_unset(environment) %s' % key)
+        else:
+            # Set config variables
+            self.nzbheaders[key] = value
+
+            self.logger.debug('nzb_set(config) %s="%s"' % (key, str(value)))
+
+            if use_env:
+                if isinstance(value, bool):
+                    # Convert boolean to integer (change True to 1 or False to 0)
+                    value = str(int(value))
+
+                elif not isinstance(value, basestring):
+                    value = str(value)
+
+                environ['%s%s%s' % (
+                    SHR_ENVIRO_ID,
+                    SHR_ENVIRO_DNZB_ID,
+                    key)] = value
+
+                self.logger.debug('nzb_set(environment) %s="%s"' % (
+                    key, value),
+                )
+
+        return True
+
+    def nzb_get(self, key, default=None):
+        """works with nzb_set() operation making it easy to retrieve
+        content
+        """
+        # clean key
+        key = VALID_KEY_RE.sub('', key).upper()
+        if not key:
+            return False
+
+        value = self.nzbheaders.get(key)
+        if value is not None:
+            # only return if a key was found
+            self.logger.debug('nzb_get(config) %s="%s"' % (key, value))
+            return value
+
+        if default is not None:
+            self.logger.debug('nzb_get(default) %s="%s"' % (key, str(default)))
+        else:
+            self.logger.debug('nzb_get(default) %s=None' % key)
+
+        return default
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # Sanity
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -842,20 +1011,6 @@ class ScriptBase(object):
         # so all errors can be caught to make it easier for debugging
         is_okay = True
 
-        # version
-        try:
-            version = '%s.' % self.system.get('VERSION', '11')
-            version = int(version.split('.')[0])
-        except (TypeError, ValueError):
-            version = 11
-
-        if min_version > version:
-            self.logger.error(
-                'Validation - detected version %d, (min expected=%d)' % (
-                    version, min_version)
-            )
-            is_okay = False
-
         if keys:
             missing = []
             if isinstance(keys, basestring):
@@ -870,6 +1025,25 @@ class ScriptBase(object):
                 self.logger.error('Validation - Directives not set: %s' % \
                       ', '.join(missing))
                 is_okay = False
+
+        if self.script_mode == SCRIPT_MODE.NONE:
+            # Nothing more to process if not utilizaing
+            # NZBGet environment
+            return is_okay
+
+        # version
+        try:
+            version = '%s.' % self.system.get('VERSION', '11')
+            version = int(version.split('.')[0])
+        except (TypeError, ValueError):
+            version = 11
+
+        if min_version > version:
+            self.logger.error(
+                'Validation - detected version %d, (min expected=%d)' % (
+                    version, min_version)
+            )
+            is_okay = False
 
         if not 'SCRIPTDIR' in self.system:
             self.logger.error(

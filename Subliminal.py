@@ -236,10 +236,10 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         nzb_used = False
 
-        nzb_proper_name = self.nzbheaders.get('PROPERNAME', '')
-        nzb_episode_name = self.nzbheaders.get('EPISODENAME', '')
-        nzb_movie_year = self.nzbheaders.get('MOVIEYEAR', '')
-        nzb_more_info = self.nzbheaders.get('MOREINFO', '')
+        nzb_proper_name = self.nzb_get('propername', '')
+        nzb_episode_name = self.nzb_get('episodename', '')
+        nzb_movie_year = self.nzb_get('movieyear', '')
+        nzb_more_info = self.nzb_get('moreinfo', '')
 
         if nzb_proper_name != '':
             nzb_used = True
@@ -279,7 +279,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         tv_categories = [
             cat.lower() for cat in \
-            self.parse_list(self.get('TVCATEGORIES', [])) ]
+            self.parse_list(self.get('TvCategories', [])) ]
 
         if deobfuscate:
             filename = self.deobfuscate(filename)
@@ -371,12 +371,12 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         """
 
         # Get configuration
-        overwrite = self.parse_bool(self.get('OVERWRITE', 'no'))
+        overwrite = self.parse_bool(self.get('Overwrite', 'no'))
         cache_dir = self.get('CACHEDIR', self.get('TEMPDIR'))
         cache_file = join(cache_dir, 'subliminal.cache.dbm')
 
         # Search Mode
-        search_mode = self.get('SEARCHMODE', DEFAULT_SEARCH_MODE)
+        search_mode = self.get('SearchMode', DEFAULT_SEARCH_MODE)
 
         if not isdir(cache_dir):
             try:
@@ -390,7 +390,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         # however, if there is content, parse it and remove entries
         # that are not valid
         providers = self.parse_list(
-            self.get('PROVIDERS', DEFAULT_PROVIDERS))
+            self.get('Providers', DEFAULT_PROVIDERS))
 
         providers = [ p.lower() for p in providers \
                      if p.lower() in DEFAULT_PROVIDERS ]
@@ -403,13 +403,13 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 ', '.join(providers)
             ))
 
-        lang = self.parse_list(self.get('LANGUAGES', 'en'))
+        lang = self.parse_list(self.get('Languages', 'en'))
         if not lang:
             self.logger.error('No valid language was set')
             return False
 
         hearing_impaired = self.parse_bool(
-            self.get('HEARINGIMPAIRED', DEFAULT_HEARING_IMPAIRED))
+            self.get('HearingImpaired', DEFAULT_HEARING_IMPAIRED))
 
         if not lang:
             self.logger.error('No valid language was set')
@@ -428,13 +428,13 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         )
 
         try:
-            maxage = abs(int(self.get('MAXAGE')))
+            maxage = abs(int(self.get('MaxAge')))
         except (TypeError, ValueError):
             maxage = None
         if not maxage:
             self.logger.error(
                 'An invalid Maximum Age (%s) was specified.' % (
-                    self.get('MAXAGE', '<not set>'),
+                    self.get('MaxAge', '<not set>'),
                 )
             )
             return False
@@ -647,26 +647,26 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             return True
         return None
 
-    def postprocessing_main(self, *args, **kwargs):
+    def postprocess_main(self, *args, **kwargs):
 
         if not self.validate(keys=(
-            'SINGLE',
-            'PROVIDERS',
-            'SEARCHMODE',
-            'HEARINGIMPAIRED',
-            'TVCATEGORIES',
-            'VIDEOEXTENSIONS',
-            'LANGUAGES')):
+            'Single',
+            'Providers',
+            'SearchMode',
+            'HearingImpaired',
+            'TvCategories',
+            'VideoExtensions',
+            'Languages')):
 
             return False
 
         # Environment
-        video_extension = self.get('VIDEOEXTENSIONS', DEFAULT_EXTENSIONS)
+        video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
 
 
         # Single Mode (don't download language extension)
         single_mode = self.parse_bool(
-            self.get('SINGLE', DEFAULT_SINGLE))
+            self.get('Single', DEFAULT_SINGLE))
 
         # Build file list
         files = self.get_files(suffix_filter=video_extension).keys()
@@ -680,25 +680,25 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
     def scheduling_main(self, *args, **kwargs):
 
         if not self.validate(keys=(
-            'MAXAGE',
-            'SINGLE',
-            'PROVIDERS',
-            'SEARCHMODE',
-            'HEARINGIMPAIRED',
-            'SCANDIRECTORIES',
-            'VIDEOEXTENSIONS',
-            'LANGUAGES')):
+            'MaxAge',
+            'Single',
+            'Providers',
+            'SearchMode',
+            'HearingImpaired',
+            'ScanDirectories',
+            'VideoExtensions',
+            'Languages')):
 
             return False
 
         # Environment
-        video_extension = self.get('VIDEOEXTENSIONS', DEFAULT_EXTENSIONS)
-        maxage = int(self.get('MAXAGE', DEFAULT_MAXAGE))
-        paths = self.parse_path_list(self.get('SCANDIRECTORIES'))
+        video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
+        maxage = int(self.get('MaxAge', DEFAULT_MAXAGE))
+        paths = self.parse_path_list(self.get('ScanDirectories'))
 
         # Single Mode (don't download language extension)
         single_mode = self.parse_bool(
-            self.get('SINGLE', DEFAULT_SINGLE))
+            self.get('Single', DEFAULT_SINGLE))
 
         files = self.filter_files_by_age(
             self.get_files(paths, suffix_filter=video_extension).keys(),
@@ -719,12 +719,12 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         """CLI
         """
         # Environment
-        video_extension = self.get('VIDEOEXTENSIONS', DEFAULT_EXTENSIONS)
-        maxage = int(self.get('MAXAGE', DEFAULT_MAXAGE))
-        force = self.get('FORCE', DEFAULT_FORCE)
-        paths = self.parse_path_list(self.get('SCANDIRECTORIES'))
+        video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
+        maxage = int(self.get('MaxAge', DEFAULT_MAXAGE))
+        force = self.get('Force', DEFAULT_FORCE)
+        paths = self.parse_path_list(self.get('ScanDirectories'))
         single_mode = self.parse_bool(
-            self.get('SINGLE', DEFAULT_SINGLE))
+            self.get('Single', DEFAULT_SINGLE))
 
         # Fetch Scan Paths
         files = self.get_files(paths, suffix_filter=video_extension).keys()
@@ -892,7 +892,7 @@ if __name__ == "__main__":
     if _maxage:
         try:
             _maxage = str(abs(int(_maxage)))
-            script.set('MAXAGE', _maxage)
+            script.set('MaxAge', _maxage)
         except (ValueError, TypeError):
             script.logger.error(
                 'An invalid `maxage` (%s) was specified.' % (_maxage)
@@ -900,41 +900,41 @@ if __name__ == "__main__":
             exit(EXIT_CODE.FAILURE)
 
     if _overwrite:
-        script.set('OVERWRITE', True)
+        script.set('Overwrite', True)
 
     if _basic_mode:
-        script.set('SEARCHMODE', SEARCH_MODE.BASIC)
+        script.set('SearchMode', SEARCH_MODE.BASIC)
 
     if _single_mode:
-        script.set('SINGLE', True)
+        script.set('Single', True)
 
     if _force:
-        script.set('FORCE', True)
+        script.set('Force', True)
 
     if _providers:
-        script.set('PROVIDERS', _providers)
+        script.set('Providers', _providers)
 
     if _language:
-        script.set('LANGUAGES', _language)
+        script.set('Languages', _language)
 
     if _hearingimpaired:
-        script.set('HEARINGIMPAIRED', True)
+        script.set('HearingImpaired', True)
 
     if scandir:
         # Set some defaults if they are not already set
         if not _maxage:
             _maxage = DEFAULT_MAXAGE
-            script.set('MAXAGE', DEFAULT_MAXAGE)
+            script.set('MaxAge', DEFAULT_MAXAGE)
 
         if not _language:
             # Force defaults if not set
-            script.set('LANGUAGES', DEFAULT_LANGUAGE)
+            script.set('Languages', DEFAULT_LANGUAGE)
 
         # Force generic Video Extensions
-        script.set('VIDEOEXTENSIONS', DEFAULT_EXTENSIONS)
+        script.set('VideoExtensions', DEFAULT_EXTENSIONS)
 
         # Finally set the directory the user specified for scanning
-        script.set('SCANDIRECTORIES', scandir)
+        script.set('ScanDirectories', scandir)
 
     # call run() and exit() using it's returned value
     exit(script.run())

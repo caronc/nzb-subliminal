@@ -395,58 +395,15 @@ class PostProcessScript(ScriptBase):
             # absolute path names
             self.nzbfilename = abspath(self.nzbfilename)
 
-        if not self.nzbfilename:
-            self.logger.warning('NZB-File not defined.')
-
-        elif isdir(dirname(self.nzbfilename)):
-
-            file_escaped = re.escape(basename(self.nzbfilename))
-            file_regex = '^(%s|%s\.queued|%s\.[0-9]+\.queued)$' % (
-                file_escaped, file_escaped, file_escaped,
-            )
-
-            # look in the directory and extract all matches
-            _nzbfilenames = self.get_files(
-                search_dir=dirname(self.nzbfilename),
-                regex_filter=file_regex,
-                fullstats=True,
-                max_depth=1,
-            )
-            if len(_nzbfilenames):
-                # sort our results by access time
-                _files = sorted (
-                    _nzbfilenames.iterkeys(),
-                    key=lambda k: (
-                        # Sort by Accessed time first
-                        _nzbfilenames[k]['accessed'],
-                        # Then sort by Created Date
-                        _nzbfilenames[k]['created'],
-                        # Then sort by filename length
-                        # file.nzb.2.queued > file.nzb.queued
-                        len(k)),
-                    reverse=True,
+            if parse_nzbfile:
+                # Initialize information fetched from NZB-File
+                # We intentionally allow existing nzbheaders to over-ride
+                # any found in the nzbfile
+                self.nzbheaders = dict(
+                    self.parse_nzbfile(
+                        self.nzbfilename, check_queued=True)\
+                        .items() + self.pull_dnzb().items(),
                 )
-                if self.debug:
-                    for _file in _files:
-                        self.logger.debug('NZB-Files located: %s (%s)' % (
-                            basename(_file),
-                            _nzbfilenames[_file]['accessed']\
-                                .strftime('%Y-%m-%d %H:%M:%S'),
-                        ))
-                # Assign first file (since we've listed by access time)
-                self.nzbfilename = _files[0]
-                self.logger.info(
-                    'NZB-File detected: %s' % basename(self.nzbfilename),
-                )
-
-        else:
-            self.logger.warning(
-                'NZB-File not found: %s' % basename(self.nzbfilename),
-            )
-
-        if self.nzbfilename and parse_nzbfile:
-            # Initialize information fetched from NZB-File
-            self.nzbheaders = self.parse_nzbfile(self.nzbfilename)
 
         if self.directory:
             # absolute path names

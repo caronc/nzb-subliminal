@@ -32,11 +32,16 @@ def destroy_logger(name=None):
     """
        Destroys any log files assiated with name and/or logger
     """
-    if not isinstance(name, Logger):
-        if isinstance(name, basestring):
-            logger = logging.getLogger(name)
-        else:
-            logger = logging.getLogger('default')
+    if name is None:
+        name = __name__
+
+    if isinstance(name, Logger):
+        logger = name
+    elif isinstance(name, basestring):
+        logger = logging.getLogger(name)
+    else:
+        # not supported
+        return
 
     logger = name
     if hasattr(logger, 'handlers'):
@@ -83,8 +88,8 @@ def init_logger(name=None, logger=True, debug=False,
                     " - %(levelname)s - %(message)s"))
         return logger
 
-    if not name:
-        name = 'default'
+    if name is None:
+        name = __name__
 
     # Perpare Logger
     _logger = logging.getLogger(name)
