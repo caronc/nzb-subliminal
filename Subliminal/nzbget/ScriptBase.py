@@ -1018,7 +1018,8 @@ class ScriptBase(object):
 
             missing = [
                 k for k in keys \
-                        if not (k in self.system or k in self.config)
+                        if (not k.upper() in self.system \
+                             or k.upper() in self.config)
             ]
 
             if missing:
