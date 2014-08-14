@@ -99,7 +99,12 @@ import re
 from tempfile import gettempdir
 from os import environ
 from os import makedirs
+from os import chdir
 from os import walk
+from os import access
+from os import W_OK
+from os import R_OK
+from os import X_OK
 from os.path import isdir
 from os.path import isfile
 from os.path import join
@@ -321,12 +326,17 @@ class ScriptBase(object):
     """
 
     def __init__(self, logger=True, debug=False, script_mode=None,
-                 database_key=None, *args, **kwargs):
+                 database_key=None, tempdir=None, *args, **kwargs):
 
         # logger identifier
         self.logger_id = self.__class__.__name__
         self.logger = logger
         self.debug = debug
+
+        # for extra verbosity
+        # This is set by just additionally passing in _dev_debug=True
+        # into the initialization of your scripts
+        self._dev_debug = kwargs.get('_dev_debug')
 
         # Script Mode
         self.script_mode = None
@@ -353,13 +363,12 @@ class ScriptBase(object):
         # Preload nzbheaders based on any DNZB environment variables
         self.nzbheaders = self.pull_dnzb()
 
-        if 'TEMPDIR' not in self.system:
-            self.system['TEMPDIR'] = join(
-                gettempdir(),
-                'nzbget-%s' % getuser(),
-            )
-            # enforce temporary directory
-            environ['%sTEMPDIR' % SYS_ENVIRO_ID] = self.system['TEMPDIR']
+        # self.tempdir
+        # path to temporary directory to work from
+        if tempdir is None:
+            self.tempdir = self.system.get('TEMPDIR')
+        else:
+            self.tempdir = tempdir
 
         # version detection
         try:
@@ -409,18 +418,36 @@ class ScriptBase(object):
         else:
             self.logger_id = None
 
-        if not isdir(self.system['TEMPDIR']):
+        # enforce temporary directory
+        if not self.tempdir:
+            self.tempdir = join(
+                gettempdir(),
+                'nzbget-%s' % getuser(),
+            )
+            # Force environment to be the same
+            self.system['TEMPDIR'] = self.tempdir
+            environ['%sTEMPDIR' % SYS_ENVIRO_ID] = self.tempdir
+
+        if not isdir(self.tempdir):
             try:
-                makedirs(self.system['TEMPDIR'], 0700)
+                makedirs(self.tempdir, 0700)
             except:
                 self.logger.warning(
                     'Temporary directory could not be ' + \
                     'created: %s' % self.system['TEMPDIR'],
                 )
+        try:
+            chdir(self.tempdir)
+        except OSError:
+            self.logger.warning('Temporary directory is not accessible: %s' % \
+                self.tempdir)
 
-        if self.debug:
+        if self._dev_debug and self.debug:
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             # Print Global System Varables to help debugging process
+            #
+            # Note: This is a very verbose process, so it is only performed
+            #       if both the debug and _dev_debug flags are set.
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             for k, v in self.system.items():
                 self.logger.debug('SYS %s=%s' % (k, v))
@@ -746,7 +773,7 @@ class ScriptBase(object):
                 self.database = Database(
                     container=self.database_key,
                     database=join(
-                        self.system['TEMPDIR'],
+                        self.tempdir,
                         NZBGET_DATABASE_FILENAME,
                     ),
                     logger=self.logger,
@@ -866,7 +893,7 @@ class ScriptBase(object):
                 self.database = Database(
                     container=self.database_key,
                     database=join(
-                        self.system['TEMPDIR'],
+                        self.tempdir,
                         NZBGET_DATABASE_FILENAME,
                     ),
                     logger=self.logger,
@@ -1043,6 +1070,14 @@ class ScriptBase(object):
                 self.logger.error('Validation - Directives not set: %s' % \
                       ', '.join(missing))
                 is_okay = False
+
+        # We should fail if the temporary directory is not accessible
+        if not access(self.tempdir, (R_OK|W_OK|X_OK)):
+            self.logger.error(
+                'Validation - Temporary directory is not accessible %s' % \
+                self.tempdir,
+            )
+            is_okay = False
 
         if self.script_mode == SCRIPT_MODE.NONE:
             # Nothing more to process if not utilizaing
