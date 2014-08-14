@@ -203,6 +203,9 @@ CFG_ENVIRO_ID = 'NZBPO_'
 # are found in the environment, they are saved to the `config` dictionary
 SHR_ENVIRO_ID = 'NZBR_'
 
+# Environment ID used when pushing common variables to the server
+PUSH_ENVIRO_ID = 'NZPR_'
+
 # DNZB is an environment variable sometimes referenced by other scripts
 SHR_ENVIRO_DNZB_ID = '_DNZB_'
 
@@ -535,7 +538,7 @@ class ScriptBase(object):
             environ['%s%s' % (SHR_ENVIRO_ID, key)] = value
 
         # Alert NZBGet of variable being set
-        return self._push('%s%s' % (SHR_ENVIRO_ID, key), value)
+        return self._push('%s%s' % (PUSH_ENVIRO_ID, key), value)
 
     def push_dnzb(self, nzbheaders=None):
         """pushes meta information to NZBGet Server as DNZB content
