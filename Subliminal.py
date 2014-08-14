@@ -158,6 +158,7 @@ from os.path import isfile
 from os.path import isdir
 from os import unlink
 from os import makedirs
+from os import getcwd
 import errno
 
 # This is required if the below environment variables
@@ -549,6 +550,38 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     # no change is nessisary
                     self.logger.info('Successfully retrieved %s' % \
                                      basename(expected_file))
+
+                    fp_expected = join(
+                        abspath(dirname(expected_file)),
+                        basename(expected_file),
+                    )
+                    fp_currentd = join(
+                        getcwd(),
+                        basename(expected_file),
+                    )
+
+                    if fp_expected != fp_currentd:
+                        # Sometimes subliminal fetches another copy and stores
+                        # it locally.  This copy is different then the one in
+                        # the proper location too.  This seems to happen when
+                        # there are more then one match found above.
+
+                        # Not sure if the fix is to filter possible matches
+                        # above just down to 1, or do what i do below (which
+                        # is to just remove the extra file found).
+
+                        # Alternatively maybe copying this back to the
+                        # the same directory as the mkv file with a .1
+                        # extension on it might be a better alternative?
+                        try:
+                            unlink(fp_currentd)
+                            self.logger.debug(
+                                'Countermeasures performed - ' + \
+                                'removing extra sub: %s' % \
+                                     basename(expected_file),
+                            )
+                        except:
+                            pass
 
                 else:
                     if isfile(basename(expected_file)):
