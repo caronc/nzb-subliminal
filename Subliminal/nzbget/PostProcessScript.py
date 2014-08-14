@@ -85,14 +85,14 @@ class MyPostProcessScript(PostProcessScript):
         # All system environment variables (NZBOP_.*) as well as Post
         # Process script specific content (NZBPP_.*)
         # following dictionary (without the NZBOP_ or NZBPP_ prefix):
-        print 'TEMPDIR (directory is: %s' % self.get('TEMPDIR')
-        print 'DIRECTORY %s' self.get('DIRECTORY')
-        print 'NZBNAME %s' self.get('NZBNAME')
-        print 'NZBFILENAME %s' self.get('NZBFILENAME')
-        print 'CATEGORY %s' self.get('CATEGORY')
-        print 'TOTALSTATUS %s' self.get('TOTALSTATUS')
-        print 'STATUS %s' self.get('STATUS')
-        print 'SCRIPTSTATUS %s' self.get('SCRIPTSTATUS')
+        print('TEMPDIR (directory is: %s' % self.get('TEMPDIR'))
+        print('DIRECTORY %s' self.get('DIRECTORY'))
+        print('NZBNAME %s' self.get('NZBNAME'))
+        print('NZBFILENAME %s' self.get('NZBFILENAME'))
+        print('CATEGORY %s' self.get('CATEGORY'))
+        print('TOTALSTATUS %s' self.get('TOTALSTATUS'))
+        print('STATUS %s' self.get('STATUS'))
+        print('SCRIPTSTATUS %s' self.get('SCRIPTSTATUS'))
 
         # Set any variable you want by any key.  Note that if you use
         # keys that were defined by the system (such as CATEGORY, DIRECTORY,
@@ -103,7 +103,7 @@ class MyPostProcessScript(PostProcessScript):
         # You can fetch it back; this will also set an entry in  the
         # sqlite database for each hash references that can be pulled from
         # another script that simply calls self.get('MY_KEY')
-        print self.get('MY_KEY') # prints MY_VALUE
+        print(self.get('MY_KEY')) # prints MY_VALUE
 
         # You can also use push() which is similar to set()
         # except that it interacts with the NZBGet Server and does not use
@@ -113,14 +113,14 @@ class MyPostProcessScript(PostProcessScript):
 
         # You can still however locally retrieve what you set using push()
         # with the get() function
-        print self.get('ANOTHER_KEY') # prints ANOTHER_VALUE
+        print(self.get('ANOTHER_KEY')) # prints ANOTHER_VALUE
 
         # Your script configuration files (NZBPP_.*) are here in this
         # dictionary (again without the NZBPP_ prefix):
         # assume you defined `Debug=no` in the first 10K of your PostProcessScript
         # NZBGet translates this to `NZBPP_DEBUG` which can be retrieved
         # as follows:
-        print 'DEBUG %s' self.get('DEBUG')
+        print('DEBUG %s' self.get('DEBUG'))
 
         # Returns have been made easy.  Just return:
         #   * True if everything was successful
@@ -228,6 +228,8 @@ POSTPROC_ENVIRO_ID = 'NZBPP_'
 POSTPROC_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % POSTPROC_ENVIRO_ID)
 
 class PostProcessScript(ScriptBase):
+    """POST PROCESS mode is called after the unpack stage
+    """
     def __init__(self, *args, **kwargs):
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Multi-Script Support
@@ -561,7 +563,7 @@ class PostProcessScript(ScriptBase):
             if found_opts != required_opts:
                 missing_opts = list(required_opts ^ found_opts)
                 self.logger.error(
-                    'Validation - (<v13) Directives not set: %s' % \
+                    'Validation - (v13) Directives not set: %s' % \
                       missing_opts.join(', ')
                 )
                 is_okay = False

@@ -358,6 +358,13 @@ class ScriptBase(object):
             # enforce temporary directory
             environ['%sTEMPDIR' % SYS_ENVIRO_ID] = self.system['TEMPDIR']
 
+        # version detection
+        try:
+            self.version = '%s.' % self.system.get('VERSION')
+            self.version = int(self.version.split('.')[0])
+        except (TypeError, ValueError):
+            self.version = 11
+
         # Enabling DEBUG as a flag by specifying  near in the configuration
         # section of your script
         #Debug=no
@@ -621,6 +628,7 @@ class ScriptBase(object):
                 fullstats=True,
                 max_depth=1,
             )
+
             if len(_filenames):
                 # sort our results by access time
                 _files = sorted (
@@ -647,10 +655,6 @@ class ScriptBase(object):
                 self.logger.info(
                     'NZB-File detected: %s' % basename(nzbfile),
                 )
-        else:
-            self.logger.warning(
-                'NZB-File not found: %s' % basename(nzbfile),
-            )
 
         try:
             for event, element in etree.iterparse(
@@ -671,7 +675,8 @@ class ScriptBase(object):
             self.logger.warning('NZBParse - Skipped; lxml is not installed')
 
         except IOError:
-            self.logger.error('NZBParse - NZB-File is missing: %s' % nzbfile)
+            self.logger.warning(
+                'NZBParse - NZB-File is missing: %s' % basename(nzbfile))
 
         except XMLSyntaxError, e:
             if e[0] is None:
@@ -897,7 +902,7 @@ class ScriptBase(object):
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # nzb_set() and nzb_get() wrappers
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    def nzb_unset(self, key, use_env=True, use_db=True):
+    def nzb_unset(self, key, use_env=True):
         """Unset a variable, this also occurs if you call nzb_set() with a
             value set to None.
         """
@@ -1018,7 +1023,7 @@ class ScriptBase(object):
 
             missing = [
                 k for k in keys \
-                        if (not k.upper() in self.system \
+                        if not (k.upper() in self.system \
                              or k.upper() in self.config)
             ]
 
@@ -1032,20 +1037,15 @@ class ScriptBase(object):
             # NZBGet environment
             return is_okay
 
-        # version
-        try:
-            version = '%s.' % self.system.get('VERSION', '11')
-            version = int(version.split('.')[0])
-        except (TypeError, ValueError):
-            version = 11
-
-        if min_version > version:
+        if min_version > self.version:
             self.logger.error(
                 'Validation - detected version %d, (min expected=%d)' % (
-                    version, min_version)
+                    self.version, min_version)
             )
             is_okay = False
 
+        # Always a bad thing if SCRIPTDIR doesn't work since that is
+        # introduced in v11 (the minimum version we support)
         if not 'SCRIPTDIR' in self.system:
             self.logger.error(
                 'Validation - (<v11) Directive not set: %s' % 'SCRIPTDIR',

@@ -85,14 +85,14 @@ class MyQueueScript(QueueScript):
         # All system environment variables (NZBOP_.*) as well as Post
         # Process script specific content (NZBNP_.*)
         # following dictionary (without the NZBOP_ or NZBNP_ prefix):
-        print 'TEMPDIR (directory is: %s' % self.get('TEMPDIR')
-        print 'DIRECTORY %s' self.get('DIRECTORY')
-        print 'FILENAME %s' self.get('FILENAME')
-        print 'NZBNAME %s' self.get('NZBNAME')
-        print 'CATEGORY %s' self.get('CATEGORY')
-        print 'PRIORITY %s' self.get('PRIORITY')
-        print 'TOP %s' self.get('TOP')
-        print 'PAUSED %s' self.get('PAUSED')
+        print('TEMPDIR (directory is: %s' % self.get('TEMPDIR'))
+        print('DIRECTORY %s' self.get('DIRECTORY'))
+        print('FILENAME %s' self.get('FILENAME'))
+        print('NZBNAME %s' self.get('NZBNAME'))
+        print('CATEGORY %s' self.get('CATEGORY'))
+        print('PRIORITY %s' self.get('PRIORITY'))
+        print('TOP %s' self.get('TOP'))
+        print('PAUSED %s' self.get('PAUSED'))
 
         # Set any variable you want by any key.  Note that if you use
         # keys that were defined by the system (such as CATEGORY, DIRECTORY,
@@ -103,7 +103,7 @@ class MyQueueScript(QueueScript):
         # You can fetch it back; this will also set an entry in  the
         # sqlite database for each hash references that can be pulled from
         # another script that simply calls self.get('MY_KEY')
-        print self.get('MY_KEY') # prints MY_VALUE
+        print(self.get('MY_KEY')) # prints MY_VALUE
 
         # You can also use push() which is similar to set()
         # except that it interacts with the NZBGet Server and does not use
@@ -113,14 +113,14 @@ class MyQueueScript(QueueScript):
 
         # You can still however locally retrieve what you set using push()
         # with the get() function
-        print self.get('ANOTHER_KEY') # prints ANOTHER_VALUE
+        print(self.get('ANOTHER_KEY')) # prints ANOTHER_VALUE
 
         # Your script configuration files (NZBNP_.*) are here in this
         # dictionary (again without the NZBNP_ prefix):
         # assume you defined `Debug=no` in the first 10K of your QueueScript
         # NZBGet translates this to `NZBNP_DEBUG` which can be retrieved
         # as follows:
-        print 'DEBUG %s' self.get('DEBUG')
+        print('DEBUG %s' self.get('DEBUG'))
 
         # Returns have been made easy.  Just return:
         #   * True if everything was successful
@@ -164,12 +164,18 @@ from ScriptBase import NZBGET_BOOL_FALSE
 
 # Environment variable that prefixes all NZBGET options being passed into
 # scripts with respect to the NZB-File (used in Queue Scripts)
-QUEUE_ENVIRO_ID = 'NZBQP_'
+QUEUE_ENVIRO_ID = 'NZBNA_'
+
+class MARK_STATUS(object):
+    # A file can be marked bad
+    BAD = 'BAD'
 
 # Precompile Regulare Expression for Speed
 QUEUE_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % QUEUE_ENVIRO_ID)
 
 class QueueScript(ScriptBase):
+    """QUEUE mode is called before the unpack stage
+    """
     def __init__(self, *args, **kwargs):
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Multi-Script Support
@@ -413,6 +419,20 @@ class QueueScript(ScriptBase):
             keys=keys,
             min_version=min_version,
         )
+
+        if min_version >= 14:
+            required_opts = (
+                'ARTICLECACHE',
+            )
+            found_opts = set(self.system) & required_opts
+            if found_opts != required_opts:
+                missing_opts = list(required_opts ^ found_opts)
+                self.logger.error(
+                    'Validation - (v14) Directives not set: %s' % \
+                      missing_opts.join(', ')
+                )
+                is_okay = False
+
         return is_okay
 
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -526,4 +546,13 @@ class QueueScript(ScriptBase):
             key='PAUSED',
             # Convert bool to int for response
             value=int(self.paused),
+        )
+
+    def push_mark(self, mark=MARK_STATUS.BAD):
+        """Mark a file status
+        """
+        # You can mark a file as bad
+        return self._push(
+            key='MARK',
+            value=mark.upper(),
         )

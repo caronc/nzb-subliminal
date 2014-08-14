@@ -550,30 +550,12 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     self.logger.info('Successfully retrieved %s' % \
                                      basename(expected_file))
 
-                    if isfile(basename(expected_file)):
-                        # Sometimes subliminal fetches another copy and stores
-                        # it locally.  This copy is different then the one in
-                        # the proper location too.  This seems to happen when
-                        # there are more then one match found above.
-
-                        # Not sure if the fix is to filter possible matches
-                        # above just down to 1, or do what i do below (which
-                        # is to just remove the extra file found).
-
-                        # Alternatively maybe copying this back to the
-                        # the same directory as the mkv file with a .1
-                        # extension on it might be a better alternative?
-                        try:
-                            unlink(basename(expected_file))
-                        except:
-                            pass
-
                 else:
                     if isfile(basename(expected_file)):
-                        expected_file = basename(expected_file)
+                        fetched_file = basename(expected_file)
 
                     elif isfile(join(cache_dir, basename(expected_file))):
-                        expected_file = join(cache_dir, basename(expected_file))
+                        fetched_file = join(cache_dir, basename(expected_file))
 
                     else:
                         self.logger.error(
@@ -599,7 +581,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                                 'Could not determine where to relocate subtitle',
                             )
                             try:
-                                unlink(basename(expected_file))
+                                unlink(basename(fetched_file))
                             except OSError:
                                 pass
 
@@ -612,29 +594,29 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
                     # remove final destination subtitle if present
                     try:
-                        unlink(join(final_path, basename(expected_file)))
+                        unlink(join(final_path, basename(fetched_file)))
                     except:
                         pass
 
                     try:
                         rename(
-                            basename(expected_file),
-                            join(final_path, basename(expected_file)),
+                            fetched_file,
+                            join(final_path, basename(fetched_file)),
                         )
-                        # Move our expected file to it's final destination
+                        # Move our fetched file to it's final destination
                         self.logger.info('Successfully retrieved %s' % \
-                                         basename(expected_file))
+                                         basename(fetched_file))
                     except OSError, e:
                         if e[0] != errno.ENOENT:
                             self.logger.error(
                                 'Could not move %s to %s' % (
-                                basename(expected_file),
-                                join(final_path, basename(expected_file)),
+                                    basename(fetched_file),
+                                    final_path,
                                 )
                             )
                             # remove subtitle
                             try:
-                                unlink(basename(expected_file))
+                                unlink(fetched_file)
                             except:
                                 pass
                             return False
