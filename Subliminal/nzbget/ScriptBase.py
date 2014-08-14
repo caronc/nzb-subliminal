@@ -619,10 +619,19 @@ class ScriptBase(object):
             # the specified nzbfile doesn't exist, but that doesn't mean
             # it hasn't been picked up and is been picked up and nzbget
             # renamed it to .queued
+            # .processed nzb files can be a result of a scan scripts handling
+            # .nzb_processed are also used during the pre-scanning in scan
+            #                scripts.
+            # .error may be corrupted, but it does't mean we can't attempt
+            #        to parse content from it.
             file_escaped = re.escape(basename(nzbfile))
-            file_regex = '^(%s|%s\.queued|%s\.[0-9]+\.queued)$' % (
-                file_escaped, file_escaped, file_escaped,
-            )
+            file_regex = r'^%s|%s' % (file_escaped, file_escaped) + \
+                r'(' + \
+                r'|\.queued|\.[0-9]+\.queued' + \
+                r'|\.processed|\.[0-9]+\.processed' + \
+                r'|\.nzb_processed|\.[0-9]+\.nzb_processed' + \
+                r'|\.error|\.[0-9]+\.error' + \
+                r')$'
 
             # look in the directory and extract all matches
             _filenames = self.get_files(
