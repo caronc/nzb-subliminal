@@ -136,6 +136,7 @@ except ImportError:
 # Database Support if sqllite is installed
 try:
     from Database import Database
+    from Database import Category
 except ImportError:
     # No panic, we just can't use database
     pass
@@ -802,7 +803,7 @@ class ScriptBase(object):
                 # set the dbstore to false so it isn't used anymore
                 self.database = False
 
-        elif use_db and self.database_key:
+        elif use_db and self.database:
             # Database is ready to go
             if value is None:
                 # Remove Entry if it's set to None
@@ -911,7 +912,7 @@ class ScriptBase(object):
                 # set the dbstore to false so it isn't used anymore
                 self.database = False
 
-        elif use_db and self.database_key:
+        elif use_db and self.database:
             value = self.database.get(key=key)
             if value is not None:
                 # only return if a key was found
@@ -938,16 +939,58 @@ class ScriptBase(object):
 
         return default
 
+    def items(self, check_system=True, check_shared=True, use_db=True):
+        """
+        This lets you utilize for-loops by returning you a list of keys
+
+        """
+        items = list()
+        if use_db and self.database is None and self.database_key:
+            try:
+                # Connect to database on first use only
+                self.database = Database(
+                    container=self.database_key,
+                    database=join(
+                        self.tempdir,
+                        NZBGET_DATABASE_FILENAME,
+                    ),
+                    logger=self.logger,
+                )
+
+                # Fetch from database first
+                items = self.database.items()
+            except NameError:
+                # Sqlite wasn't installed
+                # set the dbstore to false so it isn't used anymore
+                self.database = False
+
+        elif use_db and self.database:
+            # Fetch from database first
+            items = self.database.items()
+
+        if check_shared:
+            # Shared values trump any database set ones
+            items = dict(items + self.shared.items()).items()
+
+        # configuration trumps shared values
+        items = dict(items + self.config.items()).items()
+
+        if check_system:
+            # system trumps all values
+            items = dict(items + self.system.items()).items()
+
+        return items
+
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # nzb_set() and nzb_get() wrappers
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    def nzb_unset(self, key, use_env=True):
+    def nzb_unset(self, key, use_env=True, use_db=True):
         """Unset a variable, this also occurs if you call nzb_set() with a
             value set to None.
         """
-        return self.nzb_set(key, None, use_env=use_env)
+        return self.nzb_set(key, None, use_env=use_env, use_db=use_db)
 
-    def nzb_set(self, key, value, use_env=True):
+    def nzb_set(self, key, value, use_env=True, use_db=True):
         """Sets a key/value pair into the nzb headers
 
             if use_env is True, then content is additionaly set in the
@@ -957,6 +1000,63 @@ class ScriptBase(object):
         key = VALID_KEY_RE.sub('', key).upper()
         if not key:
             return False
+
+        # Save content to database
+        if use_db and self.database is None and self.database_key:
+            try:
+                # Connect to database on first use only
+                self.database = Database(
+                    container=self.database_key,
+                    database=join(
+                        self.tempdir,
+                        NZBGET_DATABASE_FILENAME,
+                    ),
+                    logger=self.logger,
+                )
+
+                # Database is ready to go
+                if value is None:
+                    # Remove Entry if it's set to None
+                    self.database.unset(key=key, category=Category.NZB)
+                    self.logger.debug('nzb_unset(database) %s"' % key)
+
+                elif isinstance(value, bool):
+                    # Convert boolean to integer (change True to 1 or False to 0)
+                    self.database.set(
+                        key=key, value=int(value), category=Category.NZB)
+                    self.logger.debug('nzb_set(database) %s="%s"' % (
+                        key,
+                        int(value)),
+                    )
+
+                else:
+                    self.database.set(
+                        key=key, value=value, category=Category.NZB)
+                    self.logger.debug('nzb_set(database) %s="%s"' % (key, value))
+
+            except NameError:
+                # Sqlite wasn't installed
+                # set the dbstore to false so it isn't used anymore
+                self.database = False
+
+        elif use_db and self.database:
+            # Database is ready to go
+            if value is None:
+                # Remove Entry if it's set to None
+                self.database.unset(key=key, category=Category.NZB)
+                self.logger.debug('nzb_unset(database) %s"' % key)
+
+            elif isinstance(value, bool):
+                # Convert boolean to integer (change True to 1 or False to 0)
+                self.database.set(key=key, value=int(value), category=Category.NZB)
+                self.logger.debug('nzb_set(database) %s="%s"' % (
+                    key,
+                    int(value),
+                ))
+
+            else:
+                self.database.set(key=key, value=value, category=Category.NZB)
+                self.logger.debug('nzb_set(database) %s="%s"' % (key, value))
 
         if value is None:
             # Remove Entry if it's set to None
@@ -1003,7 +1103,7 @@ class ScriptBase(object):
 
         return True
 
-    def nzb_get(self, key, default=None):
+    def nzb_get(self, key, default=None, use_db=True):
         """works with nzb_set() operation making it easy to retrieve
         content
         """
@@ -1018,12 +1118,87 @@ class ScriptBase(object):
             self.logger.debug('nzb_get(config) %s="%s"' % (key, value))
             return value
 
+        # Fetch content from database
+        if use_db and self.database is None and self.database_key:
+            try:
+                # Connect to database on first use only
+                self.database = Database(
+                    container=self.database_key,
+                    database=join(
+                        self.tempdir,
+                        NZBGET_DATABASE_FILENAME,
+                    ),
+                    logger=self.logger,
+                )
+
+                # Database is ready to go
+                value = self.database.get(key=key, category=Category.NZB)
+                if value is not None:
+                    # only return if a key was found
+                    self.logger.debug('nzb_get(database) %s="%s"' % (key, value))
+                    return value
+
+            except NameError:
+                # Sqlite wasn't installed
+                # set the dbstore to false so it isn't used anymore
+                self.database = False
+
+        elif use_db and self.database:
+            value = self.database.get(key=key, category=Category.NZB)
+            if value is not None:
+                # only return if a key was found
+                self.logger.debug('nzb_get(database) %s="%s"' % (key, value))
+                return value
+
         if default is not None:
-            self.logger.debug('nzb_get(default) %s="%s"' % (key, str(default)))
+            self.logger.debug('get(default) %s="%s"' % (key, str(default)))
         else:
-            self.logger.debug('nzb_get(default) %s=None' % key)
+            self.logger.debug('get(default) %s=None' % key)
 
         return default
+
+    def items(self, check_system=True, check_shared=True, use_db=True):
+        """
+        This lets you utilize for-loops by returning you a list of keys
+
+        """
+        items = tuple()
+        if use_db and self.database is None and self.database_key:
+            try:
+                # Connect to database on first use only
+                self.database = Database(
+                    container=self.database_key,
+                    database=join(
+                        self.tempdir,
+                        NZBGET_DATABASE_FILENAME,
+                    ),
+                    logger=self.logger,
+                )
+
+                # Fetch from database first
+                items = self.database.items()
+            except NameError:
+                # Sqlite wasn't installed
+                # set the dbstore to false so it isn't used anymore
+                self.database = False
+
+        elif use_db and self.database:
+            # Fetch from database first
+            items = self.database.items()
+
+        if check_shared:
+            # Shared values trump any database set ones
+            items = dict(items + self.shared.items()).items()
+
+        # configuration trumps shared values
+        items = dict(items + self.config.items()).items()
+
+        if check_system:
+            # system trumps all values
+            items = dict(items + self.system.items()).items()
+
+        return items
+
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # Sanity
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

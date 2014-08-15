@@ -60,21 +60,22 @@ NZBGET_SCHEMA = {
      # Lookup just contains static content and VSPs used by the database
      # and it's handling of data.  You should not write content here. this
      # is just reserved for internal operations
-     "CREATE TABLE lookup (key TEXT PRIMARY KEY, value TEXT);",
+     "CREATE TABLE lookup (key TEXT PRIMARY KEY, value TEXT)",
      # Init base version of zero (0), the _build_schema takes care
      # of updating this value
-     "INSERT INTO lookup (key, value) VALUES ('SCHEMA_VERSION', '0');",
-     "INSERT INTO lookup (key, value) VALUES ('PURGE_AGE', '%d');" % \
+     "INSERT INTO lookup (key, value) VALUES ('SCHEMA_VERSION', '0')",
+     "INSERT INTO lookup (key, value) VALUES ('PURGE_AGE', '%d')" % \
          PURGE_AGE,
      # Key Store free for use for developers of scripts
      # just use the set() and get() functions
      "CREATE TABLE keystore (" + \
         "container TEXT, " + \
+        "category TEXT, " + \
         "key TEXT, " + \
         "value TEXT, " + \
         "last_update DATETIME DEFAULT current_timestamp" + \
-     ");",
-     "CREATE UNIQUE INDEX keystore_idx ON keystore (container, key)",
+     ")",
+     "CREATE UNIQUE INDEX keystore_idx ON keystore (container, category, key)",
      "CREATE INDEX last_update_idx ON keystore (last_update)",
   ],
 }
@@ -86,6 +87,18 @@ NZBGET_SCHEMA_TABLES = (
    'lookup',
    'keystore',
 )
+
+# Categories allow us to further partition our keystore hash table
+# into groups for others subsections to use without stepping on
+# each other.
+class Category(object):
+    # General Script Configuration
+    CONFIG = 'config'
+    # NZB/NZBD Defined Variables
+    NZB = 'nzb'
+
+CATEGORIES = [ Category.CONFIG, Category.NZB, ]
+DEFAULT_CATEGORY = Category.CONFIG
 
 # keys should not be complicated... make it so they aren't
 VALID_KEY_RE = re.compile('[^a-zA-Z0-9_.-]')
@@ -261,7 +274,7 @@ class Database(object):
         for table in NZBGET_SCHEMA_TABLES:
             try:
                 if not bool(len(self.execute(
-                    "SELECT 1 FROM sqlite_master WHERE name = ?;", (table, )
+                    "SELECT 1 FROM sqlite_master WHERE name = ?", (table, )
                    ).fetchall())):
                     return False
             except AttributeError:
@@ -325,79 +338,109 @@ class Database(object):
 
         return True
 
-    def unset(self, key):
+    def unset(self, key, category=None):
         """Remove a key from the database
         """
         if not self.socket:
             self.connect()
 
+        if not category:
+            category = DEFAULT_CATEGORY
+        else:
+            category = VALID_KEY_RE.sub('', category).lower()
+
+        if category not in CATEGORIES:
+            self.logger.error("Database category '%s' does not exist.")
+            return False
+
         # clean key
         key = VALID_KEY_RE.sub('', key).upper()
         if not key:
-            return None
+            return False
 
         # First see if keystore already has a match
         if(bool(len(self.socket.execute(
-            "SELECT value FROM keystore WHERE container = ? AND key = ?;",
-            (self.container, key)).fetchall()))):
+            "SELECT value FROM keystore WHERE " + \
+            "container = ? AND category = ? AND key = ?",
+            (self.container, category, key)).fetchall()))):
             if not self.socket.execute(
-                "DELETE FROM keystore WHERE container = ? AND key = ?;",
-                (self.container, key),):
+                "DELETE FROM keystore WHERE " +\
+                "container = ? AND category = ? AND key = ?",
+                (self.container, category, key),):
                 return False
 
         return True
 
 
-    def set(self, key, value):
+    def set(self, key, value, category=None):
         """Set a key and a value into the database for retrieval later
         """
         if not self.socket:
             self.connect()
+
+        if not category:
+            category = DEFAULT_CATEGORY
+        else:
+            category = VALID_KEY_RE.sub('', category).lower()
+
+        if category not in CATEGORIES:
+            self.logger.error("Database category '%s' does not exist.")
+            return False
 
         now = datetime.now().strftime(SQLITE_DATE_FORMAT)
 
         # clean key
         key = VALID_KEY_RE.sub('', key).upper()
         if not key:
-            return None
+            return False
 
         # Get a cursor object
         cursor = self.socket.cursor()
 
         # First see if keystore already has a match
         if(bool(len(cursor.execute(
-            "SELECT value FROM keystore WHERE container = ? AND key = ?;",
-            (self.container, key)).fetchall()))):
+            "SELECT value FROM keystore WHERE " + \
+            "container = ? AND category = ? AND key = ?",
+            (self.container, category, key)).fetchall()))):
             if not cursor.execute(
                 "UPDATE keystore SET value = ?, last_update = ?" + \
-                " WHERE container = ? AND key = ?;",
-                (value, now, self.container, key),):
+                " WHERE container = ? AND category = ? AND key = ?",
+                (value, now, self.container, category, key),):
                 return False
         else:
             if not cursor.execute(
                 "INSERT INTO keystore " + \
-                "(container, key, value, last_update) " + \
-                "VALUES (?, ?, ?, ?)",
-                (self.container, key, value, now),):
+                "(container, category, key, value, last_update) " + \
+                "VALUES (?, ?, ?, ?, ?)",
+                (self.container, category, key, value, now),):
                 return False
         # commit changes
         self.socket.commit()
         return True
 
-    def get(self, key, default=None):
+    def get(self, key, default=None, category=None):
         """Get a value after specifying a key
         """
 
         if not self.socket:
             self.connect()
 
+        if not category:
+            category = DEFAULT_CATEGORY
+        else:
+            category = VALID_KEY_RE.sub('', category).lower()
+
+        if category not in CATEGORIES:
+            self.logger.error("Database category '%s' does not exist.")
+            return default
+
         # clean key
         key = VALID_KEY_RE.sub('', key).upper()
 
         result = self.socket.execute(
             "SELECT value FROM keystore " + \
-            "WHERE container = ? AND key = ?;",
-            (self.container, key),
+            "WHERE container = ? AND category = ? AND key = ?",
+            (self.container, category, key),
         )
         if result:
             try:
@@ -405,3 +448,34 @@ class Database(object):
             except:
                 return default
         return default
+
+    def items(self, category=None):
+        """Return all variables as a list of tuples (k, p)
+        """
+
+        items = list()
+
+        if not category:
+            category = DEFAULT_CATEGORY
+        else:
+            category = VALID_KEY_RE.sub('', category).lower()
+
+        if category not in CATEGORIES:
+            self.logger.error("Database category '%s' does not exist.")
+            return items
+
+        # Get a cursor object
+        cursor = self.socket.cursor()
+
+        cursor.execute(
+            "SELECT key, value FROM keystore " + \
+            "WHERE container = ? AND category = ?",
+            (self.container, category),
+        )
+
+        while True:
+            row = cursor.fetchone()
+            if row is None:
+                break
+
+            items.append((row[0], row[1]))

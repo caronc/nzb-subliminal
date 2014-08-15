@@ -152,6 +152,7 @@ from ScriptBase import SCRIPT_MODE
 # Environment variable that prefixes all NZBGET options being passed into
 # scripts with respect to the NZB-File (used in Scan Scripts)
 SCHEDULER_ENVIRO_ID = 'NZBSP_'
+TASK_ENVIRO_ID = 'TASK'
 
 # Precompile Regulare Expression for Speed
 SCHEDULER_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SCHEDULER_ENVIRO_ID)
@@ -181,7 +182,7 @@ class SchedulerScript(ScriptBase):
         script_config = dict([(SCHEDULER_OPTS_RE.match(k).group(1), v.strip()) \
                for (k, v) in environ.items() if SCHEDULER_OPTS_RE.match(k)])
 
-        if self.debug:
+        if self._dev_debug and self.debug:
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             # Print Global Script Varables to help debugging process
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -205,9 +206,18 @@ class SchedulerScript(ScriptBase):
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         try:
             self.taskid = int(self.taskid)
+            self.logger.info('Task ID assigned: %d' % self.taskid)
         except (ValueError, TypeError):
             # Default is 0
             self.taskid = 0
+            self.logger.warning('No Task ID was assigned')
+
+        # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        # Enforce system/global variables for script processing
+        # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        self.system['TASKID'] = self.taskid
+        if isinstance(self.taskid, int) and self.taskid > 0:
+            environ['%sTASKID' % SCHEDULER_ENVIRO_ID] = str(self.taskid)
 
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # Debug Flag Check
@@ -254,3 +264,43 @@ class SchedulerScript(ScriptBase):
         from PostProcessScript import POSTPROC_ENVIRO_ID
         return ('%sDIRECTORY' % POSTPROC_ENVIRO_ID not in environ) and \
                ('%sTASKID' % SCHEDULER_ENVIRO_ID in environ)
+
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # Tasks
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def get_task(self, taskid=None):
+        """Returns a dictionary of task details identified by the id
+        specified.  If no id is specified, then the current task is
+        detected and returned.
+        """
+        if taskid is None:
+            # assume default
+            taskid = self.taskid
+
+        if not isinstance(taskid, int):
+            try:
+                taskid = int(taskid)
+            except (ValueError, TypeError):
+                # can't be typecasted to an integer
+                return {}
+
+        if taskid <= 0:
+            # No task defined
+            return {}
+
+        # Precompile Regulare Expression for Speed
+        task_re = re.compile('^%s%s%d_([A-Z0-9_]+)$' % (
+            SCHEDULER_ENVIRO_ID,
+            TASK_ENVIRO_ID,
+            taskid,
+        ))
+
+        self.logger.debug('looking for  %s%s%d_([A-Z0-9_]+)$' % (
+            SCHEDULER_ENVIRO_ID,
+            TASK_ENVIRO_ID,
+            taskid,
+        ))
+
+        # Fetch Task related content
+        return dict([(task_re.match(k).group(1), v.strip()) \
+            for (k, v) in environ.items() if task_re.match(k)])

@@ -203,7 +203,7 @@ class ScanScript(ScriptBase):
         script_config = dict([(SCAN_OPTS_RE.match(k).group(1), v.strip()) \
                for (k, v) in environ.items() if SCAN_OPTS_RE.match(k)])
 
-        if self.debug:
+        if self._dev_debug and self.debug:
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             # Print Global Script Varables to help debugging process
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
