@@ -692,7 +692,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             use_nzbheaders=True,
         )
 
-    def scheduling_main(self, *args, **kwargs):
+    def scheduler_main(self, *args, **kwargs):
 
         if not self.validate(keys=(
             'MaxAge',
