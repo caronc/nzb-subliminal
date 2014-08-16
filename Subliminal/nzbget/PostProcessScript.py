@@ -554,11 +554,11 @@ class PostProcessScript(ScriptBase):
 
 
         if min_version >= 13:
-            required_opts = (
+            required_opts = set((
                 'TOTALSTATUS',
                 'STATUS',
                 'SCRIPTSTATUS',
-            )
+            ))
             found_opts = set(self.system) & required_opts
             if found_opts != required_opts:
                 missing_opts = list(required_opts ^ found_opts)

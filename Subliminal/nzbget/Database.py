@@ -437,16 +437,23 @@ class Database(object):
         # clean key
         key = VALID_KEY_RE.sub('', key).upper()
 
-        result = self.socket.execute(
-            "SELECT value FROM keystore " + \
-            "WHERE container = ? AND category = ? AND key = ?",
-            (self.container, category, key),
-        )
-        if result:
-            try:
-                return result.fetchall()[0][-1]
-            except:
-                return default
+        try:
+            result = self.socket.execute(
+                "SELECT value FROM keystore " + \
+                "WHERE container = ? AND category = ? AND key = ?",
+                (self.container, category, key),
+            )
+            if result:
+                try:
+                    return result.fetchall()[0][-1]
+                except:
+                    return default
+        except sqlite3.OperationalError:
+            # Database is corrupt or changed
+            self.logger.debug("Detected damaged database; " + \
+                             "Countermeasures taken.")
+            self._reset()
+
         return default
 
     def items(self, category=None):

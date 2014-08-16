@@ -1282,12 +1282,12 @@ class ScriptBase(object):
         """
 
         # System Options required for RPC calls to work
-        required_opts = (
+        required_opts = set((
             'CONTROLIP',
             'CONTROLPORT',
             'CONTROLUSERNAME',
             'CONTROLPASSWORD',
-        )
+        ))
         # Fetch standard RCP information to simplify future commands
         if set(self.system) & required_opts != required_opts:
             # Not enough options to extract RCP information
