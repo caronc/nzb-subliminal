@@ -91,8 +91,8 @@
 # Supply a list of providers you want to include in your query
 # separated by a comma and or space. The default (if none is
 # specified then the following defaults are used: opensubtitles, tvsubtitles,
-# podnapisi, addic7ed, bierdopje, thesubdb
-#Providers=opensubtitles, tvsubtitles, podnapisi, addic7ed, bierdopje, thesubdb
+# podnapisi, addic7ed, thesubdb
+#Providers=opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb
 
 # File extensions for video files.
 #
@@ -198,7 +198,6 @@ DEFAULT_PROVIDERS = [
     'tvsubtitles',
     'podnapisi',
     'addic7ed',
-    'bierdopje',
     'thesubdb',
 ]
 DEFAULT_SINGLE = 'yes'
