@@ -152,6 +152,7 @@ from os.path import join
 from os import rename
 from os.path import split
 from os.path import basename
+from os.path import abspath
 from os.path import dirname
 from os.path import splitext
 from os.path import isfile
