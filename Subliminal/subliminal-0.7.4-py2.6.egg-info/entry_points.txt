@@ -1,0 +1,16 @@
+[subliminal.providers]
+opensubtitles = subliminal.providers.opensubtitles:OpenSubtitlesProvider
+tvsubtitles = subliminal.providers.tvsubtitles:TVsubtitlesProvider
+podnapisi = subliminal.providers.podnapisi:PodnapisiProvider
+addic7ed = subliminal.providers.addic7ed:Addic7edProvider
+bierdopje = subliminal.providers.bierdopje:BierDopjeProvider
+thesubdb = subliminal.providers.thesubdb:TheSubDBProvider
+
+[babelfish.language_converters]
+podnapisi = subliminal.converters.podnapisi:PodnapisiConverter
+addic7ed = subliminal.converters.addic7ed:Addic7edConverter
+tvsubtitles = subliminal.converters.tvsubtitles:TVsubtitlesConverter
+
+[console_scripts]
+subliminal = subliminal.cli:subliminal
+

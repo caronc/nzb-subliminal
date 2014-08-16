@@ -1,0 +1,19 @@
+Metadata-Version: 1.0
+Name: pysrt
+Version: 1.0.1
+Summary: SubRip (.srt) subtitle parser and writer
+Home-page: https://github.com/byroot/pysrt
+Author: Jean Boussier
+Author-email: jean.boussier@gmail.com
+License: GPLv3
+Description: UNKNOWN
+Keywords: SubRip srt subtitle
+Platform: Independent
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: GNU General Public License (GPL)
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Topic :: Multimedia :: Video
+Classifier: Topic :: Software Development :: Libraries
+Classifier: Topic :: Text Processing :: Markup

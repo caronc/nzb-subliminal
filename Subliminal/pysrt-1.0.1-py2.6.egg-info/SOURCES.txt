@@ -1,0 +1,17 @@
+setup.cfg
+setup.py
+pysrt/__init__.py
+pysrt/commands.py
+pysrt/comparablemixin.py
+pysrt/compat.py
+pysrt/srtexc.py
+pysrt/srtfile.py
+pysrt/srtitem.py
+pysrt/srttime.py
+pysrt/version.py
+pysrt.egg-info/PKG-INFO
+pysrt.egg-info/SOURCES.txt
+pysrt.egg-info/dependency_links.txt
+pysrt.egg-info/entry_points.txt
+pysrt.egg-info/requires.txt
+pysrt.egg-info/top_level.txt
