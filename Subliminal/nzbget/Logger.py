@@ -58,7 +58,7 @@ def destroy_logger(name=None):
                 pass
 
 
-def init_logger(name=None, logger=True, debug=False,
+def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
                 daily=False, bytecount=5242880, logcount=3, encoding=None):
     """
         Generate Logger
@@ -75,6 +75,8 @@ def init_logger(name=None, logger=True, debug=False,
                       - If defined as a logger, then that is presumed
                         to be the log file to use.
         debug:        Enable extra debug log entries
+        nzbget_mode:  Log formatting does not include date/time, pid etc
+                      because nzbget wraps all this for us.
         daily:        Rotate logs by day (instead of by size)
         encoding:     Can be set to something like 'bz2' to have all
                       content created compressed
@@ -83,9 +85,13 @@ def init_logger(name=None, logger=True, debug=False,
     if isinstance(logger, Logger):
         # Update handlers only
         for l in logger.handlers:
-            l.setFormatter(logging. \
-                Formatter("%(asctime)s - " + str(getpid()) + \
-                    " - %(levelname)s - %(message)s"))
+            if not nzbget_mode:
+                l.setFormatter(logging. \
+                    Formatter("%(asctime)s - " + str(getpid()) + \
+                        " - %(levelname)s - %(message)s"))
+            else:
+                l.setFormatter(logging. \
+                    Formatter("[%(levelname)s] %(message)s"))
         return logger
 
     if name is None:
@@ -141,9 +147,14 @@ def init_logger(name=None, logger=True, debug=False,
         _logger.setLevel(logging.INFO)
 
     # Format logger
-    h1.setFormatter(logging. \
-            Formatter("%(asctime)s - " + str(getpid()) +
-                " - %(levelname)s - %(message)s"))
+    if not nzbget_mode:
+        h1.setFormatter(logging. \
+                Formatter("%(asctime)s - " + str(getpid()) +
+                    " - %(levelname)s - %(message)s"))
+    else:
+        h1.setFormatter(logging. \
+                Formatter("[%(levelname)s] %(message)s"))
+
     # Add Handler
     _logger.addHandler(h1)
 

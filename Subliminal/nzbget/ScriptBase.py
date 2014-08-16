@@ -330,7 +330,7 @@ class ScriptBase(object):
                  database_key=None, tempdir=None, *args, **kwargs):
 
         # logger identifier
-        self.logger_id = self.__class__.__name__
+        self.logger_id = __name__
         self.logger = logger
         self.debug = debug
 
@@ -398,6 +398,7 @@ class ScriptBase(object):
                 name=self.logger_id,
                 logger=logger,
                 debug=debug,
+                nzbget_mode=False,
             )
 
         elif not isinstance(self.logger, Logger):
@@ -408,6 +409,7 @@ class ScriptBase(object):
                     name=self.logger_id,
                     logger=None,
                     debug=debug,
+                    nzbget_mode=True,
                 )
             else:
                 # Use STDOUT for now
@@ -415,6 +417,7 @@ class ScriptBase(object):
                     name=self.logger_id,
                     logger=True,
                     debug=debug,
+                    nzbget_mode=True,
                 )
         else:
             self.logger_id = None
@@ -489,6 +492,17 @@ class ScriptBase(object):
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         if self.script_mode is None:
             self.detect_mode()
+
+        if self.script_mode == SCRIPT_MODE.NONE:
+            # Reload logging without NZBGet mode configured
+            self.logger = init_logger(
+                name=self.logger_id,
+                logger=self.logger,
+                debug=debug,
+
+                # NZBGet mode disabled
+                nzbget_mode=False,
+            )
 
         # Initialize the chosen script mode
         if hasattr(self, '%s_%s' % (self.script_mode, 'init')):
@@ -1162,7 +1176,7 @@ class ScriptBase(object):
         This lets you utilize for-loops by returning you a list of keys
 
         """
-        items = tuple()
+        items = []
         if use_db and self.database is None and self.database_key:
             try:
                 # Connect to database on first use only
@@ -1607,8 +1621,14 @@ class ScriptBase(object):
             exc_type, exc_value, exc_traceback = exc_info()
             lines = traceback.format_exception(
                      exc_type, exc_value, exc_traceback)
-            self.logger.error('Fatal Exception:\n%s' % \
-                ''.join('  ' + line for line in lines))
+            if self.script_mode != SCRIPT_MODE.NONE:
+                # NZBGet Mode enabled
+                for line in lines:
+                    self.logger.error(line)
+            else:
+                # Display error as is
+                self.logger.error('Fatal Exception:\n%s' % \
+                    ''.join('  ' + line for line in lines))
             exit_code = EXIT_CODE.FAILURE
 
         # Simplify return codes for those who just want to use
