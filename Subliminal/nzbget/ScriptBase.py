@@ -210,7 +210,7 @@ CFG_ENVIRO_ID = 'NZBPO_'
 SHR_ENVIRO_ID = 'NZBR_'
 
 # Environment ID used when pushing common variables to the server
-PUSH_ENVIRO_ID = 'NZPR_'
+PUSH_ENVIRO_ID = 'NZBPR_'
 
 # DNZB is an environment variable sometimes referenced by other scripts
 SHR_ENVIRO_DNZB_ID = '_DNZB_'
