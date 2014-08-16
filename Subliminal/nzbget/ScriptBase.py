@@ -440,11 +440,6 @@ class ScriptBase(object):
                     'Temporary directory could not be ' + \
                     'created: %s' % self.system['TEMPDIR'],
                 )
-        try:
-            chdir(self.tempdir)
-        except OSError:
-            self.logger.warning('Temporary directory is not accessible: %s' % \
-                self.tempdir)
 
         if self._dev_debug and self.debug:
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -485,6 +480,15 @@ class ScriptBase(object):
             else:
                 self.logger.warning(
                     'Could not force script mode to: %s' % script_mode,
+                )
+        else:
+            # An NZBGet Mode means we should work out of a writeable directory
+            try:
+                chdir(self.tempdir)
+            except OSError:
+                self.logger.warning(
+                    'Temporary directory is not ' + 'accessible: %s' % \
+                    self.tempdir,
                 )
 
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
