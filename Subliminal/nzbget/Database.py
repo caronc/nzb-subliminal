@@ -117,6 +117,11 @@ class Database(object):
         self.container = container
         self.database = database
 
+        # A global switch that basically disables this class silently
+        # the purpose it to prevent it from thrashing on re-occuring
+        # failures that are a result of the users system environment
+        self.disabled = False
+
         # Database Connection
         self.socket = None
 
@@ -155,6 +160,7 @@ class Database(object):
         if reset:
             # Initialize
             self._reset()
+
         elif not isfile(self.database):
             # Initialize
             self._reset()
@@ -163,12 +169,9 @@ class Database(object):
         # Connect to Database
         self.connect()
         if not self._schema_okay():
-            if not self._build_schema():
-                self._reset()
-                self.connect()
-                self._build_schema()
-                if not self._schema_okay():
-                    raise EnvironmentError('Could not build database.')
+            self._reset()
+            if not self._schema_okay():
+                raise EnvironmentError('Could not build database.')
 
         # Keep content clean
         self.prune()
@@ -181,17 +184,22 @@ class Database(object):
         if self.logger_id:
             destroy_logger(self.logger_id)
 
-    def _reset(self):
+    def _reset(self, rebuild=True):
         """Resets the database
+        If rebuild is set to True then the schema is re-prepared
         """
         try:
             self.close()
         except:
             pass
+
         try:
+            # Best way to reset the database is to
+            # remove it entirely
             unlink(self.database)
         except:
             pass
+
         if not isdir(dirname(self.database)):
             try:
                 # safely ensure the directory exists
@@ -201,6 +209,13 @@ class Database(object):
                                   dirname(self.database))
                 return False
 
+        if rebuild:
+            # Connect to Database
+            self.connect()
+            if not self._schema_okay():
+                if not self._build_schema():
+                    return False
+
         self.logger.debug('Reset Database: %s' % self.database)
         return True
 
@@ -209,6 +224,10 @@ class Database(object):
         """
         if  self.socket is not None:
             self.close()
+
+        if self.disabled:
+            # Connections turned off
+            return False
 
         try:
             self.socket = sqlite3.connect(self.database, 20)
@@ -230,7 +249,8 @@ class Database(object):
     def execute(self, *args, **kwargs):
 
         if not self.socket:
-            self.connect()
+            if not self.connect():
+                return None
 
         self.logger.debug('DB Execute: %s' % str(args))
         try:
@@ -249,7 +269,8 @@ class Database(object):
            start_version defined)
         """
         if not self.socket:
-            self.connect()
+            if not self.connect():
+                return False
 
         if not isinstance(start_version, int):
             start_version = self._get_version()
@@ -269,7 +290,8 @@ class Database(object):
         """A simple check to see if the schema is okay
         """
         if not self.socket:
-            self.connect()
+            if not self.connect():
+                return False
 
         for table in NZBGET_SCHEMA_TABLES:
             try:
@@ -287,7 +309,8 @@ class Database(object):
 
     def _get_version(self):
         if not self.socket:
-            self.connect()
+            if not self.connect():
+                return 0
 
         result = self.execute(
             "SELECT value FROM lookup WHERE key = ?",
@@ -305,7 +328,8 @@ class Database(object):
            under control
         """
         if not self.socket:
-            self.connect()
+            if not self.connect():
+                return False
 
         # Default
         prune_age = PURGE_AGE
@@ -342,7 +366,8 @@ class Database(object):
         """Remove a key from the database
         """
         if not self.socket:
-            self.connect()
+            if not self.connect():
+                return False
 
         if not category:
             category = DEFAULT_CATEGORY
@@ -376,7 +401,8 @@ class Database(object):
         """Set a key and a value into the database for retrieval later
         """
         if not self.socket:
-            self.connect()
+            if not self.connect():
+                return False
 
         if not category:
             category = DEFAULT_CATEGORY
@@ -423,7 +449,8 @@ class Database(object):
         """
 
         if not self.socket:
-            self.connect()
+            if not self.connect():
+                return default
 
         if not category:
             category = DEFAULT_CATEGORY
@@ -448,12 +475,17 @@ class Database(object):
                     return result.fetchall()[0][-1]
                 except:
                     return default
+
         except sqlite3.OperationalError:
             # Database is corrupt or changed
-            self.logger.debug("Detected damaged database; " + \
+            self.logger.error("Detected damaged database; " + \
                              "Countermeasures taken.")
-            self._reset()
-
+            if not self._reset():
+                self.disabled = True
+            else:
+                if not self._schema_okay():
+                    if not self._build_schema():
+                        self.disabled = True
         return default
 
     def items(self, category=None):
@@ -461,6 +493,10 @@ class Database(object):
         """
 
         items = list()
+
+        if not self.socket:
+            if not self.connect():
+                return items
 
         if not category:
             category = DEFAULT_CATEGORY
