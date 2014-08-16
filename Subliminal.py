@@ -378,6 +378,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         # Search Mode
         search_mode = self.get('SearchMode', DEFAULT_SEARCH_MODE)
+        self.logger.info('Using %s search mode' % search_mode)
 
         if not isdir(cache_dir):
             try:
@@ -427,18 +428,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             expiration_time=timedelta(days=30),
             arguments={'filename': cache_file, 'lock_factory': MutexLock},
         )
-
-        try:
-            maxage = abs(int(self.get('MaxAge')))
-        except (TypeError, ValueError):
-            maxage = None
-        if not maxage:
-            self.logger.error(
-                'An invalid Maximum Age (%s) was specified.' % (
-                    self.get('MaxAge', '<not set>'),
-                )
-            )
-            return False
 
         f_count = 0
         for entry in files:
