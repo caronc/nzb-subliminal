@@ -401,20 +401,22 @@ class ScriptBase(object):
             self.debug = self.parse_bool(
                 self.config.get('DEBUG', False))
 
+        # Verbose Debug
         if self.vdebug is None:
             self.vdebug = self.parse_bool(
                 self.config.get('VDEBUG', False))
+        if self.vdebug:
+            self.debug = VERBOSE_DEBUG
 
+        # Very Verbose Debug - Developers only!!
         if self.vvdebug is None:
             self.vvdebug = self.parse_bool(
                 self.config.get('VVDEBUG', False))
-
         if self.vvdebug:
             self.debug = VERY_VERBOSE_DEBUG
 
-        elif self.vdebug:
-            self.debug = VERBOSE_DEBUG
-
+        print "debug=%s, vdebug=%s, vvdebug=%s" % (
+            str(self.debug), self.vdebug, self.vvdebug)
         if isinstance(self.logger, basestring):
             # Use Log File
             self.logger = init_logger(
@@ -1565,7 +1567,7 @@ class ScriptBase(object):
         # For depth matching
         search_dir = normpath(search_dir)
         depth_offset = len(re.split('[%s]' % ESCAPED_PATH_SEPARATOR, search_dir)) - 1
-        self.logger.debug('File depth offset %d' % depth_offset)
+        self.logger.vdebug('File depth offset %d' % depth_offset)
 
         for dname, dnames, fnames in walk(
             search_dir, followlinks=followlinks):

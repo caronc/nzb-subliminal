@@ -34,12 +34,13 @@ VERY_VERBOSE_DEBUG = DEBUG - 2
 logging.addLevelName(VERBOSE_DEBUG, "VDEBUG")
 logging.addLevelName(VERY_VERBOSE_DEBUG, "VVDEBUG")
 
-def vdebug(self, message, *args, **kws):
+def vdebug(self, message, *args, **kwargs):
     # logger takes its '*args' as 'args'.
-    self._log(VERBOSE_DEBUG, message, args, **kws)
-def vvdebug(self, message, *args, **kws):
+    self.log(VERBOSE_DEBUG, message, args, **kwargs)
+
+def vvdebug(self, message, *args, **kwargs):
     # logger takes its '*args' as 'args'.
-    self._log(VERY_VERBOSE_DEBUG, message, args, **kws)
+    self.log(VERY_VERBOSE_DEBUG, message, args, **kwargs)
 
 logging.Logger.vdebug = vdebug
 logging.Logger.vvdebug = vvdebug
@@ -158,17 +159,24 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
         # stderr
         h1 = logging.StreamHandler(sys.stderr)
 
+    # Unset disable flag (if set previously)
+    logging.disable(logging.NOTSET)
+
     if debug is True:
         _logger.setLevel(DEBUG)
 
-    elif debug is VERBOSE_DEBUG:
-        _logger.setLevel(VERBOSE_DEBUG)
-
-    elif debug is VERY_VERBOSE_DEBUG:
-        _logger.setLevel(VERY_VERBOSE_DEBUG)
-
-    else:
+    elif debug is True:
+        # Default
         _logger.setLevel(logging.INFO)
+    else:
+        try:
+            debug = int(debug)
+            _logger.setLevel(debug)
+
+        except (ValueError, TypeError):
+            # Default
+            _logger.setLevel(logging.INFO)
+
 
     # Format logger
     if not nzbget_mode:
@@ -176,20 +184,24 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
                 Formatter("%(asctime)s - " + str(getpid()) +
                     " - %(levelname)s - %(message)s"))
         logging.addLevelName(DEBUG, 'DEBUG')
-        logging.addLevelName(VERBOSE_DEBUG, 'VDEBUG')
-        logging.addLevelName(VERY_VERBOSE_DEBUG, 'VVDEBUG')
+        if isinstance(debug, int):
+            if debug  <= VERBOSE_DEBUG:
+                logging.addLevelName(VERBOSE_DEBUG, 'VDEBUG')
+            if debug  <= VERY_VERBOSE_DEBUG:
+                logging.addLevelName(VERY_VERBOSE_DEBUG, 'VVDEBUG')
 
     else:
         h1.setFormatter(logging. \
                 Formatter("[%(levelname)s] %(message)s"))
         # Level Name for [debug] has to be [info] or it simply won't pring
         logging.addLevelName(DEBUG, 'INFO] [DEBUG')
-        logging.addLevelName(VERBOSE_DEBUG, 'INFO] [VDEBUG')
-        logging.addLevelName(VERY_VERBOSE_DEBUG, 'INFO] [VVDEBUG')
+        if isinstance(debug, int):
+            if debug  <= VERBOSE_DEBUG:
+                logging.addLevelName(VERBOSE_DEBUG, 'INFO] [VDEBUG')
+            if debug  <= VERY_VERBOSE_DEBUG:
+                logging.addLevelName(VERY_VERBOSE_DEBUG, 'INFO] [VVDEBUG')
 
     # Add Handler
     _logger.addHandler(h1)
 
-    # Unset disable flag (if set previously)
-    #logging.disable(logging.NOTSET)
     return _logger
