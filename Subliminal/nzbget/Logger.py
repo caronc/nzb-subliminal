@@ -22,6 +22,7 @@ import sys
 import logging
 import logging.handlers
 from logging import Logger
+from logging import DEBUG
 
 from os import getpid
 
@@ -151,9 +152,13 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
         h1.setFormatter(logging. \
                 Formatter("%(asctime)s - " + str(getpid()) +
                     " - %(levelname)s - %(message)s"))
+        logging.addLevelName(DEBUG, 'DEBUG')
+
     else:
         h1.setFormatter(logging. \
                 Formatter("[%(levelname)s] %(message)s"))
+        # Level Name for [debug] has to be [info] or it simply won't pring
+        logging.addLevelName(DEBUG, 'INFO] [DEBUG')
 
     # Add Handler
     _logger.addHandler(h1)

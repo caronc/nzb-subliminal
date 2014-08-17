@@ -255,12 +255,15 @@ class Database(object):
         self.logger.debug('DB Execute: %s' % str(args))
         try:
             result = self.socket.execute(*args, **kwargs)
+
         except sqlite3.OperationalError, e:
             self.logger.debug('DB Execute OpError: %s' % str(e))
             return None
+
         except Exception, e:
             self.logger.debug('DB Execute Error: %s' % str(e))
             return None
+
         return result
 
 
@@ -383,16 +386,33 @@ class Database(object):
         if not key:
             return False
 
-        # First see if keystore already has a match
-        if(bool(len(self.socket.execute(
-            "SELECT value FROM keystore WHERE " + \
-            "container = ? AND category = ? AND key = ?",
-            (self.container, category, key)).fetchall()))):
-            if not self.socket.execute(
-                "DELETE FROM keystore WHERE " +\
+        try:
+            # First see if keystore already has a match
+            if(bool(len(self.socket.execute(
+                "SELECT value FROM keystore WHERE " + \
                 "container = ? AND category = ? AND key = ?",
-                (self.container, category, key),):
-                return False
+                (self.container, category, key)).fetchall()))):
+                if not self.socket.execute(
+                    "DELETE FROM keystore WHERE " +\
+                    "container = ? AND category = ? AND key = ?",
+                    (self.container, category, key),):
+                    return False
+
+        except sqlite3.OperationalError, e:
+            # Database is corrupt or changed
+            self.logger.debug(
+                "Database.unset() Operational Error: %s" % str(e))
+
+            if not self._reset():
+                self.logger.error(
+                    "Detected damaged database; countermeasures failed.",
+                )
+                self.disabled = True
+
+            else:
+                self.logger.info(
+                    "Detected damaged database; situation corrected.",
+                )
 
         return True
 
@@ -423,25 +443,44 @@ class Database(object):
         # Get a cursor object
         cursor = self.socket.cursor()
 
-        # First see if keystore already has a match
-        if(bool(len(cursor.execute(
-            "SELECT value FROM keystore WHERE " + \
-            "container = ? AND category = ? AND key = ?",
-            (self.container, category, key)).fetchall()))):
-            if not cursor.execute(
-                "UPDATE keystore SET value = ?, last_update = ?" + \
-                " WHERE container = ? AND category = ? AND key = ?",
-                (value, now, self.container, category, key),):
-                return False
-        else:
-            if not cursor.execute(
-                "INSERT INTO keystore " + \
-                "(container, category, key, value, last_update) " + \
-                "VALUES (?, ?, ?, ?, ?)",
-                (self.container, category, key, value, now),):
-                return False
-        # commit changes
-        self.socket.commit()
+        try:
+            # First see if keystore already has a match
+            if(bool(len(cursor.execute(
+                "SELECT value FROM keystore WHERE " + \
+                "container = ? AND category = ? AND key = ?",
+                (self.container, category, key)).fetchall()))):
+                if not cursor.execute(
+                    "UPDATE keystore SET value = ?, last_update = ?" + \
+                    " WHERE container = ? AND category = ? AND key = ?",
+                    (value, now, self.container, category, key),):
+                    return False
+            else:
+                if not cursor.execute(
+                    "INSERT INTO keystore " + \
+                    "(container, category, key, value, last_update) " + \
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (self.container, category, key, value, now),):
+                    return False
+            # commit changes
+            self.socket.commit()
+
+        except sqlite3.OperationalError, e:
+            # Database is corrupt or changed
+            self.logger.debug(
+                "Database.set() Operational Error: %s" % str(e))
+
+            if not self._reset():
+                self.logger.error(
+                    "Detected damaged database; countermeasures failed.",
+                )
+                self.disabled = True
+
+            else:
+                self.logger.info(
+                    "Detected damaged database; situation corrected.",
+                )
+            return False
+
         return True
 
     def get(self, key, default=None, category=None):
@@ -476,16 +515,22 @@ class Database(object):
                 except:
                     return default
 
-        except sqlite3.OperationalError:
+        except sqlite3.OperationalError, e:
             # Database is corrupt or changed
-            self.logger.error("Detected damaged database; " + \
-                             "Countermeasures taken.")
+            self.logger.debug(
+                "Database.get() Operational Error: %s" % str(e))
+
             if not self._reset():
+                self.logger.error(
+                    "Detected damaged database; countermeasures failed.",
+                )
                 self.disabled = True
+
             else:
-                if not self._schema_okay():
-                    if not self._build_schema():
-                        self.disabled = True
+                self.logger.info(
+                    "Detected damaged database; situation corrected.",
+                )
+
         return default
 
     def items(self, category=None):
@@ -510,11 +555,31 @@ class Database(object):
         # Get a cursor object
         cursor = self.socket.cursor()
 
-        cursor.execute(
-            "SELECT key, value FROM keystore " + \
-            "WHERE container = ? AND category = ?",
-            (self.container, category),
-        )
+        try:
+            cursor.execute(
+                "SELECT key, value FROM keystore " + \
+                "WHERE container = ? AND category = ?",
+                (self.container, category),
+            )
+
+        except sqlite3.OperationalError, e:
+            # Database is corrupt or changed
+            self.logger.debug(
+                "Database.items() Operational Error: %s" % str(e))
+
+            if not self._reset():
+                self.logger.error(
+                    "Detected damaged database; countermeasures failed.",
+                )
+                self.disabled = True
+
+            else:
+                self.logger.info(
+                    "Detected damaged database; situation corrected.",
+                )
+
+            # early return of empty list
+            return items
 
         while True:
             row = cursor.fetchone()
@@ -522,3 +587,5 @@ class Database(object):
                 break
 
             items.append((row[0], row[1]))
+
+        return items
