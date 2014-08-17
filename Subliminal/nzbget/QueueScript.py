@@ -290,21 +290,15 @@ class QueueScript(ScriptBase):
             # absolute path names
             self.filename = abspath(self.filename)
 
-        if not self.filename:
-            self.logger.warning('NZB-File not defined.')
-
-        elif not isfile(self.filename):
-            if isfile('%s.queued' % self.filename):
-                # support .queued files
-                self.nzbheaders = self.parse_filename(
-                    '%s.queued' % self.filename,
+            if parse_nzbfile:
+                # Initialize information fetched from NZB-File
+                # We intentionally allow existing nzbheaders to over-ride
+                # any found in the nzbfile
+                self.nzbheaders = dict(
+                    self.filename(
+                        self.nzbfilename, check_queued=True)\
+                        .items() + self.pull_dnzb().items(),
                 )
-            else:
-                self.logger.warning('NZB-File not found: %s' % self.filename)
-
-        elif parse_nzbfile:
-            # Initialize information fetched from NZB-File
-            self.nzbheaders = self.parse_nzbfile(self.filename)
 
         if self.directory:
             # absolute path names

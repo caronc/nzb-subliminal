@@ -636,27 +636,25 @@ class PostProcessScript(ScriptBase):
                     )
 
                     # Fetch category
-                    category = self.nzbheaders.get('CATEGORY', '')\
+                    category = self.nzb_get('category', '')\
                         .split(' ')[0].tolower()
-                    subcategory = self.nzbheaders.get('CATEGORY', '')\
+                    subcategory = self.nzb_get('category', '')\
                         .split(' ')[-1].tolower()
 
-                    if self.nzbheaders.get('NAME'):
-
+                    if self.nzb_get('name'):
                         # We can pick from the nzb headers
-                        nzb_name = self.nzbheaders.get('NAME')
+                        nzb_name = self.nzb_get('name')
                         new_name = join(self.directory, '%s%s' %(
                             re.replace('[\s]+','.', nzb_name),
                             splitext(basename(new_name))[1],
                         ))
 
                     elif category[0:5] == 'movie' and \
-                            self.nzbheaders.get('PROPERNAME'):
-                        nzb_name = self.nzbheaders.get('PROPERNAME')
+                            self.nzb_get('propername'):
+                        nzb_name = self.nzb_get('propername')
 
-                        if self.nzbheaders.get('MOVIEYEAR'):
-                            nzb_name += '(%s)' % \
-                                    self.nzbheaders.get('MOVIEYEAR')
+                        if self.nzb_get('movieyear'):
+                            nzb_name += '(%s)' % self.nzb_get('movieyear')
 
                         new_name = join(self.directory, '%s%s' %(
                             re.replace('[\s]+','.', nzb_name),
@@ -664,11 +662,11 @@ class PostProcessScript(ScriptBase):
                         ))
 
                     elif category == 'tv' and \
-                            self.nzbheaders.get('PROPERNAME'):
-                        nzb_name = self.nzbheaders.get('PROPERNAME')
-                        if self.nzbheaders.get('EPISODENAME'):
+                            self.nzb_get('propername'):
+                        nzb_name = self.nzb_get('propername')
+                        if self.nzb_get('episodename'):
                             nzb_name += '-%s' % \
-                                    self.nzbheaders.get('EPISODENAME')
+                                    self.nzb_get('episodename')
 
                         if subcategory == 'hd':
                             nzb_name += '-HDTV'
@@ -678,8 +676,8 @@ class PostProcessScript(ScriptBase):
                             splitext(basename(new_name))[1],
                         ))
 
-                    elif self.nzbheaders.get('PROPERNAME'):
-                        nzb_name = self.nzbheaders.get('PROPERNAME')
+                    elif self.nzb_get('propername'):
+                        nzb_name = self.nzb_get('propername')
                         new_name = join(self.directory, '%s%s' %(
                             re.replace('[\s]+','.', nzb_name),
                             splitext(basename(new_name))[1],

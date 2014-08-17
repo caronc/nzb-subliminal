@@ -382,22 +382,15 @@ class ScriptBase(object):
         # section of your script
         #Debug=no
         if self.debug is None:
-            # Check Script Environments
-            for k in SCRIPT_MODES:
-                # Initialize all script types
-                if hasattr(self, '%s_%s' % (k, 'debug')):
-                    if getattr(self, '%s_%s' % (k, 'debug'))(*args, **kwargs):
-                        self.debug = True
-                        break
-            if self.debug is None:
-                self.debug = False
+            self.debug = self.parse_bool(
+                self.config.get('DEBUG', False))
 
         if isinstance(self.logger, basestring):
             # Use Log File
             self.logger = init_logger(
                 name=self.logger_id,
                 logger=logger,
-                debug=debug,
+                debug=self.debug,
                 nzbget_mode=False,
             )
 
@@ -408,7 +401,7 @@ class ScriptBase(object):
                 self.logger = init_logger(
                     name=self.logger_id,
                     logger=None,
-                    debug=debug,
+                    debug=self.debug,
                     nzbget_mode=True,
                 )
             else:
@@ -416,7 +409,7 @@ class ScriptBase(object):
                 self.logger = init_logger(
                     name=self.logger_id,
                     logger=True,
-                    debug=debug,
+                    debug=self.debug,
                     nzbget_mode=True,
                 )
         else:
@@ -460,7 +453,7 @@ class ScriptBase(object):
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Enforce system/global variables for script processing
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        self.system['DEBUG'] = self.debug
+        self.config['DEBUG'] = self.debug
 
         # Set environment variable how NZBGet Would have done so
         if self.debug:
@@ -502,7 +495,7 @@ class ScriptBase(object):
             self.logger = init_logger(
                 name=self.logger_id,
                 logger=self.logger,
-                debug=debug,
+                debug=self.debug,
 
                 # NZBGet mode disabled
                 nzbget_mode=False,
@@ -816,6 +809,11 @@ class ScriptBase(object):
                     self.database.set(key=key, value=value)
                     self.logger.debug('set(database) %s="%s"' % (key, value))
 
+            except EnvironmentError:
+                # Database Access Problem
+                # set the dbstore to false so it isn't used anymore
+                self.database = False
+
             except NameError:
                 # Sqlite wasn't installed
                 # set the dbstore to false so it isn't used anymore
@@ -925,6 +923,11 @@ class ScriptBase(object):
                     self.logger.debug('get(database) %s="%s"' % (key, value))
                     return value
 
+            except EnvironmentError:
+                # Database Access Problem
+                # set the dbstore to false so it isn't used anymore
+                self.database = False
+
             except NameError:
                 # Sqlite wasn't installed
                 # set the dbstore to false so it isn't used anymore
@@ -977,6 +980,12 @@ class ScriptBase(object):
 
                 # Fetch from database first
                 items = self.database.items()
+
+            except EnvironmentError:
+                # Database Access Problem
+                # set the dbstore to false so it isn't used anymore
+                self.database = False
+
             except NameError:
                 # Sqlite wasn't installed
                 # set the dbstore to false so it isn't used anymore
@@ -1051,6 +1060,11 @@ class ScriptBase(object):
                     self.database.set(
                         key=key, value=value, category=Category.NZB)
                     self.logger.debug('nzb_set(database) %s="%s"' % (key, value))
+
+            except EnvironmentError:
+                # Database Access Problem
+                # set the dbstore to false so it isn't used anymore
+                self.database = False
 
             except NameError:
                 # Sqlite wasn't installed
@@ -1156,6 +1170,11 @@ class ScriptBase(object):
                     self.logger.debug('nzb_get(database) %s="%s"' % (key, value))
                     return value
 
+            except EnvironmentError:
+                # Database Access Problem
+                # set the dbstore to false so it isn't used anymore
+                self.database = False
+
             except NameError:
                 # Sqlite wasn't installed
                 # set the dbstore to false so it isn't used anymore
@@ -1169,18 +1188,18 @@ class ScriptBase(object):
                 return value
 
         if default is not None:
-            self.logger.debug('get(default) %s="%s"' % (key, str(default)))
+            self.logger.debug('nzb_get(default) %s="%s"' % (key, str(default)))
         else:
-            self.logger.debug('get(default) %s=None' % key)
+            self.logger.debug('nzb_get(default) %s=None' % key)
 
         return default
 
-    def items(self, check_system=True, check_shared=True, use_db=True):
+    def nzb_items(self, use_db=True):
         """
         This lets you utilize for-loops by returning you a list of keys
 
         """
-        items = []
+        items = list()
         if use_db and self.database is None and self.database_key:
             try:
                 # Connect to database on first use only
@@ -1195,6 +1214,12 @@ class ScriptBase(object):
 
                 # Fetch from database first
                 items = self.database.items()
+
+            except EnvironmentError:
+                # Database Access Problem
+                # set the dbstore to false so it isn't used anymore
+                self.database = False
+
             except NameError:
                 # Sqlite wasn't installed
                 # set the dbstore to false so it isn't used anymore
@@ -1202,18 +1227,10 @@ class ScriptBase(object):
 
         elif use_db and self.database:
             # Fetch from database first
-            items = self.database.items()
-
-        if check_shared:
-            # Shared values trump any database set ones
-            items = dict(items + self.shared.items()).items()
+            items = self.database.items(category=Category.NZB)
 
         # configuration trumps shared values
-        items = dict(items + self.config.items()).items()
-
-        if check_system:
-            # system trumps all values
-            items = dict(items + self.system.items()).items()
+        items = dict(items + self.nzbheaders.items()).items()
 
         return items
 
