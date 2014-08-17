@@ -151,9 +151,7 @@ import re
 from os import chdir
 from os import environ
 from os.path import isdir
-from os.path import isfile
 from os.path import basename
-from os.path import dirname
 from os.path import abspath
 
 # Relative Includes
@@ -203,12 +201,12 @@ class ScanScript(ScriptBase):
         script_config = dict([(SCAN_OPTS_RE.match(k).group(1), v.strip()) \
                for (k, v) in environ.items() if SCAN_OPTS_RE.match(k)])
 
-        if self._dev_debug and self.debug:
+        if self.vvdebug:
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             # Print Global Script Varables to help debugging process
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             for k, v in script_config.items():
-                self.logger.debug('SCR %s=%s' % (k, v))
+                self.logger.vvdebug('%s%s=%s' % (SCAN_ENVIRO_ID, k, v))
 
         # Merge Script Configuration With System Config
         self.system = dict(script_config.items() + self.system.items())

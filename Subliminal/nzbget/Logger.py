@@ -28,6 +28,21 @@ from os import getpid
 
 # Monkey Patch
 logging.raiseExceptions = 0
+VERBOSE_DEBUG = DEBUG - 1
+VERY_VERBOSE_DEBUG = DEBUG - 2
+
+logging.addLevelName(VERBOSE_DEBUG, "VDEBUG")
+logging.addLevelName(VERY_VERBOSE_DEBUG, "VVDEBUG")
+
+def vdebug(self, message, *args, **kws):
+    # logger takes its '*args' as 'args'.
+    self._log(VERBOSE_DEBUG, message, args, **kws)
+def vvdebug(self, message, *args, **kws):
+    # logger takes its '*args' as 'args'.
+    self._log(VERY_VERBOSE_DEBUG, message, args, **kws)
+
+logging.Logger.vdebug = vdebug
+logging.Logger.vvdebug = vvdebug
 
 def destroy_logger(name=None):
     """
@@ -75,7 +90,8 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
                         sent.
                       - If defined as a logger, then that is presumed
                         to be the log file to use.
-        debug:        Enable extra debug log entries
+        debug:        Enable extra debug log entries, if this is an interger
+                      value, then that is the log level set
         nzbget_mode:  Log formatting does not include date/time, pid etc
                       because nzbget wraps all this for us.
         daily:        Rotate logs by day (instead of by size)
@@ -142,8 +158,15 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
         # stderr
         h1 = logging.StreamHandler(sys.stderr)
 
-    if debug:
-        _logger.setLevel(logging.DEBUG)
+    if debug is True:
+        _logger.setLevel(DEBUG)
+
+    elif debug is VERBOSE_DEBUG:
+        _logger.setLevel(VERBOSE_DEBUG)
+
+    elif debug is VERY_VERBOSE_DEBUG:
+        _logger.setLevel(VERY_VERBOSE_DEBUG)
+
     else:
         _logger.setLevel(logging.INFO)
 
@@ -153,12 +176,16 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
                 Formatter("%(asctime)s - " + str(getpid()) +
                     " - %(levelname)s - %(message)s"))
         logging.addLevelName(DEBUG, 'DEBUG')
+        logging.addLevelName(VERBOSE_DEBUG, 'VDEBUG')
+        logging.addLevelName(VERY_VERBOSE_DEBUG, 'VVDEBUG')
 
     else:
         h1.setFormatter(logging. \
                 Formatter("[%(levelname)s] %(message)s"))
         # Level Name for [debug] has to be [info] or it simply won't pring
         logging.addLevelName(DEBUG, 'INFO] [DEBUG')
+        logging.addLevelName(VERBOSE_DEBUG, 'INFO] [VDEBUG')
+        logging.addLevelName(VERY_VERBOSE_DEBUG, 'INFO] [VVDEBUG')
 
     # Add Handler
     _logger.addHandler(h1)

@@ -182,12 +182,12 @@ class SchedulerScript(ScriptBase):
         script_config = dict([(SCHEDULER_OPTS_RE.match(k).group(1), v.strip()) \
                for (k, v) in environ.items() if SCHEDULER_OPTS_RE.match(k)])
 
-        if self._dev_debug and self.debug:
+        if self.vvdebug:
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             # Print Global Script Varables to help debugging process
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             for k, v in script_config.items():
-                self.logger.debug('SCR %s=%s' % (k, v))
+                self.logger.vvdebug('%s%s=%s' % (SCHEDULER_ENVIRO_ID, k, v))
 
         # Merge Script Configuration With System Config
         self.system = dict(script_config.items() + self.system.items())

@@ -119,8 +119,12 @@ from Utils import tidy_path
 
 # Relative Includes
 from NZBGetAPI import NZBGetAPI
+
+from Logger import VERBOSE_DEBUG
+from Logger import VERY_VERBOSE_DEBUG
 from Logger import init_logger
 from Logger import destroy_logger
+
 from Utils import ESCAPED_PATH_SEPARATOR
 from Utils import ESCAPED_WIN_PATH_SEPARATOR
 from Utils import ESCAPED_NUX_PATH_SEPARATOR
@@ -334,10 +338,22 @@ class ScriptBase(object):
         self.logger = logger
         self.debug = debug
 
-        # for extra verbosity
-        # This is set by just additionally passing in _dev_debug=True
-        # into the initialization of your scripts
-        self._dev_debug = kwargs.get('_dev_debug')
+        # Extra debug modes used from command line; it gets to be
+        # too noisy if you pass this into nzbget but if you really
+        # insist, you can define a VDEBUG or a VVDEBUG as arguments
+        # to your script.  This works best if you setup your script
+        # and just set the debug variable above to 'VERBOSE_DEBUG',
+        # or 'VERY_VERBOSE_DEBUG'
+
+        # Verbose Debug Mode
+        self.vdebug = kwargs.get(
+            'vdebug', self.parse_bool(self.debug == VERBOSE_DEBUG),
+        )
+
+        # Very Verbose Debug Mode
+        self.vvdebug = kwargs.get(
+            'vvdebug', self.parse_bool(self.debug == VERY_VERBOSE_DEBUG),
+        )
 
         # Script Mode
         self.script_mode = None
@@ -384,6 +400,20 @@ class ScriptBase(object):
         if self.debug is None:
             self.debug = self.parse_bool(
                 self.config.get('DEBUG', False))
+
+        if self.vdebug is None:
+            self.vdebug = self.parse_bool(
+                self.config.get('VDEBUG', False))
+
+        if self.vvdebug is None:
+            self.vvdebug = self.parse_bool(
+                self.config.get('VVDEBUG', False))
+
+        if self.vvdebug:
+            self.debug = VERY_VERBOSE_DEBUG
+
+        elif self.vdebug:
+            self.debug = VERBOSE_DEBUG
 
         if isinstance(self.logger, basestring):
             # Use Log File
@@ -434,21 +464,21 @@ class ScriptBase(object):
                     'created: %s' % self.system['TEMPDIR'],
                 )
 
-        if self._dev_debug and self.debug:
+        if self.vvdebug:
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             # Print Global System Varables to help debugging process
             #
             # Note: This is a very verbose process, so it is only performed
-            #       if both the debug and _dev_debug flags are set.
+            #       if both the debug and vvdebug flags are set.
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             for k, v in self.system.items():
-                self.logger.debug('SYS %s=%s' % (k, v))
+                self.logger.vvdebug('%s%s=%s' % (SYS_ENVIRO_ID, k, v))
 
             for k, v in self.config.items():
-                self.logger.debug('CFG %s=%s' % (k, v))
+                self.logger.vvdebug('%s%s=%s' % (CFG_ENVIRO_ID, k, v))
 
             for k, v in self.shared.items():
-                self.logger.debug('SHR %s=%s' % (k, v))
+                self.logger.vvdebug('%s%s=%s' % (SHR_ENVIRO_ID, k, v))
 
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Enforce system/global variables for script processing
@@ -1469,7 +1499,7 @@ class ScriptBase(object):
                         filtered = False
                         break
                 if filtered:
-                    self.logger.debug('Denied %s (regex)' % fname)
+                    self.logger.vdebug('Denied %s (regex)' % fname)
 
             if not filtered and prefix_filter:
                 filtered = True
@@ -1486,14 +1516,14 @@ class ScriptBase(object):
                             filtered = False
                             break
                 if filtered:
-                    self.logger.debug('Denied %s (prefix)' % fname)
+                    self.logger.vdebug('Denied %s (prefix)' % fname)
 
             if not filtered and suffix_filter:
                 filtered = True
                 for suffix in suffix_filter:
                     if case_sensitive:
                         if fname[-len(suffix):] == suffix:
-                            self.logger.debug('Allowed %s (suffix)' % fname)
+                            self.logger.vdebug('Allowed %s (suffix)' % fname)
                             filtered = False
                             break
                     else:
@@ -1503,7 +1533,7 @@ class ScriptBase(object):
                             filtered = False
                             break
                 if filtered:
-                    self.logger.debug('Denied %s (suffix)' % fname)
+                    self.logger.vdebug('Denied %s (suffix)' % fname)
 
             if filtered:
                 # File does not meet implied filters
@@ -1551,7 +1581,7 @@ class ScriptBase(object):
             if min_depth and min_depth > current_depth:
                 continue
 
-            self.logger.debug('CUR depth %d (MAX=%s, MIN=%s)' % \
+            self.logger.vdebug('CUR depth %d (MAX=%s, MIN=%s)' % \
                               (current_depth, str(max_depth), str(min_depth)))
 
             for fname in fnames:
@@ -1566,7 +1596,7 @@ class ScriptBase(object):
                             filtered = False
                             break
                     if filtered:
-                        self.logger.debug('Denied %s (regex)' % fname)
+                        self.logger.vdebug('Denied %s (regex)' % fname)
                         continue
 
                 if not filtered and prefix_filter:
@@ -1577,7 +1607,7 @@ class ScriptBase(object):
                             filtered = False
                             break
                     if filtered:
-                        self.logger.debug('Denied %s (prefix)' % fname)
+                        self.logger.vdebug('Denied %s (prefix)' % fname)
                         continue
 
                 if not filtered and suffix_filter:
@@ -1588,7 +1618,7 @@ class ScriptBase(object):
                             filtered = False
                             break
                     if filtered:
-                        self.logger.debug('Denied %s (suffix)' % fname)
+                        self.logger.vdebug('Denied %s (suffix)' % fname)
                         continue
 
                 # If we reach here, we store the file found
