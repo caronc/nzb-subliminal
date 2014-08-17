@@ -30,7 +30,6 @@ location that content is retrieved from.
 | opensubtitles | http://www.opensubtitles.org/
 | tvsubtitles | http://www.tvsubtitles.net/
 | podnapisi | http://www.podnapisi.net/
-| bierdopje | http://www.bierdopje.com/
 | thesubdb | http://thesubdb.com/
 
 Dependencies
