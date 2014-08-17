@@ -415,8 +415,6 @@ class ScriptBase(object):
         if self.vvdebug:
             self.debug = VERY_VERBOSE_DEBUG
 
-        print "debug=%s, vdebug=%s, vvdebug=%s" % (
-            str(self.debug), self.vdebug, self.vvdebug)
         if isinstance(self.logger, basestring):
             # Use Log File
             self.logger = init_logger(
