@@ -1477,7 +1477,7 @@ class ScriptBase(object):
                         flags |= re.IGNORECASE
                     try:
                         _filters.append(re.compile(f, flags=flags))
-                        self.logger.debug('Compiled regex "%s"' % f)
+                        self.logger.vdebug('Compiled regex "%s"' % f)
                     except:
                         self.logger.error(
                             'invalid regular expression: "%s"' % f,
@@ -1488,6 +1488,11 @@ class ScriptBase(object):
                     _filters.append(f)
             # apply
             regex_filter = _filters
+
+        self.logger.debug("get_files('%s') with %d filter(s)" % (
+            str(search_dir),
+            len(prefix_filter) + len(suffix_filter) + len(regex_filter),
+        ))
 
         if isfile(search_dir):
             fname = basename(search_dir)
