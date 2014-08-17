@@ -157,21 +157,19 @@ class Database(object):
         else:
             self.logger_id = None
 
-        if reset:
+        if reset or not isfile(self.database):
             # Initialize
             self._reset()
-
-        elif not isfile(self.database):
-            # Initialize
-            self._reset()
-            reset = True
 
         # Connect to Database
-        self.connect()
+        if not self.connect():
+            raise EnvironmentError('Could not access database.')
+
         if not self._schema_okay():
+            # fail-safe
             self._reset()
             if not self._schema_okay():
-                raise EnvironmentError('Could not build database.')
+                raise EnvironmentError('Could not prepare database.')
 
         # Keep content clean
         self.prune()
@@ -216,14 +214,15 @@ class Database(object):
                 if not self._build_schema():
                     return False
 
-        self.logger.debug('Reset Database: %s' % self.database)
+        self.logger.debug('Successsfully reset database: %s' % self.database)
         return True
 
     def connect(self):
         """Establish a connection to the database
         """
         if  self.socket is not None:
-            self.close()
+            # Already connected
+            return True
 
         if self.disabled:
             # Connections turned off
@@ -231,20 +230,36 @@ class Database(object):
 
         try:
             self.socket = sqlite3.connect(self.database, 20)
-        except:
+            self.logger.debug(
+                'Opened connection to SQLite Database: %s' % \
+                self.database,
+            )
+
+        except Exception, e:
             self.socket = None
+            self.logger.error('Failed to connect SQLite Database')
+            self.logger.debug(
+                'SQLite Database (%s) failure message: %s' % (
+                    self.database,
+                    str(e),
+            ))
             return False
 
-        self.logger.info('Connected to SQLite Database')
         return True
 
     def close(self):
         if self.socket is not None:
             try:
                 self.socket.close()
-                self.socket = None
             except:
                 pass
+
+            self.socket = None
+            self.logger.debug(
+                'Closed connection to SQLite Database %s' % \
+                self.database,
+            )
+        return
 
     def execute(self, *args, **kwargs):
 
@@ -252,9 +267,9 @@ class Database(object):
             if not self.connect():
                 return None
 
-        self.logger.debug('DB Execute: %s' % str(args))
         try:
             result = self.socket.execute(*args, **kwargs)
+            self.logger.vdebug('DB Executing: %s' % str(args))
 
         except sqlite3.OperationalError, e:
             self.logger.debug('DB Execute OpError: %s' % str(e))
