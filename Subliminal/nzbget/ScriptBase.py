@@ -46,6 +46,9 @@ functionality such as:
                      information from it. lxml must be installed on your
                      system for this to work correctly
 
+ * parse_url()  - Parse a URL and extract the protocol, user, pass,
+                  remote directory and hostname from the string.
+
  * parse_list() - Takes a string (or more) as well as lists of strings as
                   input. It then cleans it up and produces an easy to
                   manage list by combining all of the results into 1.
@@ -152,6 +155,8 @@ from stat import ST_MTIME
 from stat import ST_SIZE
 
 from os import stat
+
+from urlparse import urlparse
 
 # Some booleans that are read to and from nzbget
 NZBGET_BOOL_TRUE = 'yes'
@@ -274,6 +279,22 @@ PATH_DELIMITERS = r'([%s]+[%s;\|,\s]+|[;\|,\s%s]+[%s]+)' % (
 
 # SQLite Database
 NZBGET_DATABASE_FILENAME = "nzbget/nzbget.db"
+
+# URL Indexing Table for returns via parse_url()
+VALID_URL_RE = re.compile(r'^([^:]+):[/\\]*(.+)$')
+class URL(object):
+    """
+    This can be used as a hash table to access the results returned from
+    parse_url()
+    """
+    PROT = 0
+    HOST = 1
+    PORT = 2
+    USER = 3
+    PASS = 4
+    PATH = 5
+    # A cleaned up (parsed) version of the same URL re-assmembled
+    FULL = 6
 
 class SCRIPT_MODE(object):
     # After the download of nzb-file is completed NZBGet can call
@@ -504,15 +525,6 @@ class ScriptBase(object):
                 self.logger.warning(
                     'Could not force script mode to: %s' % script_mode,
                 )
-        else:
-            # An NZBGet Mode means we should work out of a writeable directory
-            try:
-                chdir(self.tempdir)
-            except OSError:
-                self.logger.warning(
-                    'Temporary directory is not ' + 'accessible: %s' % \
-                    self.tempdir,
-                )
 
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Detect the mode we're running in
@@ -530,6 +542,15 @@ class ScriptBase(object):
                 # NZBGet mode disabled
                 nzbget_mode=False,
             )
+        else:
+            # An NZBGet Mode means we should work out of a writeable directory
+            try:
+                chdir(self.tempdir)
+            except OSError:
+                self.logger.warning(
+                    'Temporary directory is not ' + 'accessible: %s' % \
+                    self.tempdir,
+                )
 
         # Initialize the chosen script mode
         if hasattr(self, '%s_%s' % (self.script_mode, 'init')):
@@ -781,6 +802,104 @@ class ScriptBase(object):
                 self.logger.debug('NZBParse - Exception %s' % str(e))
 
         return results
+
+    def parse_url(self, url):
+        """A function that greatly simplifies the parsing of a url
+        specified by the end user.
+
+         Valid syntaxes are:
+            <protocol>://<user>@<host>:<port>/<path>
+            <protocol>://<user>:<passwd>@<host>:<port>/<path>
+            <protocol>://<host>:<port>/<path>
+            <protocol>://<host>/<path>
+            <protocol>://<host>
+
+         The function returns the following tuple:
+
+           (protocol, host, port, user, passwd, dir)
+
+         and returns 'None' if the content could not be extracted
+        """
+
+        # Defaults
+        user = None
+        passwd = None
+        port = None
+        host = None
+        path = None
+        protocol = None
+
+        match = VALID_URL_RE.search(url)
+        if not match:
+            return None
+
+        # Extract basic results
+        protocol = match.group(1).lower().strip()
+
+        if not protocol:
+            # Invalid Protocol
+            return None
+
+        host = match.group(2).strip()
+        if not host:
+            # Invalid Hostname
+            return None
+
+        # Now do a proper extraction of data
+        parsed = urlparse('http://%s' % host)
+
+        # Parse results
+        host = parsed[1].strip()
+        path = tidy_path(parsed[2].strip())
+
+        if not path:
+            # Default
+            path = ''
+
+        try:
+            (user, host) = host.split('@')[:2]
+        except ValueError:
+            # no problem then, host only exists
+            # and it's already assigned
+            pass
+
+        if user is not None:
+            try:
+                (user, passwd) = user.split(':')[:2]
+            except ValueError:
+                # no problem then, user only exists
+                # and it's already assigned
+                pass
+
+        try:
+            (host, port) = host.split(':')[:2]
+        except ValueError:
+            # no problem then, user only exists
+            # and it's already assigned
+            pass
+
+        if port:
+            try:
+                port = int(port)
+            except (ValueError, TypeError):
+                return None
+
+        # Re-assemble cleaned up version of the url
+        url = '%s://' % protocol
+        if isinstance(user, basestring):
+            url += user
+            if isinstance(passwd, basestring):
+                url += ':%s@' % passwd
+            else:
+                url += '@'
+        url += host
+
+        if port > 0:
+            url += ':%d' % port
+
+        url += path
+
+        return (protocol, host, port, user, passwd, path, url)
 
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # set() and get() wrappers
@@ -1871,7 +1990,7 @@ class ScriptBase(object):
             self.logger.debug('Detecting possible script mode from: %s' % \
                          ', '.join(self.script_dict.keys()))
 
-        if len(self.script_dict.keys()) > 1:
+        if len(self.script_dict.keys()):
             for k in [ v for v in SCRIPT_MODES \
                       if v in self.script_dict.keys() + [SCRIPT_MODE.NONE,]]:
                 if hasattr(self, '%s_%s' % (k, 'sanity_check')):
@@ -1882,13 +2001,7 @@ class ScriptBase(object):
                                 'Script Mode: %s' % self.script_mode.upper())
                             return self.script_mode
 
-        elif len(self.script_dict.keys()) == 1:
-            self.script_mode = self.script_dict.keys()[0]
-            if self.script_mode != SCRIPT_MODE.NONE:
-                self.logger.info('Script Mode: %s' % self.script_mode.upper())
-                return self.script_mode
-
-        self.logger.warning('Script Mode: <Standalone>')
+        self.logger.info('Script Mode: STANDALONE')
         self.script_mode = SCRIPT_MODE.NONE
 
         return self.script_mode

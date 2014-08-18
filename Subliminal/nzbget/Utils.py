@@ -79,9 +79,8 @@ def os_path_split(path):
     return p_list
 
 def tidy_path(path):
-    """take a filename and or directory and tidy it up
-    by removing trailing slashes and correcting any
-    formatting issues.
+    """take a filename and or directory and attempts to tidy it up by removing
+    trailing slashes and correcting any formatting issues.
 
     For example: ////absolute//path// becomes:
         /absolute/path
