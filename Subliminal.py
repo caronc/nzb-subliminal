@@ -38,6 +38,9 @@
 # Script Version: 0.5.0.
 #
 # NOTE: This script requires Python to be installed on your system.
+#
+# NOTE: Addic7ed (http://www.addic7ed.com/) is only utilized if a valid
+#       username and password is provided.
 
 ##############################################################################
 ### OPTIONS                                                                ###
@@ -93,6 +96,18 @@
 # specified then the following defaults are used: opensubtitles, tvsubtitles,
 # podnapisi, addic7ed, thesubdb
 #Providers=opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb
+
+# Addic7ed Username
+#
+# If you wish to utilize the addic7ed provider, you are additionally required
+# to provide a username and password. Specify the `username` here.
+#Addic7edUsername=
+
+# Addic7ed Password
+#
+# If you wish to utilize the addic7ed provider, you are additionally required
+# to provide a username and password. Specify the `password` here.
+#Addic7edPassword=
 
 # File extensions for video files.
 #
@@ -403,6 +418,27 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 ', '.join(providers)
             ))
 
+        provider_configs = {}
+        if 'addic7ed' in providers:
+            # Addic7ed Support
+            a_username = self.get('Addic7edUsername')
+            a_password = self.get('Addic7edPassword')
+
+            if not (a_username and a_password):
+                self.logger.warning(
+                    'Addic7ed provider dropped due to missing credentials',
+                )
+                providers.remove('addic7ed')
+            else:
+                provider_configs['addic7ed'] = {
+                    'username': a_username,
+                    'password': a_password,
+                }
+
+        if not len(providers):
+            self.logger.error('There were are no remaining providers to search.')
+            return False
+
         lang = self.parse_list(self.get('Languages', 'en'))
         if not lang:
             self.logger.error('No valid language was set')
@@ -501,6 +537,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     videos,
                     lang,
                     providers=providers,
+                    provider_configs=provider_configs,
                     single=single_mode,
                     min_score=None,
                     hearing_impaired=hearing_impaired,
@@ -623,6 +660,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'Single',
             'Providers',
             'SearchMode',
+            'Addic7edUsername',
+            'Addic7edPassword',
             'HearingImpaired',
             'TvCategories',
             'VideoExtensions',
@@ -654,6 +693,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'Single',
             'Providers',
             'SearchMode',
+            'Addic7edUsername',
+            'Addic7edPassword',
             'HearingImpaired',
             'ScanDirectories',
             'VideoExtensions',
@@ -808,6 +849,22 @@ if __name__ == "__main__":
             "will use normal ones if this fails.",
     )
     parser.add_option(
+        "-U",
+        "--addic7ed-username",
+        dest="a_username",
+        help="You must specify a Addic7ed username if you wish to use " +\
+        "them as one of your chosen providers.",
+        metavar="USERNAME",
+    )
+    parser.add_option(
+        "-P",
+        "--addic7ed-password",
+        dest="a_password",
+        help="You must specify a Addic7ed password if you wish to use " +\
+        "them as one of your chosen providers.",
+        metavar="PASSWORD",
+    )
+    parser.add_option(
         "-L",
         "--logfile",
         dest="logfile",
@@ -859,6 +916,10 @@ if __name__ == "__main__":
     _providers = options.providers
     _hearingimpaired = options.hearingimpaired
 
+    # Addic7ed Support
+    _a_username = options.a_username
+    _a_password = options.a_password
+
     if _maxage:
         try:
             _maxage = str(abs(int(_maxage)))
@@ -883,6 +944,12 @@ if __name__ == "__main__":
 
     if _providers:
         script.set('Providers', _providers)
+
+    if _a_username:
+        script.set('Addic7edUsername', _a_username)
+
+    if _a_password:
+        script.set('Addic7edPassword', _a_password)
 
     if _language:
         script.set('Languages', _language)
