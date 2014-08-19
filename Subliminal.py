@@ -174,6 +174,7 @@ from os.path import isdir
 from os import unlink
 from os import makedirs
 import errno
+import logging
 
 # This is required if the below environment variables
 # are not included in your environment already
@@ -315,12 +316,13 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             mtree = _matcher.match_tree
             guess = _matcher.matched()
 
-            if self.debug:
-                self.logger.debug(mtree)
+            if self.vdebug:
+                # Verbose Mode Only
+                self.logger.vdebug(mtree)
                 for node in mtree.nodes():
                     if node.guess:
-                        self.logger.debug(node.guess)
-                self.logger.debug(guess.nice_string())
+                        self.logger.vdebug(node.guess)
+                self.logger.vdebug(guess.nice_string())
 
             # fix some strange guessit guessing:
             # if guessit doesn't find a year in the file name it
@@ -517,6 +519,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 [full_path, ],
                 subtitles=not overwrite,
                 embedded_subtitles=not overwrite,
+                age=None,
             )
 
             videos.extend([
@@ -530,10 +533,10 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     ))
             ])
 
-            results = {}
+            subtitles = {}
             if videos:
                 # download best subtitles
-                results = download_best_subtitles(
+                subtitles = download_best_subtitles(
                     videos,
                     lang,
                     providers=providers,
@@ -545,7 +548,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             else:
                 continue
 
-            if not results:
+            if not subtitles:
                 self.logger.warning('No subtitles were found.')
                 continue
 
@@ -553,10 +556,10 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             f_count += 1
 
             self.logger.info('Matched %d possible subtitle(s) for %s' % \
-                (sum([len(s) for s in results.itervalues()]),
+                (sum([len(s) for s in subtitles.itervalues()]),
                  basename(entry)),
             )
-            for res in results.itervalues():
+            for res in subtitles.itervalues():
                 for sub in res:
                     self.logger.debug('Subtitle found at: %s', str(sub))
 
@@ -972,6 +975,12 @@ if __name__ == "__main__":
 
         # Finally set the directory the user specified for scanning
         script.set('ScanDirectories', scandir)
+
+    # Attach Subliminal logging to output by connecting to its namespace
+    logging.getLogger('subliminal').\
+            addHandler(script.logger.handlers[0])
+    logging.getLogger('subliminal').\
+            setLevel(script.logger.getEffectiveLevel())
 
     # call run() and exit() using it's returned value
     exit(script.run())
