@@ -164,9 +164,11 @@
 
 import re
 from os.path import join
-from os import rename
+from shutil import move
+from os import getcwd
 from os.path import split
 from os.path import basename
+from os.path import abspath
 from os.path import dirname
 from os.path import splitext
 from os.path import isfile
@@ -465,7 +467,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             arguments={'filename': cache_file, 'lock_factory': MutexLock},
         )
 
+        # initialize fetch counter
         f_count = 0
+
         for entry in files:
             full_path = entry
             if search_mode == SEARCH_MODE.BASIC:
@@ -498,13 +502,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     _lang.remove(l)
                     continue
 
-                if single_mode:
-                    expected_file = '%s.srt' % srt_file
-                else:
-                    expected_file = '%s.%s.srt' % (srt_file, srt_lang)
-
-                self.logger.debug('Expecting %s' % expected_file)
-
             if len(_lang) == 0:
                 continue
 
@@ -522,6 +519,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 age=None,
             )
 
+            # Add Guessed Information
             videos.extend([
                 Video.fromguess(
                     split(entry)[1],
@@ -552,9 +550,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 self.logger.warning('No subtitles were found.')
                 continue
 
-            # Track download
-            f_count += 1
-
             self.logger.info('Matched %d possible subtitle(s) for %s' % \
                 (sum([len(s) for s in subtitles.itervalues()]),
                  basename(entry)),
@@ -564,97 +559,111 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     self.logger.debug('Subtitle found at: %s', str(sub))
 
             for l in _lang:
-                srt_file = splitext(entry)[0]
+                srt_path = dirname(abspath(entry))
+                srt_file = basename(splitext(entry)[0])
                 srt_lang = str(l)
 
                 if single_mode:
-                    expected_file = '%s.srt' % srt_file
+                    expected_file = join(srt_path, '%s.srt' % srt_file)
+
                 else:
-                    expected_file = '%s.%s.srt' % (srt_file, srt_lang)
+                    expected_file = join(srt_path, '%s.%s.srt' % (
+                        srt_file, srt_lang,
+                    ))
+
+                self.logger.debug('Expecting %s' % basename(expected_file))
+
+                # Provide other possible locations (unique list)
+                potential_files = list(set([ \
+                    f for f in [
+                        join(getcwd(), basename(expected_file)),
+                        join(cache_dir, basename(expected_file)),
+                    ] if isfile(f) and f != expected_file
+                ]))
+
+                # If Moving is required
+                move_from = None
 
                 if isfile(expected_file):
                     # File was found in the same folder as the movie is
                     # no change is nessisary
-                    self.logger.info('Successfully retrieved %s' % \
-                                     basename(expected_file))
+                    pass
 
-                else:
-                    if isfile(basename(expected_file)):
-                        fetched_file = basename(expected_file)
-
-                    elif isfile(join(cache_dir, basename(expected_file))):
-                        fetched_file = join(cache_dir, basename(expected_file))
-
-                    else:
-                        self.logger.error(
-                            'Could not locate subtitle previously fetched!',
-                        )
-                        continue
+                elif len(potential_files):
+                    # Pop the first item from the potential list
+                    move_from = potential_files.pop()
 
 
-                    final_path = None
-                    if isfile(entry):
-                        # Detect final_path
-                        final_path = dirname(entry)
+                # Remove any lingering potential files
 
-                    elif isdir(entry):
-                        # Detect final_path
-                        final_path = entry
-                    else:
-                        # Detect final_path
-                        final_path = self.get('FINALDIR',
-                                          self.get('DIRECTORY'))
-                        if not final_path:
-                            self.logger.error(
-                                'Could not determine where to relocate subtitle',
-                            )
-                            try:
-                                unlink(basename(fetched_file))
-                            except OSError:
-                                pass
+                # Sometimes subliminal fetches another copy and stores
+                # it locally. This copy is different then the one in
+                # the proper location too. This seems to happen when
+                # there are more then one match found above.
 
-                    if final_path and not isdir(final_path):
-                        self.logger.error(
-                            'Directory %s is missing; aborting' % \
-                            final_path,
-                        )
-                        return None
+                # Not sure if the fix is to filter possible matches
+                # above just down to 1, or do what i do below (which
+                # is to just remove the extra file found).
 
-                    # remove final destination subtitle if present
+                # Alternatively maybe copying this back to the
+                # the same directory as the mkv file with a .1
+                # extension on it might be a better alternative?
+                for f in potential_files:
                     try:
-                        unlink(join(final_path, basename(fetched_file)))
+                        unlink(f)
+                        self.logger.debug(
+                            'Removed lingering extra: %s' % \
+                            f,
+                        )
                     except:
                         pass
 
+                if move_from:
                     try:
-                        rename(
-                            fetched_file,
-                            join(final_path, basename(fetched_file)),
-                        )
+                        # Move our file
+                        move(move_from, expected_file)
+
                         # Move our fetched file to it's final destination
                         self.logger.info('Successfully retrieved %s' % \
-                                         basename(fetched_file))
+                                         basename(expected_file))
                     except OSError, e:
                         if e[0] != errno.ENOENT:
                             self.logger.error(
                                 'Could not move %s to %s' % (
-                                    basename(fetched_file),
-                                    final_path,
+                                    basename(f),
+                                    expected_file,
                                 )
                             )
+                            self.logger.debug(
+                                'move() exception: %s' % str(e),
+                            )
+
                             # remove subtitle
                             try:
-                                unlink(fetched_file)
+                                unlink(f)
+                                self.logger.debug(
+                                    'removed() lingering extra: %s' % \
+                                    expected_file,
+                                )
                             except:
                                 pass
-                            return False
+
+                if not isfile(expected_file):
+                    # We can't find anything
+                    self.logger.error(
+                        'Could not locate subtitle previously fetched!',
+                    )
+                    continue
+
+                # increment counter
+                f_count += 1
 
         # When you're all done handling the file, just return
         # the error code that best represents how everything worked
-        if f_count is None:
-            return False
-        elif f_count > 0:
+        if f_count > 0:
             return True
+
+        # Nothing fetched, nothing gained or lost
         return None
 
     def postprocess_main(self, *args, **kwargs):
