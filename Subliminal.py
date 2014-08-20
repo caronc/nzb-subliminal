@@ -175,7 +175,6 @@ from os.path import isfile
 from os.path import isdir
 from os import unlink
 from os import makedirs
-import errno
 import logging
 
 # This is required if the below environment variables
@@ -560,7 +559,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     self.logger.debug('Subtitle found at: %s', str(sub))
 
             for l in _lang:
-                srt_path = dirname(abspath(entry))
+                srt_path = abspath(dirname(entry))
                 srt_file = basename(splitext(entry)[0])
                 srt_lang = str(l)
 
@@ -577,7 +576,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 # Provide other possible locations (unique list)
                 potential_files = list(set([ \
                     f for f in [
-                        join(getcwd(), basename(expected_file)),
+                        join(abspath(getcwd()), basename(expected_file)),
                         join(cache_dir, basename(expected_file)),
                     ] if isfile(f) and f != expected_file
                 ]))
