@@ -714,6 +714,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             maxage,
         )
         if files:
+            self.logger.info('Found %d matched file(s).' % len(files))
             return self.subliminal_fetch(
                 files,
                 single_mode=single_mode,
@@ -722,6 +723,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 use_nzbheaders=False,
             )
         else:
+            self.logger.info('There were no files found.')
             return None
 
     def main(self, *args, **kwargs):
