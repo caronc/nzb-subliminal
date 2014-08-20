@@ -281,7 +281,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             nzb_used = True
             self.logger.debug('Using DNZB-MoreInfo')
             if guess['type'] == 'movie':
-                regex = re.compile(r'^http://www.imdb.com/title/(tt[0-9]+)/$', re.IGNORECASE)
+                regex = re.compile(
+                    r'^http://www.imdb.com/title/(tt[0-9]+)/$', re.IGNORECASE)
                 matches = regex.match(nzb_more_info)
                 if matches:
                     guess['imdb'] = matches.group(1)
@@ -571,7 +572,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                         srt_file, srt_lang,
                     ))
 
-                self.logger.debug('Expecting %s' % basename(expected_file))
+                self.logger.debug('Expecting .srt: %s' % expected_file)
 
                 # Provide other possible locations (unique list)
                 potential_files = list(set([ \
@@ -581,8 +582,12 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     ] if isfile(f) and f != expected_file
                 ]))
 
-                # If Moving is required
-                move_from = None
+                if self.debug:
+                    # Helpful information
+                    for potential in potential_files:
+                        self.logger.debug(
+                            'Potential .srt: %s' % potential
+                        )
 
                 if isfile(expected_file):
                     # File was found in the same folder as the movie is
@@ -591,24 +596,36 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
                 elif len(potential_files):
                     # Pop the first item from the potential list
-                    move_from = potential_files.pop()
+                    while len(potential_files):
+                        move_from = potential_files.pop()
+                        self.logger.debug(
+                            'Expected not found, retrieving: %s' % move_from,
+                        )
 
+                        try:
+                            # Move our file
+                            move(move_from, expected_file)
+
+                            # Move our fetched file to it's final destination
+                            self.logger.info('Successfully placed %s' % \
+                                             basename(expected_file))
+                            # leave loop
+                            break
+
+                        except OSError, e:
+                            self.logger.error(
+                                'Could not move %s to %s' % (
+                                    basename(move_from),
+                                    expected_file,
+                                )
+                            )
+                            self.logger.debug(
+                                'move() exception: %s' % str(e),
+                            )
 
                 # Remove any lingering potential files
-
-                # Sometimes subliminal fetches another copy and stores
-                # it locally. This copy is different then the one in
-                # the proper location too. This seems to happen when
-                # there are more then one match found above.
-
-                # Not sure if the fix is to filter possible matches
-                # above just down to 1, or do what i do below (which
-                # is to just remove the extra file found).
-
-                # Alternatively maybe copying this back to the
-                # the same directory as the mkv file with a .1
-                # extension on it might be a better alternative?
-                for f in potential_files:
+                while len(potential_files):
+                    f = potential_files.pop()
                     try:
                         unlink(f)
                         self.logger.debug(
@@ -617,36 +634,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                         )
                     except:
                         pass
-
-                if move_from:
-                    try:
-                        # Move our file
-                        move(move_from, expected_file)
-
-                        # Move our fetched file to it's final destination
-                        self.logger.info('Successfully retrieved %s' % \
-                                         basename(expected_file))
-                    except OSError, e:
-                        if e[0] != errno.ENOENT:
-                            self.logger.error(
-                                'Could not move %s to %s' % (
-                                    basename(f),
-                                    expected_file,
-                                )
-                            )
-                            self.logger.debug(
-                                'move() exception: %s' % str(e),
-                            )
-
-                            # remove subtitle
-                            try:
-                                unlink(f)
-                                self.logger.debug(
-                                    'removed() lingering extra: %s' % \
-                                    expected_file,
-                                )
-                            except:
-                                pass
 
                 if not isfile(expected_file):
                     # We can't find anything
