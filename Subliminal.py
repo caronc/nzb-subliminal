@@ -623,14 +623,22 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                             )
 
                 # Remove any lingering potential files
+                try:
+                    expected_stat = stat(expected_file)
+                except OSError:
+                    # weird, expected file was not found..
+                    expected_stat = ()
+
                 while len(potential_files):
                     f = potential_files.pop()
                     try:
-                        unlink(f)
-                        self.logger.debug(
-                            'Removed lingering extra: %s' % \
-                            f,
-                        )
+                        if stat(f) != expected_stat:
+                            # non-linked files... proceed
+                            unlink(f)
+                            self.logger.debug(
+                                'Removed lingering extra: %s' % \
+                                f,
+                            )
                     except:
                         pass
 
