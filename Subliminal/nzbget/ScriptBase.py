@@ -112,6 +112,7 @@ from os.path import isdir
 from os.path import isfile
 from os.path import join
 from os.path import dirname
+from os.path import abspath
 from os.path import basename
 from os.path import normpath
 from os.path import splitext
@@ -157,6 +158,8 @@ from stat import ST_SIZE
 from os import stat
 
 from urlparse import urlparse
+from urllib import quote
+from urllib import unquote
 
 # Some booleans that are read to and from nzbget
 NZBGET_BOOL_TRUE = 'yes'
@@ -281,20 +284,9 @@ PATH_DELIMITERS = r'([%s]+[%s;\|,\s]+|[;\|,\s%s]+[%s]+)' % (
 NZBGET_DATABASE_FILENAME = "nzbget/nzbget.db"
 
 # URL Indexing Table for returns via parse_url()
-VALID_URL_RE = re.compile(r'^([^:]+):[/\\]*(.+)$')
-class URL(object):
-    """
-    This can be used as a hash table to access the results returned from
-    parse_url()
-    """
-    PROT = 0
-    HOST = 1
-    PORT = 2
-    USER = 3
-    PASS = 4
-    PATH = 5
-    # A cleaned up (parsed) version of the same URL re-assmembled
-    FULL = 6
+VALID_URL_RE = re.compile(r'^[\s]*([^:\s]+):[/\\]*(.+)[\s]*$')
+VALID_HOST_RE = re.compile(r'^[\s]*([^:/\s]+)')
+VALID_QUERY_RE = re.compile(r'^(.*[/\\])([^/\\]*)$')
 
 class SCRIPT_MODE(object):
     # After the download of nzb-file is completed NZBGet can call
@@ -803,44 +795,65 @@ class ScriptBase(object):
 
         return results
 
-    def parse_url(self, url):
+    def parse_url(self, url, default_schema='http'):
         """A function that greatly simplifies the parsing of a url
         specified by the end user.
 
          Valid syntaxes are:
-            <protocol>://<user>@<host>:<port>/<path>
-            <protocol>://<user>:<passwd>@<host>:<port>/<path>
-            <protocol>://<host>:<port>/<path>
-            <protocol>://<host>/<path>
-            <protocol>://<host>
+            <schema>://<user>@<host>:<port>/<path>
+            <schema>://<user>:<passwd>@<host>:<port>/<path>
+            <schema>://<host>:<port>/<path>
+            <schema>://<host>/<path>
+            <schema>://<host>
 
          The function returns the following tuple:
 
-           (protocol, host, port, user, passwd, dir)
+           (schema, host, port, user, passwd, dir)
 
          and returns 'None' if the content could not be extracted
         """
 
-        # Defaults
-        user = None
-        passwd = None
-        port = None
-        host = None
-        path = None
-        protocol = None
+        if not isinstance(url, basestring):
+            # Simple error checking
+            return None
+
+        # Default Results
+        result = {
+            # The username (if specified)
+            'user': None,
+            # The password (if specified)
+            'password': None,
+            # The port (if specified)
+            'port': None,
+            # The hostname
+            'host': None,
+            # The full path (query + path)
+            'fullpath': None,
+            # The path
+            'path': None,
+            # The query
+            'query': None,
+            # The schema
+            'schema': None,
+            # The schema
+            'url': None
+        }
 
         match = VALID_URL_RE.search(url)
-        if not match:
-            return None
+        if match:
+            # Extract basic results
+            result['schema'] = match.group(1).lower().strip()
+            host = match.group(2).strip()
+        else:
+            match = VALID_HOST_RE.search(url)
+            if not match:
+                return None
+            result['schema'] = default_schema
+            host = match.group(1).strip()
 
-        # Extract basic results
-        protocol = match.group(1).lower().strip()
+        if not result['schema']:
+            result['schema'] = default_schema
 
-        if not protocol:
-            # Invalid Protocol
-            return None
-
-        host = match.group(2).strip()
         if not host:
             # Invalid Hostname
             return None
@@ -849,57 +862,85 @@ class ScriptBase(object):
         parsed = urlparse('http://%s' % host)
 
         # Parse results
-        host = parsed[1].strip()
-        path = tidy_path(parsed[2].strip())
-
-        if not path:
-            # Default
-            path = ''
-
+        result['host'] = parsed[1].strip().lower()
+        result['fullpath'] = quote(unquote(tidy_path(parsed[2].strip())))
         try:
-            (user, host) = host.split('@')[:2]
+            # Handle trailing slashes removed by tidy_path
+            if result['fullpath'][-1] not in ('/', '\\') and \
+               url[-1] in ('/', '\\'):
+                result['fullpath'] += url.strip()[-1]
+        except IndexError:
+            # No problem, there simply isn't any returned results
+            # and therefore, no trailing slash
+            pass
+
+        if not result['fullpath']:
+            # Default
+            result['fullpath'] = None
+        else:
+            # Using full path, extract query from path
+            match = VALID_QUERY_RE.search(result['fullpath'])
+            if match:
+                result['path'] = match.group(1)
+                result['query'] = match.group(2)
+                if not result['path']:
+                    result['path'] = None
+                if not result['query']:
+                    result['query'] = None
+        try:
+            (result['user'], result['host']) = \
+                    re.split('[\s@]+', result['host'])[:2]
+
         except ValueError:
             # no problem then, host only exists
             # and it's already assigned
             pass
 
-        if user is not None:
+        if result['user'] is not None:
             try:
-                (user, passwd) = user.split(':')[:2]
+                (result['user'], result['password']) = \
+                        re.split('[:\s]+', result['user'])[:2]
+
             except ValueError:
                 # no problem then, user only exists
                 # and it's already assigned
                 pass
 
         try:
-            (host, port) = host.split(':')[:2]
+            (result['host'], result['port']) = \
+                    re.split('[\s:]+', result['host'])[:2]
+
         except ValueError:
             # no problem then, user only exists
             # and it's already assigned
             pass
 
-        if port:
+        if result['port']:
             try:
-                port = int(port)
+                result['port'] = int(result['port'])
             except (ValueError, TypeError):
+                # Invalid Port Specified
                 return None
+            if result['port'] == 0:
+                result['port'] = None
 
         # Re-assemble cleaned up version of the url
-        url = '%s://' % protocol
-        if isinstance(user, basestring):
-            url += user
-            if isinstance(passwd, basestring):
-                url += ':%s@' % passwd
+        result['url'] = '%s://' % result['schema']
+        if isinstance(result['user'], basestring):
+            result['url'] += result['user']
+            if isinstance(result['password'], basestring):
+                result['url'] += ':%s@' % result['password']
             else:
-                url += '@'
-        url += host
+                result['url'] += '@'
+        result['url'] += result['host']
 
-        if port > 0:
-            url += ':%d' % port
+        if result['port']:
+            result['url'] += ':%d' % result['port']
 
-        url += path
+        if result['fullpath']:
+            result['url'] += result['fullpath']
 
-        return (protocol, host, port, user, passwd, path, url)
+        return result
 
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # set() and get() wrappers
@@ -1519,6 +1560,8 @@ class ScriptBase(object):
                  '/full/path/to/file.mkv': {
                      'basename': 'file.mkv',
                      'dirname': '/full/path/to',
+                     # identify the filename (without applied extension)
+                     'filename': 'file',
                      # always tolower() applied to:
                      'extension': mkv,
 
@@ -1613,7 +1656,7 @@ class ScriptBase(object):
 
         if isfile(search_dir):
             fname = basename(search_dir)
-            dname = dirname(search_dir)
+            dname = abspath(dirname(search_dir))
             filtered = False
             if regex_filter:
                 filtered = True
@@ -1670,6 +1713,7 @@ class ScriptBase(object):
                 'basename': fname,
                 'dirname': dname,
                 'extension': splitext(basename(fname))[1].lower(),
+                'filename': splitext(basename(fname))[0],
                 }
             }
             if fullstats:

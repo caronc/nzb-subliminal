@@ -22,26 +22,35 @@ import sys
 import logging
 import logging.handlers
 from logging import Logger
-from logging import DEBUG
 
 from os import getpid
 
 # Monkey Patch
 logging.raiseExceptions = 0
-VERBOSE_DEBUG = DEBUG - 1
-VERY_VERBOSE_DEBUG = DEBUG - 2
 
+# Logging Levels
+DETAIL = 19
+VERBOSE_DEBUG = 9
+VERY_VERBOSE_DEBUG = 8
+
+# Ensure Levels are Globally Added To logging module
+logging.addLevelName(DETAIL, "DETAIL")
 logging.addLevelName(VERBOSE_DEBUG, "VDEBUG")
 logging.addLevelName(VERY_VERBOSE_DEBUG, "VVDEBUG")
 
+def detail(self, message, *args, **kwargs):
+    # logger takes its '*args' as 'args'.
+    self._log(DETAIL, message, args, **kwargs)
+
 def vdebug(self, message, *args, **kwargs):
     # logger takes its '*args' as 'args'.
-    self.log(VERBOSE_DEBUG, message, args, **kwargs)
+    self._log(VERBOSE_DEBUG, message, args, **kwargs)
 
 def vvdebug(self, message, *args, **kwargs):
     # logger takes its '*args' as 'args'.
-    self.log(VERY_VERBOSE_DEBUG, message, args, **kwargs)
+    self._log(VERY_VERBOSE_DEBUG, message, args, **kwargs)
 
+logging.Logger.detail = detail
 logging.Logger.vdebug = vdebug
 logging.Logger.vvdebug = vvdebug
 
@@ -73,7 +82,6 @@ def destroy_logger(name=None):
                 # Bug 573782 - python logging's fileConfig causes
                 # KeyError on shutdown
                 pass
-
 
 def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
                 daily=False, bytecount=5242880, logcount=3, encoding=None):
@@ -111,8 +119,11 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
                 l.setFormatter(logging. \
                     Formatter("[%(levelname)s] %(message)s"))
 
+        # Support NZBGET Detail Messages
+        logging.addLevelName(DETAIL, 'DETAIL')
+
         if not nzbget_mode:
-            logging.addLevelName(DEBUG, 'DEBUG')
+            logging.addLevelName(logging.DEBUG, 'DEBUG')
             if isinstance(debug, int):
                 if debug <= VERBOSE_DEBUG:
                     logging.addLevelName(VERBOSE_DEBUG, 'VDEBUG')
@@ -121,7 +132,7 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
 
         else:
             # Level Name for [debug] has to be [info] or it simply won't print
-            logging.addLevelName(DEBUG, 'INFO] [DEBUG')
+            logging.addLevelName(logging.DEBUG, 'INFO] [DEBUG')
             if isinstance(debug, int):
                 if debug <= VERBOSE_DEBUG:
                     logging.addLevelName(VERBOSE_DEBUG, 'INFO] [VDEBUG')
@@ -131,6 +142,7 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
         return logger
 
     if name is None:
+        # Namespace
         name = __name__
 
     # Perpare Logger
@@ -177,31 +189,31 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
         # stderr
         h1 = logging.StreamHandler(sys.stderr)
 
-    # Unset disable flag (if set previously)
-    logging.disable(logging.NOTSET)
-
     if debug is True:
-        _logger.setLevel(DEBUG)
+        _logger.setLevel(logging.DEBUG)
+        h1.setLevel(logging.DEBUG)
 
     elif debug in (False, None):
         # Default
-        _logger.setLevel(logging.INFO)
+        _logger.setLevel(DETAIL)
+        h1.setLevel(DETAIL)
     else:
         try:
             debug = int(debug)
             _logger.setLevel(debug)
+            h1.setLevel(debug)
 
         except (ValueError, TypeError):
             # Default
-            _logger.setLevel(logging.INFO)
-
+            _logger.setLevel(DETAIL)
+            h1.setLevel(DETAIL)
 
     # Format logger
     if not nzbget_mode:
         h1.setFormatter(logging. \
                 Formatter("%(asctime)s - " + str(getpid()) +
                     " - %(levelname)s - %(message)s"))
-        logging.addLevelName(DEBUG, 'DEBUG')
+        logging.addLevelName(logging.DEBUG, 'DEBUG')
         if isinstance(debug, int):
             if debug <= VERBOSE_DEBUG:
                 logging.addLevelName(VERBOSE_DEBUG, 'VDEBUG')
@@ -212,7 +224,7 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
         h1.setFormatter(logging. \
                 Formatter("[%(levelname)s] %(message)s"))
         # Level Name for [debug] has to be [info] or it simply won't print
-        logging.addLevelName(DEBUG, 'INFO] [DEBUG')
+        logging.addLevelName(logging.DEBUG, 'INFO] [DEBUG')
         if isinstance(debug, int):
             if debug <= VERBOSE_DEBUG:
                 logging.addLevelName(VERBOSE_DEBUG, 'INFO] [VDEBUG')
