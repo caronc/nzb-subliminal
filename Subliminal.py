@@ -220,6 +220,12 @@ DEFAULT_FORCE = 'no'
 DEFAULT_HEARING_IMPAIRED = 'no'
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 
+# A list of compiled regular expressions identifying files to not parse ever
+IGNORE_FILELIST_RE = (
+    # Samples
+    re.compile('^.*[-.]sample(\.[^.]*)?$', re.IGNORECASE),
+)
+
 # stat is used to filter files by age
 from stat import ST_MTIME
 from os import stat
@@ -471,6 +477,11 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         f_count = 0
 
         for entry in files:
+            if True in [ v.match(entry) is not None \
+                        for v in IGNORE_FILELIST_RE ]:
+                self.logger.debug('Skipping - Ignored file: %s' % basename(entry))
+                continue
+
             full_path = entry
             if search_mode == SEARCH_MODE.BASIC:
                 full_path = join(cache_dir, basename(entry))
@@ -495,8 +506,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 )
                 if not overwrite and len(_matches):
                     self.logger.info(
-                        '[%s] subtitles already exist for %s; skipping ' % (
-                            srt_lang,
+                        'Skipping - Subtitles already exist for: %s' % (
                             srt_file,
                     ))
                     _lang.remove(l)
