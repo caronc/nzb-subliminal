@@ -71,10 +71,10 @@
 # Overwrite existing subtitles if they exist.
 #Overwrite=no
 
-# Hearing Impaired Enabled (yes, no).
+# Hearing Impaired Enabled (Always, Never, BestScore).
 #
 # download hearing impaired subtitles
-#HearingImpaired=no
+#HearingImpaired=BestScore
 
 # Search Mode (basic, advanced).
 #
@@ -217,7 +217,8 @@ DEFAULT_PROVIDERS = [
 ]
 DEFAULT_SINGLE = 'yes'
 DEFAULT_FORCE = 'no'
-DEFAULT_HEARING_IMPAIRED = 'no'
+# None = BestScore
+DEFAULT_HEARING_IMPAIRED = None
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 
 # A list of compiled regular expressions identifying files to not parse ever
@@ -454,11 +455,20 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             self.logger.error('No valid language was set')
             return False
 
+        # `Always` would return True
+        # `Never`  would return False
+        # otherwise assume default which is None (BestScore)
         hearing_impaired = self.parse_bool(
-            self.get('HearingImpaired', DEFAULT_HEARING_IMPAIRED))
-
-        if not lang:
-            self.logger.error('No valid language was set')
+            self.get('HearingImpaired', DEFAULT_HEARING_IMPAIRED),
+        )
+        if hearing_impaired is None:
+            self.logger.debug('Subtitle Category: BestScore')
+        elif hearing_impaired is False:
+            self.logger.debug('Subtitle Category: Standard Subtitles Only')
+        elif hearing_impaired is True:
+            self.logger.debug('Subtitle Category: Hearing Impaired Subtitles Only')
+        else:
+            self.logger.error('Subtitle Category could not be detected.')
             return False
 
         try:
