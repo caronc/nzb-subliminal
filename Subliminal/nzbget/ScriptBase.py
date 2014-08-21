@@ -2005,7 +2005,7 @@ class ScriptBase(object):
             # 0  = int for False
             # fa = short for False - False
             # f  = short for False - False
-            # n  = short for No - False
+            # n  = short for No or Never - False
             if arg.lower()[0:2] in ('f', 'n', 'no', 'of', '0', 'fa'):
                 return False
             # ye = yes - True
@@ -2013,7 +2013,8 @@ class ScriptBase(object):
             # 1  = int for True
             # tr = short for True - True
             # t  = short for True - True
-            elif arg.lower()[0:2] in ('t', 'y', 'ye', 'on', '1', 'tr'):
+            # al = short for Always - True
+            elif arg.lower()[0:2] in ('al', 't', 'y', 'ye', 'on', '1', 'tr'):
                 return True
             # otherwise
             return default
