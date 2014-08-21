@@ -73,20 +73,23 @@
 
 # Hearing Impaired Enabled (Always, Never, BestScore).
 #
-# download hearing impaired subtitles
+#  Always    - Always download hearing impaired subtitles.
+#  Never     - Stick with the non-hearing impaired subtitles only.
+#  BestScore - It doesn't matter, either are fine. Just download the
+#              subtitles that best match what was retrieved.
 #HearingImpaired=BestScore
 
 # Search Mode (basic, advanced).
 #
-# basic    - presumed subtitles are guessed based on the (deobsfucated)
-#            filename alone.
-# advanced - presumed subtiltes are guessed based on the (deobsfucated)
-#            filename (same as basic).  But further processing occurs to
-#            help obtain more accurate results. Meta data extracted from
-#            the actual video in question such as it's length, FPS, and
-#            encoding (including if subs are already included or not).
-#            This mode yields the best results but at the cost of additional
-#            time and CPU.
+#  basic    - presumed subtitles are guessed based on the (deobsfucated)
+#             filename alone.
+#  advanced - presumed subtiltes are guessed based on the (deobsfucated)
+#             filename (same as basic).  But further processing occurs to
+#             help obtain more accurate results. Meta data extracted from
+#             the actual video in question such as it's length, FPS, and
+#             encoding (including if subs are already included or not).
+#             This mode yields the best results but at the cost of additional
+#             time and CPU.
 #SearchMode=advanced
 
 # Subtitle Providers
