@@ -165,9 +165,10 @@ from ScriptBase import NZBGET_BOOL_FALSE
 # scripts with respect to the NZB-File (used in Queue Scripts)
 QUEUE_ENVIRO_ID = 'NZBNA_'
 
-class MARK_STATUS(object):
+class Mark(object):
     # A file can be marked bad
     BAD = 'BAD'
+    GOOD = 'GOOD'
 
 # Precompile Regulare Expression for Speed
 QUEUE_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % QUEUE_ENVIRO_ID)
@@ -541,7 +542,7 @@ class QueueScript(ScriptBase):
             value=int(self.paused),
         )
 
-    def push_mark(self, mark=MARK_STATUS.BAD):
+    def push_mark(self, mark=Mark.BAD):
         """Mark a file status
         """
         # You can mark a file as bad

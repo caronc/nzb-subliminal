@@ -189,6 +189,206 @@ EXIT_CODES = (
    EXIT_CODE.NONE,
 )
 
+class Health(tuple):
+    """
+    A class that returns health in in its 2 categories ie:
+        ('SUCCESS', 'ALL')
+    """
+
+    # Define Main Categories
+    SUCCESS = 'SUCCESS'
+    WARNING = 'WARNING'
+    FAILURE = 'FAILURE'
+    DELETED = 'DELETED'
+
+    # This gets set if the category was not correctly defined (or wasn't
+    # defined at all)
+    UNDEFINED = 'UNDEFINED'
+
+    # Default Sub Category if one isn't matched
+    DEFAULT_SUB = 'DEFAULT'
+
+    # Define Category Map
+    # has_archive: The original archive files are still present such as
+    #              the .rar, .zip, .7z, .PAR2, .PAR3, files
+    #
+    # is_unpacked: The archive has been successfully extracted and content
+    #           is present for parsing.
+    HEALTH_MAP = {
+        UNDEFINED: {
+            # Assume debug mode because we aren't processing correct
+            # values from environment
+            DEFAULT_SUB: {'has_archive': True, 'is_unpacked': True, },
+        },
+        SUCCESS: {
+            DEFAULT_SUB: {'has_archive': False, 'is_unpacked': True, },
+            # Downloaded and par-checked or unpacked successfully. All
+            # post-processing scripts were successful. The download is
+            # completely OK.
+            'ALL': {}, # Use all defaults
+            # The download was marked as good using mark(Mark.GOOD)
+            'GOOD': {}, # Use all defaults
+            # Download was successful, download health is 100.0%. No par-check
+            # was made (there are no par-files). No unpack was made (there are
+            # no archive files or unpack was disabled for that download or
+            # globally).
+            'HEALTH': {}, # Use all defaults
+            # The hidden history item has status SUCCESS.
+            'HIDDEN': {}, # Use all defaults
+            # Similar to SUCCESS/ALL but no post-processing scripts were
+            # executed. Downloaded and par-checked successfully. No unpack was
+            # made (there are no archive files or unpack was disabled for that
+            # download or globally).
+            'PAR': {}, # Use all defaults
+            # Similar to SUCCESS/ALL but no post-processing scripts were
+            # executed. Downloaded and unpacked successfully. Par-check was
+            # successful or was not necessary.
+            'UNPACK': {}, # Use all defaults
+        },
+
+        WARNING: {
+            DEFAULT_SUB: {'has_archive': True, 'is_unpacked': False, },
+            # Par-check is required by is disabled in settings
+            # (option ParCheck=Manual).
+            'DAMAGED': {}, # Use all defaults
+            # Download health is below 100.0%. No par-check was made (there
+            # are no par-files). No unpack was made (there are no archive
+            # files or unpack was disabled for that download or globally).
+            'HEALTH': {}, # Use all defaults
+            # The hidden history item has status FAILURE.
+            'HIDDEN': {}, # Use all defaults
+            # Unpack has failed because the password was not provided or was
+            # wrong. Only for rar5-archives.
+            'PASSWORD': {}, # Use all defaults
+            # Par-check has detected damage and has downloaded additional
+            # par-files but the repair is disabled in settings
+            # (option ParRepair=no).
+            'REPAIRABLE': {}, # Use all defaults
+            # The URL was fetched successfully but an error occurred during
+            # scanning of the downloaded file. The downloaded file isn't a
+            # proper nzb-file. This status usually means the web-server has
+            # returned an error page (HTML page) instead of the nzb-file.
+            'SCAN': {}, # Use all defaults
+            # Downloaded successfully. Par-check and unpack were either
+            # successful or were not performed. At least one of the
+            # post-processing scripts has failed.
+            'SCRIPT': {}, # Use all defaults
+            # The URL was fetched successfully but downloaded file was not
+            # nzb-file and was skipped by the scanner.
+            'SKIPPED': {}, # Use all defaults
+            # Unpack has failed due to not enough space on the drive.
+            'SPACE': {}, # Use all defaults
+        },
+
+        FAILURE: {
+            DEFAULT_SUB: {'has_archive': True, 'is_unpacked': False, },
+            # The download was marked as good using mark(Mark.BAD)
+            'BAD': {}, # Use all defaults
+            # The download was aborted by history check.
+            # Usual case is: download health is below critical health. No
+            # par-check was made (there are no par-files). No unpack was made
+            # (there are no archive files or unpack was disabled for that
+            # download or globally).
+            'HEALTH': {}, # Use all defaults
+            # An error has occurred when moving files from intermediate
+            # directory into the final destination directory.
+            'MOVE': {}, # Use all defaults
+            # The par-check has failed.
+            'PAR': {}, # Use all defaults
+            # The unpack has failed and there are no par-files.
+            'UNPACK': {}, # Use all defaults
+        },
+
+        DELETED: {
+            DEFAULT_SUB: {'has_archive': False, 'is_unpacked': False, },
+            # The download was deleted by duplicate check.
+            'DUPE': {}, # Use all defaults
+            # Fetching of the URL has failed.
+            'FETCH': {}, # Use all defaults
+            # The download was manually deleted by user.
+            'MANUAL': {}, # Use all defaults
+        }
+    }
+
+    def __new__(self, health):
+        """Allow initializations to set default values too
+        """
+        # We only work with the first (and potentially the second item)
+
+        # Default Category
+        category = Health.UNDEFINED
+
+        # Default Sub Category
+        subcategory = Health.DEFAULT_SUB
+
+        if isinstance(health, basestring):
+            health = re.split('[\s/\\\]+', health + '/')
+
+        elif not isinstance(health, (tuple, list)):
+            health = (category, subcategory)
+
+        health = [ h.upper() for h in filter(bool, health) ]
+
+        try:
+            if health[0] in Health.HEALTH_MAP:
+                category = health[0]
+
+        except IndexError:
+            # no problem, use default
+            pass
+
+        try:
+            if health[1] in Health.HEALTH_MAP[category]:
+                # no problem, use default
+                subcategory = health[1]
+
+        except IndexError:
+            # no problem, use default
+            pass
+
+        return super(Health, self)\
+                .__new__(self, tuple((category, subcategory)))
+
+    def __init__(self, health):
+        super(Health, self).__init__()
+
+        # cat is a list or tuple at this point, we need to massage it
+        # Get defaults
+        self.category = self[0]
+        self.subcategory = self[1]
+
+        # Assign Defaults
+        self.has_archive = Health.HEALTH_MAP\
+                [self.category][Health.DEFAULT_SUB]['has_archive']
+        self.is_unpacked = Health.HEALTH_MAP\
+                [self.category][Health.DEFAULT_SUB]['is_unpacked']
+
+        try:
+            self.has_archive = Health.HEALTH_MAP\
+                    [self.category][self.subcategory]['has_archive']
+
+        except KeyError:
+            # No problem, we'll just use the defaults
+            pass
+
+        try:
+            self.is_unpacked = Health.HEALTH_MAP\
+                [self.category][self.subcategory]['is_unpacked']
+
+        except KeyError:
+            # No problem, we'll just use the defaults
+            pass
+
+        # End of Health.__init__()
+        return
+
+    def __str__(self):
+        """
+        Return the status in a fashion the string format
+        """
+        return '/'.join(self)
+
+
 class PRIORITY(object):
     """Although priority can be any integer value, the web-interface operates
     with six predefined priorities.
@@ -1501,6 +1701,29 @@ class ScriptBase(object):
 
         return is_okay
 
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # Health Check
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def health_check(self, *args, **kwargs):
+        """A system wrapper to _health_check() allowing a mult-script environment
+        """
+        # Default
+        core_function = self._health_check
+        if hasattr(self, '%s_%s' % (self.script_mode, 'health_check')):
+            core_function = getattr(
+                self, '%s_%s' % (self.script_mode, 'health_check'))
+
+        # Execute
+        return core_function(*args, **kwargs)
+
+    def _health_check(self, *args, **kwargs):
+        """Health Check
+        """
+        return True
+
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # API Factory
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     def get_api(self):
         """This function can be used to return a XML-RCP server
         object using the server variables defined
@@ -2006,7 +2229,8 @@ class ScriptBase(object):
             # fa = short for False - False
             # f  = short for False - False
             # n  = short for No or Never - False
-            if arg.lower()[0:2] in ('f', 'n', 'no', 'of', '0', 'fa'):
+            # ne  = short for Never - False
+            if arg.lower()[0:2] in ('ne', 'f', 'n', 'no', 'of', '0', 'fa'):
                 return False
             # ye = yes - True
             # on = short for off - True
