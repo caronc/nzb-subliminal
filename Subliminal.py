@@ -71,13 +71,23 @@
 # Overwrite existing subtitles if they exist.
 #Overwrite=no
 
-# Hearing Impaired Enabled (Always, Never, BestScore).
+# Subtitle Fetch Mode (ImpairedOnly, StandardOnly, BestScore, ImpairedFirst, StandardFirst).
 #
-#  Always    - Always download hearing impaired subtitles.
-#  Never     - Stick with the non-hearing impaired subtitles only.
-#  BestScore - It doesn't matter, either are fine. Just download the
-#              subtitles that best match what was retrieved.
-#HearingImpaired=BestScore
+# Define the types of subtitles you would like to scan for, the options
+# break down as follows:
+#  ImpairedOnly - Only download hearing-impaired subtitles.
+#  StandardOnly - Only download non hearing-impaired subtitles.
+#  BestScore - Download the best matching subtitles reguardless of if they
+#              are flagged for the hearing-impaired or not.
+#  ImpairedFirst - Attempt to download the hearing-impaired subtitles
+#              first. In the event that they there are not available,
+#              then attempt to acquire the non hearing-impaired versions
+#              instead.
+#  StandardFirst - Attempt to download the standard (non hearing-impaired)
+#              subtitles first. In the event that they are not available,
+#              then attempt to acquire the the hearing-impaired versions
+#              instead.
+#FetchMode=BestScore
 
 # Search Mode (basic, advanced).
 #
@@ -202,6 +212,23 @@ from nzbget import SchedulerScript
 from nzbget import EXIT_CODE
 from nzbget import SCRIPT_MODE
 
+class FETCH_MODE(object):
+    IMPAIRED_ONLY= "ImpairedOnly"
+    STANDARD_ONLY= "StandardOnly"
+    BESTSCORE = "BestScore"
+    IMPAIRED_FIRST = "ImpairedFirst"
+    STANDARD_FIRST = "StandardFirst"
+
+FETCH_MODES = (
+    FETCH_MODE.IMPAIRED_ONLY,
+    FETCH_MODE.STANDARD_ONLY,
+    FETCH_MODE.BESTSCORE,
+    FETCH_MODE.STANDARD_FIRST,
+    FETCH_MODE.IMPAIRED_FIRST,
+)
+
+FETCH_MODE_DEFAULT = FETCH_MODE.BESTSCORE
+
 class SEARCH_MODE(object):
     BASIC = "basic"
     ADVANCED = "advanced"
@@ -220,8 +247,6 @@ DEFAULT_PROVIDERS = [
 ]
 DEFAULT_SINGLE = 'yes'
 DEFAULT_FORCE = 'no'
-# None = BestScore
-DEFAULT_HEARING_IMPAIRED = None
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 
 # A list of compiled regular expressions identifying files to not parse ever
@@ -458,21 +483,42 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             self.logger.error('No valid language was set')
             return False
 
-        # `Always` would return True
-        # `Never`  would return False
-        # otherwise assume default which is None (BestScore)
-        hearing_impaired = self.parse_bool(
-            self.get('HearingImpaired', DEFAULT_HEARING_IMPAIRED),
-        )
-        if hearing_impaired is None:
-            self.logger.debug('Subtitle Category: BestScore')
-        elif hearing_impaired is False:
-            self.logger.debug('Subtitle Category: Standard Subtitles Only')
-        elif hearing_impaired is True:
-            self.logger.debug('Subtitle Category: Hearing Impaired Subtitles Only')
-        else:
-            self.logger.error('Subtitle Category could not be detected.')
-            return False
+        # Set up some arguments based on the fetch mode specified
+        fetch_mode = self.get('FetchMode', FETCH_MODE_DEFAULT)
+        try:
+            # Correct ID if required
+            fetch_mode = [ m for m in FETCH_MODES \
+                          if fetch_mode.upper() == m.upper()][0]
+            self.logger.debug('Fetch Mode: %s' % fetch_mode)
+        except IndexError:
+            self.logger.warning(
+                'Invalid FetchMode specified, using default: %s' %\
+                FETCH_MODE_DEFAULT,
+            )
+            fetch_mode = FETCH_MODE_DEFAULT
+
+        hearing_impaired = None
+        hi_score_adjust = 0
+        if fetch_mode is FETCH_MODE.IMPAIRED_ONLY:
+            # Force Hearing-Impaired Only
+            hearing_impaired = True
+
+        elif fetch_mode is FETCH_MODE.STANDARD_ONLY:
+            # Force Non Hearing-Impaired Only
+            hearing_impaired = False
+
+        elif fetch_mode is FETCH_MODE.STANDARD_FIRST:
+            # Fetch Non Hearing-Impaired First by lowering the score of
+            # matched hearing-impaired subs.
+            hi_score_adjust = -3
+
+        elif fetch_mode is FETCH_MODE.IMPAIRED_FIRST:
+            # Fetch Hearing-Impaired First by lowering the score of
+            # matched non hearing-impaired subs.
+            hi_score_adjust = +3
+
+        else: # FETCH_MODE.BESTSCORE
+            pass
 
         try:
             lang = set( babelfish.Language.fromietf(l) for l in lang )
@@ -565,6 +611,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     single=single_mode,
                     min_score=None,
                     hearing_impaired=hearing_impaired,
+                    hi_score_adjust=hi_score_adjust,
                 )
             else:
                 continue
@@ -598,10 +645,10 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
                 # Provide other possible locations (unique list)
                 potential_files = list(set([ \
-                    f for f in [
+                    p for p in [
                         join(abspath(getcwd()), basename(expected_file)),
                         join(cache_dir, basename(expected_file)),
-                    ] if isfile(f) and f != expected_file
+                    ] if isfile(p) and p != expected_file
                 ]))
 
                 if self.debug:
@@ -872,12 +919,14 @@ if __name__ == "__main__":
         help="Overwrite a subtitle in the event one is already present.",
     )
     parser.add_option(
-        "-i",
-        "--hearingimpaired",
-        action="store_true",
-        dest="hearingimpaired",
-        help="Attempt to download hearing impaired subtitles first and " + \
-            "will use normal ones if this fails.",
+        "-m",
+        "--fetch-mode",
+        dest="fetch_mode",
+        default=FETCH_MODE_DEFAULT,
+        help="Identify the fetch mode you wish to invoke," + \
+        " the options are: '%s'" % "', '".join(FETCH_MODES) + ".  " +\
+        "The default is %s" % FETCH_MODE_DEFAULT,
+        metavar="MODE",
     )
     parser.add_option(
         "-U",
@@ -945,7 +994,7 @@ if __name__ == "__main__":
     _basic_mode = options.basic_mode is True
     _force = options.force is True
     _providers = options.providers
-    _hearingimpaired = options.hearingimpaired
+    _fetch_mode = options.fetch_mode
 
     # Addic7ed Support
     _a_username = options.a_username
@@ -983,10 +1032,16 @@ if __name__ == "__main__":
         script.set('Addic7edPassword', _a_password)
 
     if _language:
-        script.set('Languages', _language)
+        script.set('languages', _language)
 
-    if _hearingimpaired:
-        script.set('HearingImpaired', True)
+    if _fetch_mode:
+        if _fetch_mode.upper() in [ f.upper() for f in FETCH_MODES ]:
+            script.set('FetchMode', _fetch_mode.upper())
+        else:
+            script.logger.warning(
+                'Invalid FetchMode specified, using default: %s' %\
+                FETCH_MODE_DEFAULT)
+            script.set('FetchMode', FETCH_MODE_DEFAULT)
 
     if scandir:
         # Set some defaults if they are not already set
@@ -997,6 +1052,9 @@ if __name__ == "__main__":
         if not _language:
             # Force defaults if not set
             script.set('Languages', DEFAULT_LANGUAGE)
+
+        if not _fetch_mode:
+            script.set('FetchMode', FETCH_MODE_DEFAULT)
 
         # Force generic Video Extensions
         script.set('VideoExtensions', DEFAULT_EXTENSIONS)

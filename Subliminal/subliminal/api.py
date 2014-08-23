@@ -102,6 +102,7 @@ def download_subtitles(subtitles, provider_configs=None, single=False):
             for subtitle in video_subtitles:
                 # filter
                 if subtitle.language in downloaded_languages:
+                    logger.debug('Skipping subtitle: %r already downloaded', subtitle.language)
                     continue
                 if subtitle.provider_name in discarded_providers:
                     logger.debug('Skipping subtitle from discarded provider %r', subtitle.provider_name)
@@ -138,7 +139,7 @@ def download_subtitles(subtitles, provider_configs=None, single=False):
                 with io.open(subtitle_path, 'w', encoding='utf-8') as f:
                     f.write(subtitle_text)
                 downloaded_languages.add(subtitle.language)
-                if single or downloaded_languages == languages:
+                if single or sorted(downloaded_languages) == sorted(languages):
                     break
     finally:  # terminate providers
         for (provider_name, provider) in initialized_providers.items():
@@ -151,7 +152,7 @@ def download_subtitles(subtitles, provider_configs=None, single=False):
 
 
 def download_best_subtitles(videos, languages, providers=None, provider_configs=None, single=False, min_score=0,
-                            hearing_impaired=False):
+                            hearing_impaired=False, hi_score_adjust=0):
     """Download the best subtitles for `videos` with the given `languages` using the specified `providers`
 
     :param videos: videos to download subtitles for
@@ -165,6 +166,7 @@ def download_best_subtitles(videos, languages, providers=None, provider_configs=
     :param bool single: download with .srt extension if `True`, add language identifier otherwise
     :param int min_score: minimum score for subtitles to download
     :param bool hearing_impaired: download hearing impaired subtitles
+    :param int hi_score_adjust: Adjust hearing_impaired_scores if matched.
 
     """
     provider_configs = provider_configs or {}
@@ -201,6 +203,7 @@ def download_best_subtitles(videos, languages, providers=None, provider_configs=
         for video in videos:
             # search for subtitles
             subtitles = []
+            downloaded_languages = set()
             for provider_name, provider in initialized_providers.items():
                 if provider.check(video):
                     if provider_name in discarded_providers:
@@ -226,7 +229,7 @@ def download_best_subtitles(videos, languages, providers=None, provider_configs=
                     subtitles.extend(provider_subtitles)
 
             # find the best subtitles and download them
-            downloaded_languages = video.subtitle_languages.copy()
+            languages = video.subtitle_languages.copy()
             for subtitle, score in sorted([(s, s.compute_score(video)) for s in subtitles],
                                           key=operator.itemgetter(1), reverse=True):
                 # filter
@@ -237,6 +240,10 @@ def download_best_subtitles(videos, languages, providers=None, provider_configs=
                     if subtitle.hearing_impaired != hearing_impaired:
                         logger.debug('Skipping subtitle: hearing impaired != %r', hearing_impaired)
                         continue
+                elif subtitle.hearing_impaired and hi_score_adjust != 0:
+                    # Priortization (adjust score)
+                    score += hi_score_adjust
+
                 if score < min_score:
                     logger.debug('Skipping subtitle: score < %d', min_score)
                     continue
@@ -264,8 +271,7 @@ def download_best_subtitles(videos, languages, providers=None, provider_configs=
                 with io.open(subtitle_path, 'w', encoding='utf-8') as f:
                     f.write(subtitle_text)
                 downloaded_languages.add(subtitle.language)
-                if single or downloaded_languages >= languages:
-                    logger.debug('All languages downloaded')
+                if single or sorted(downloaded_languages) == sorted(languages):
                     break
     finally:  # terminate providers
         for (provider_name, provider) in initialized_providers.items():
