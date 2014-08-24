@@ -700,14 +700,14 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     expected_stat = ()
 
                 while len(potential_files):
-                    f = potential_files.pop()
+                    p = potential_files.pop()
                     try:
                         if stat(f) != expected_stat:
                             # non-linked files... proceed
-                            unlink(f)
+                            unlink(p)
                             self.logger.debug(
                                 'Removed lingering extra: %s' % \
-                                f,
+                                p,
                             )
                     except:
                         pass
@@ -738,12 +738,16 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'SearchMode',
             'Addic7edUsername',
             'Addic7edPassword',
-            'HearingImpaired',
+            'FetchMode',
             'TvCategories',
             'VideoExtensions',
             'Languages')):
 
             return False
+
+        if not self.health_check():
+            # No sense scanning something that did not download successfully
+            return None
 
         # Environment
         video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
@@ -771,7 +775,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'SearchMode',
             'Addic7edUsername',
             'Addic7edPassword',
-            'HearingImpaired',
+            'FetchMode',
             'ScanDirectories',
             'VideoExtensions',
             'Languages')):
