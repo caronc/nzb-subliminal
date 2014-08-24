@@ -213,8 +213,8 @@ from nzbget import EXIT_CODE
 from nzbget import SCRIPT_MODE
 
 class FETCH_MODE(object):
-    IMPAIRED_ONLY= "ImpairedOnly"
-    STANDARD_ONLY= "StandardOnly"
+    IMPAIRED_ONLY = "ImpairedOnly"
+    STANDARD_ONLY = "StandardOnly"
     BESTSCORE = "BestScore"
     IMPAIRED_FIRST = "ImpairedFirst"
     STANDARD_FIRST = "StandardFirst"
@@ -439,6 +439,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 self.logger.error('Could not create directory %s' % (
                     cache_dir,
                 ))
+                return False
 
         # Handle providers, if list is empty, then use default
         # however, if there is content, parse it and remove entries
