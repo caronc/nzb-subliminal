@@ -926,7 +926,6 @@ if __name__ == "__main__":
         "-m",
         "--fetch-mode",
         dest="fetch_mode",
-        default=FETCH_MODE_DEFAULT,
         help="Identify the fetch mode you wish to invoke," + \
         " the options are: '%s'" % "', '".join(FETCH_MODES) + ".  " +\
         "The default is %s" % FETCH_MODE_DEFAULT,
