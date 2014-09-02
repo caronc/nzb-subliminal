@@ -289,6 +289,10 @@ def download_best_subtitles(videos, languages, providers=None, provider_configs=
                 downloaded_languages.add(subtitle.language)
                 if single or sorted(downloaded_languages) == sorted(languages):
                     break
+            # handle outer loop (prevent second iteration if it is unnessisary)
+            if single or sorted(downloaded_languages) == sorted(languages):
+                break
+
     finally:  # terminate providers
         for (provider_name, provider) in initialized_providers.items():
             try:
