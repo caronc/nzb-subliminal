@@ -134,12 +134,38 @@ from Utils import ESCAPED_WIN_PATH_SEPARATOR
 from Utils import ESCAPED_NUX_PATH_SEPARATOR
 
 # NZB Processing Support if lxml is installed
+LXML_TYPE = None
 try:
     from lxml import etree
     from lxml.etree import XMLSyntaxError
+    LXML_TYPE = 'lxml.etree'
 except ImportError:
-    # No panic, we just can't use nzbfile parsing
-    pass
+    try:
+        # Python 2.5
+        import xml.etree.cElementTree as etree
+        XMLSyntaxError = Exception
+        LXML_TYPE = 'xml.etree.cElementTree'
+    except ImportError:
+        try:
+            # Python 2.5
+            import xml.etree.ElementTree as etree
+            XMLSyntaxError = Exception
+            LXML_TYPE = 'xml.etree.ElementTree'
+        except ImportError:
+            try:
+                # normal cElementTree install
+                import cElementTree as etree
+                XMLSyntaxError = Exception
+                LXML_TYPE = 'cElementTree'
+            except ImportError:
+                try:
+                    # normal ElementTree install
+                    import elementtree.ElementTree as etree
+                    XMLSyntaxError = Exception
+                    LXML_TYPE = 'elementtree.ElementTree'
+                except ImportError:
+                    # No panic, we just can't use nzbfile parsing
+                    pass
 
 # Database Support if sqllite is installed
 try:
@@ -992,6 +1018,16 @@ class ScriptBase(object):
                     'NZBParse - NZB-File is corrupt: %s' % nzbfile,
                 )
                 self.logger.debug('NZBParse - Exception %s' % str(e))
+
+        except Exception, e:
+                self.logger.error(
+                    'NZBParse - NZB-File is corrupt: %s' % nzbfile,
+                )
+                self.logger.debug(
+                    'NZBParse - %s Unhandled Exception %s' % (
+                        str(e),
+                        LXML_TYPE,
+                ))
 
         return results
 
