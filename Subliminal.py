@@ -733,6 +733,10 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
     def postprocess_main(self, *args, **kwargs):
 
+        if not self.health_check():
+            # No sense scanning something that did not download successfully
+            return None
+
         if not self.validate(keys=(
             'Single',
             'Providers',
@@ -745,10 +749,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'Languages')):
 
             return False
-
-        if not self.health_check():
-            # No sense scanning something that did not download successfully
-            return None
 
         # Environment
         video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
