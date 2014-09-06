@@ -245,7 +245,7 @@ DEFAULT_PROVIDERS = [
     'addic7ed',
     'thesubdb',
 ]
-DEFAULT_SINGLE = 'yes'
+DEFAULT_SINGLE = False
 DEFAULT_FORCE = 'no'
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 
@@ -483,6 +483,12 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         if not lang:
             self.logger.error('No valid language was set')
             return False
+        if len(lang) > 1 and single_mode:
+            # More then 1 language specifies implies not to use single mode
+            single_mode = False
+            self.logger.warning(
+                'SingleMode disabled due to multiple languages specified.',
+            )
 
         # Set up some arguments based on the fetch mode specified
         fetch_mode = self.get('FetchMode', FETCH_MODE_DEFAULT)
@@ -606,7 +612,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 # download best subtitles
                 subtitles = download_best_subtitles(
                     videos,
-                    lang,
+                    _lang,
                     providers=providers,
                     provider_configs=provider_configs,
                     single=single_mode,
@@ -716,7 +722,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 if not isfile(expected_file):
                     # We can't find anything
                     self.logger.error(
-                        'Could not locate subtitle previously fetched!',
+                        'Could not locate a fetched (%s) subtitle.' % l
                     )
                     continue
 
