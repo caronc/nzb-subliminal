@@ -150,6 +150,9 @@ def download_subtitles(subtitles, provider_configs=None, single=False):
                 downloaded_languages.add(subtitle.language)
                 if single or sorted(downloaded_languages) == sorted(languages):
                     break
+            # handle outerloop
+            if single or sorted(downloaded_languages) == sorted(languages):
+                break
     finally:  # terminate providers
         for (provider_name, provider) in initialized_providers.items():
             try:
