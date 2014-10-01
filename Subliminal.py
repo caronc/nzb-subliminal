@@ -253,6 +253,7 @@ DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 IGNORE_FILELIST_RE = (
     # Samples
     re.compile('^.*[-.]sample(\.[^.]*)?$', re.IGNORECASE),
+    re.compile('^sample-(\.[^.]*)?$', re.IGNORECASE),
 )
 
 # stat is used to filter files by age
