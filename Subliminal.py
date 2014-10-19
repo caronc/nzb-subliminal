@@ -102,6 +102,17 @@
 #             time and CPU.
 #SearchMode=advanced
 
+# Minimum File Size (in MB)
+#
+# Any video that is equal to this size or larger will not be filtered out from
+# having it checked for subtitles. This option prevents unnecessary queries
+# to subtitle providers when the video in question is just a sample or preview
+# file anyway.  The sample/preview videos will get filtered out by this option
+# but still allow for a subtitle checks against the real thing.
+# Setting this value to 0 (zero) will disable this filter feature and attempted
+# to fetch subtitles on all matched video formats (not recommend).
+#MinSize=150
+
 # Subtitle Providers
 #
 # Supply a list of providers you want to include in your query
@@ -256,32 +267,17 @@ IGNORE_FILELIST_RE = (
     re.compile('^sample-.*$', re.IGNORECASE),
 )
 
-# stat is used to filter files by age
-from stat import ST_MTIME
+# The number of MegaBytes the detected video must be (with respect
+# to it's filesize). If it is less than this value, then it is presumed
+# no subtitles exists for it.
+DEFAULT_MIN_VIDEO_SIZE_MB = 150
+
+# stat is used to test if the .srt file was fetched okay or not
 from os import stat
 
 class SubliminalScript(PostProcessScript, SchedulerScript):
     """A wrapper to Subliminal written for NZBGet
     """
-
-    def filter_files_by_age(self, files, maxage):
-        """ Used to filter file list by their age
-        """
-        _files = []
-        ref_time = datetime.now() - timedelta(hours=maxage)
-        for _file in files:
-            try:
-                m_time = datetime.fromtimestamp(stat(_file)[ST_MTIME])
-            except:
-                self.logger.debug('File not found, skipping %s' % _file)
-                continue
-
-            if m_time < ref_time:
-                self.logger.debug('To old, skipping %s' % _file)
-                continue
-
-            _files.append(_file)
-        return _files
 
     def apply_nzbheaders(self, guess):
         """ Applies NZB headers (if exist) """
@@ -745,6 +741,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             return None
 
         if not self.validate(keys=(
+            'MinSize',
             'Single',
             'Providers',
             'SearchMode',
@@ -759,25 +756,56 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         # Environment
         video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
-
+        minsize = int(self.get('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)) * 1048576
 
         # Single Mode (don't download language extension)
         single_mode = self.parse_bool(
             self.get('Single', DEFAULT_SINGLE))
 
         # Build file list
-        files = self.get_files(suffix_filter=video_extension).keys()
-        return self.subliminal_fetch(
-            files,
-            single_mode=single_mode,
-            deobfuscate=True,
-            use_nzbheaders=True,
-        )
+        files = self.get_files(suffix_filter=video_extension)
+
+        # Apply Filters
+        _files = dict([ (k, v) for (k, v) in files.items() if \
+                      v['filesize'] >= minsize ]).keys()
+
+        if self.debug and len(_files) != len(files):
+            # Debug Mode - Print filtered content for peace of mind and
+            #              debugging other peoples logs
+            for file in list(set(files.keys()) - set(_files)):
+                size = 0.0
+                if files[file]['filesize'] > 0:
+                    size = (float(files[file]['filesize']) / 1048576.0)
+
+                self.logger.debug('Filtered "%s" (%.2f MB)' % (file, size))
+
+        if not _files:
+            self.logger.info('There were no files found.')
+            return None
+
+        self.logger.info('Found %d matched file(s).' % len(_files))
+
+        if self.debug:
+            for file in _files:
+                size = 0.0
+                if files[file]['filesize'] > 0:
+                    size = (float(files[file]['filesize']) / 1048576.0)
+
+                self.logger.debug('Scanning "%s" (%.2f MB)' % (file, size))
+
+        if _files:
+            return self.subliminal_fetch(
+                _files,
+                single_mode=single_mode,
+                deobfuscate=True,
+                use_nzbheaders=True,
+            )
 
     def scheduler_main(self, *args, **kwargs):
 
         if not self.validate(keys=(
             'MaxAge',
+            'MinSize',
             'Single',
             'Providers',
             'SearchMode',
@@ -793,28 +821,59 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         # Environment
         video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
         maxage = int(self.get('MaxAge', DEFAULT_MAXAGE))
+        minsize = int(self.get('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)) * 1048576
         paths = self.parse_path_list(self.get('ScanDirectories'))
 
         # Single Mode (don't download language extension)
         single_mode = self.parse_bool(
             self.get('Single', DEFAULT_SINGLE))
 
-        files = self.filter_files_by_age(
-            self.get_files(paths, suffix_filter=video_extension).keys(),
-            maxage,
+        # Fetch Scan Paths
+        files = self.get_files(
+            paths,
+            suffix_filter=video_extension,
+            fullstats=True,
         )
-        if files:
-            self.logger.info('Found %d matched file(s).' % len(files))
+
+        # Apply Filters
+        ref_time = datetime.now() - timedelta(hours=maxage)
+        _files = dict([ (k, v) for (k, v) in files.items() if \
+                      v['filesize'] >= minsize and \
+                      v['modified'] >= ref_time ]).keys()
+
+
+        if self.debug and len(_files) != len(files):
+            # Debug Mode - Print filtered content for peace of mind and
+            #              debugging other peoples logs
+            for file in list(set(files.keys()) - set(_files)):
+                size = 0.0
+                if files[file]['filesize'] > 0:
+                    size = (float(files[file]['filesize']) / 1048576.0)
+
+                self.logger.debug('Filtered "%s" (%.2f MB)' % (file, size))
+
+        if not _files:
+            self.logger.info('There were no files found.')
+            return None
+
+        self.logger.info('Found %d matched file(s).' % len(_files))
+
+        if self.debug:
+            for file in _files:
+                size = 0.0
+                if files[file]['filesize'] > 0:
+                    size = (float(files[file]['filesize']) / 1048576.0)
+
+                self.logger.debug('Scanning "%s" (%.2f MB)' % (file, size))
+
+        if _files:
             return self.subliminal_fetch(
-                files,
+                _files,
                 single_mode=single_mode,
                 shared=False,
                 deobfuscate=False,
                 use_nzbheaders=False,
             )
-        else:
-            self.logger.info('There were no files found.')
-            return None
 
     def main(self, *args, **kwargs):
         """CLI
@@ -822,27 +881,56 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         # Environment
         video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
         maxage = int(self.get('MaxAge', DEFAULT_MAXAGE))
+        minsize = int(self.get('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)) * 1048576
         force = self.get('Force', DEFAULT_FORCE)
         paths = self.parse_path_list(self.get('ScanDirectories'))
         single_mode = self.parse_bool(
             self.get('Single', DEFAULT_SINGLE))
 
         # Fetch Scan Paths
-        files = self.get_files(paths, suffix_filter=video_extension).keys()
-        if not files:
+        files = self.get_files(
+            paths,
+            suffix_filter=video_extension,
+            fullstats=True,
+        )
+
+        # Apply Filters
+        if not force:
+            ref_time = datetime.now() - timedelta(hours=maxage)
+            _files = dict([ (k, v) for (k, v) in files.items() if \
+                      v['filesize'] >= minsize and \
+                          v['modified'] >= ref_time ]).keys()
+        else:
+            _files = dict([ (k, v) for (k, v) in files.items() if \
+                          v['filesize'] >= minsize ]).keys()
+
+        if self.debug and len(_files) != len(files):
+            # Debug Mode - Print filtered content for peace of mind and
+            #              debugging other peoples logs
+            for file in list(set(files.keys()) - set(_files)):
+                size = 0.0
+                if files[file]['filesize'] > 0:
+                    size = (float(files[file]['filesize']) / 1048576.0)
+
+                self.logger.debug('Filtered "%s" (%.2f MB)' % (file, size))
+
+        if not _files:
             self.logger.info('There were no files found.')
             return True
-        else:
-            self.logger.info('Found %d matched file(s).' % len(files))
 
-        self.logger.debug('Scanning "%s"' %  '","'.join(files))
+        self.logger.info('Found %d matched file(s).' % len(_files))
 
-        if not force:
-            files = self.filter_files_by_age(files, maxage)
+        if self.debug:
+            for file in _files:
+                size = 0.0
+                if files[file]['filesize'] > 0:
+                    size = (float(files[file]['filesize']) / 1048576.0)
+
+                self.logger.debug('Scanning "%s" (%.2f MB)' % (file, size))
 
         if files:
             return self.subliminal_fetch(
-                files,
+                _files,
                 single_mode=single_mode,
                 shared=False,
                 deobfuscate=False,
@@ -915,6 +1003,15 @@ if __name__ == "__main__":
             "video file. Running in a basic mode is much faster but can " + \
             "make it more difficult to determine the correct subtitle if " + \
             "more then one is matched."
+    )
+    parser.add_option(
+        "-z",
+        "--minsize",
+        dest="minsize",
+        help="Specify the minimum size a video must be to be worthy of " + \
+        "of checking for subtiles. This value is interpreted in MB " + \
+        "(Megabytes) and defaults to %d MB." % DEFAULT_MIN_VIDEO_SIZE_MB,
+        metavar="SIZE_IN_MB",
     )
     parser.add_option(
         "-f",
@@ -1000,6 +1097,7 @@ if __name__ == "__main__":
     # already be resident in memory (environment variables).
     _language = options.language
     _maxage = options.maxage
+    _minsize = options.minsize
     _single_mode = options.single_mode is True
     _overwrite = options.overwrite is True
     _basic_mode = options.basic_mode is True
@@ -1018,6 +1116,16 @@ if __name__ == "__main__":
         except (ValueError, TypeError):
             script.logger.error(
                 'An invalid `maxage` (%s) was specified.' % (_maxage)
+            )
+            exit(EXIT_CODE.FAILURE)
+
+    if _minsize:
+        try:
+            _minsize = str(abs(int(_minsize)))
+            script.set('MinSize', _minsize)
+        except (ValueError, TypeError):
+            script.logger.error(
+                'An invalid `minsize` (%s) was specified.' % (_minsize)
             )
             exit(EXIT_CODE.FAILURE)
 
@@ -1057,8 +1165,10 @@ if __name__ == "__main__":
     if scandir:
         # Set some defaults if they are not already set
         if not _maxage:
-            _maxage = DEFAULT_MAXAGE
             script.set('MaxAge', DEFAULT_MAXAGE)
+
+        if not _minsize:
+            script.set('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)
 
         if not _language:
             # Force defaults if not set
