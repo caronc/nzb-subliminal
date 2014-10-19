@@ -113,13 +113,33 @@
 # to fetch subtitles on all matched video formats (not recommend).
 #MinSize=150
 
-# Subtitle Providers
+# Default Core Subtitle Providers
 #
-# Supply a list of providers you want to include in your query
-# separated by a comma and or space. The default (if none is
-# specified then the following defaults are used: opensubtitles, tvsubtitles,
-# podnapisi, addic7ed, thesubdb
+# Supply a core (master) list of subtitle providers you want to reference
+# against each video you scan. The specified subtitle providers should be
+# separated by a comma and or a space. The default (if none is
+# specified) are used: opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb
 #Providers=opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb
+
+# Movie (Exclusive) Subtitle Providers
+#
+# Optionally specify Movie Providers you wish to exclusively use when
+# a movie is detected.  If nothing is specified, then the Default
+# Core Subtitle Providers (identified above) are used instead.
+#
+# Providers specified should be separated by a comma and or a space. An example
+# of what one might specify here is: opensubtitles, podnapisi, thesubdb
+#MovieProviders=
+
+# TV Show (Exclusive) Subtitle Providers
+#
+# Optionally specify TV Show Providers you wish to exclusively use when
+# a TV Show is detected.  If nothing is specified, then the Default
+# Core Subtitle Providers (identified above) are used instead.
+#
+# Providers specified should be separated by a comma and or a space.
+# An example of what one might specify here is: tvsubtitles, addic7ed
+#TVShowProviders=
 
 # Addic7ed Username
 #
@@ -211,6 +231,7 @@ from guessit import matcher
 from datetime import timedelta
 from datetime import datetime
 from subliminal import Video
+from subliminal import Episode
 from subliminal import MutexLock
 from subliminal import cache_region
 from subliminal import scan_videos
@@ -438,43 +459,77 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 ))
                 return False
 
-        # Handle providers, if list is empty, then use default
-        # however, if there is content, parse it and remove entries
-        # that are not valid
-        providers = self.parse_list(
-            self.get('Providers', DEFAULT_PROVIDERS))
+        # Attempt to detect a category and manage exclusive provider lists (if
+        # specified)
+        movie_providers = self.parse_list(self.get('MovieProviders', ''))
+        if not movie_providers:
+            # Handle providers, if list is empty, then use default
+            movie_providers = self.parse_list(
+                self.get('Providers', DEFAULT_PROVIDERS))
 
-        providers = [ p.lower() for p in providers \
+        tvshow_providers = self.parse_list(self.get('TVShowProviders', ''))
+        if not tvshow_providers:
+            # Handle providers, if list is empty, then use default
+            tvshow_providers = self.parse_list(
+                self.get('Providers', DEFAULT_PROVIDERS))
+
+        # parse provider list and remove entries that are not valid
+        movie_providers = [ p.lower() for p in movie_providers \
                      if p.lower() in DEFAULT_PROVIDERS ]
 
-        if not providers:
-            providers = DEFAULT_PROVIDERS
-            self.logger.info('Using default provider list.')
+        # parse provider list and remove entries that are not valid
+        tvshow_providers = [ p.lower() for p in tvshow_providers \
+                     if p.lower() in DEFAULT_PROVIDERS ]
+
+        if not movie_providers:
+            movie_providers = DEFAULT_PROVIDERS
+            self.logger.debug('Using default provider list for movies.')
         else:
-            self.logger.info('Using the following providers: %s' %(
-                ', '.join(providers)
+            self.logger.debug('Using the following movie providers: %s' %(
+                ', '.join(movie_providers)
+            ))
+        if not tvshow_providers:
+            tvshow_providers = DEFAULT_PROVIDERS
+            self.logger.debug('Using default provider list for movies.')
+        else:
+            self.logger.debug('Using the following tv show providers: %s' %(
+                ', '.join(tvshow_providers)
             ))
 
         provider_configs = {}
-        if 'addic7ed' in providers:
+        if 'addic7ed' in movie_providers:
             # Addic7ed Support
             a_username = self.get('Addic7edUsername')
             a_password = self.get('Addic7edPassword')
 
             if not (a_username and a_password):
                 self.logger.warning(
-                    'Addic7ed provider dropped due to missing credentials',
+                    'Addic7ed provider dropped from Movie ' + \
+                    'providers list due to missing credentials',
                 )
-                providers.remove('addic7ed')
+                movie_providers.remove('addic7ed')
             else:
                 provider_configs['addic7ed'] = {
                     'username': a_username,
                     'password': a_password,
                 }
 
-        if not len(providers):
-            self.logger.error('There were are no remaining providers to search.')
-            return False
+        if 'addic7ed' in tvshow_providers:
+            # Addic7ed Support
+            a_username = self.get('Addic7edUsername')
+            a_password = self.get('Addic7edPassword')
+
+            if not (a_username and a_password):
+                self.logger.warning(
+                    'Addic7ed provider dropped from TV Show ' + \
+                    'providers list due to missing credentials',
+                )
+                tvshow_providers.remove('addic7ed')
+            else:
+                provider_configs['addic7ed'] = {
+                    'username': a_username,
+                    'password': a_password,
+                }
 
         lang = self.parse_list(self.get('Languages', 'en'))
         if not lang:
@@ -603,6 +658,20 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                         use_nzbheaders=use_nzbheaders,
                     ))
             ])
+            # Depending if we are dealing with a TV Show or A Movie, we swap
+            # our list of providers
+            if isinstance(videos[0], Episode):
+                # use TV Series providers
+                providers = tvshow_providers
+            else:
+                # use Movie providers
+                providers = movie_providers
+
+            if not len(providers):
+                self.logger.warning(
+                    'There were no valid providers for this video type.',
+                )
+                continue
 
             subtitles = {}
             if videos:
@@ -744,6 +813,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MinSize',
             'Single',
             'Providers',
+            'MovieProviders',
+            'TVShowProviders',
             'SearchMode',
             'Addic7edUsername',
             'Addic7edPassword',
@@ -808,6 +879,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MinSize',
             'Single',
             'Providers',
+            'MovieProviders',
+            'TVShowProviders',
             'SearchMode',
             'Addic7edUsername',
             'Addic7edPassword',
