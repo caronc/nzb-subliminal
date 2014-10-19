@@ -909,20 +909,21 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
             # Update Permissions (if specified to do so)
             if update_permissions:
-                self.logger.debug(
-                    'Updating video permissions to %o', video_permissions,
-                )
                 try:
                     chmod(file, video_permissions)
+                    self.logger.debug(
+                        'Video permissions set to 0%o.', video_permissions,
+                    )
                 except:
                     self.logger.error(
                         'Failed to update video permissions for "%s"' % file,
                     )
+
             # Update Timestamps (if specified to do so)
             if update_timestamp:
-                self.logger.debug('Updating video timestamps')
                 try:
                     utime(file, None)
+                    self.logger.debug('Video timestamp updated.')
                 except:
                     self.logger.error(
                         'Failed to update timestamp for "%s"' % file,
