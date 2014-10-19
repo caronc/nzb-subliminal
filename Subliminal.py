@@ -185,6 +185,24 @@
 # Category names must match categories defined in NZBGet.
 #TvCategories=tv, tv2
 
+# Correct Videos Timestamp (yes, no).
+#
+# Set this to yes if you want freshly downloaded videos to have their file
+# timestamp updated to `now`.
+#UpdateTimestamp=yes
+
+# Correct Video Permissions (yes, no).
+#
+# Set this to yes if you want to adjust the permissions associated with
+# all downloaded videos (Unix/Linux only).
+#UpdatePermissions=no
+
+# Video Permission Value
+#
+# Specify the video permissions to set. This is only used if UpdatePermissions
+# (identified above) is set to yes.
+#VideoPermissions=644
+
 ### SCHEDULER MODE                                                         ###
 
 # Directories to Scan
@@ -277,6 +295,9 @@ DEFAULT_PROVIDERS = [
     'addic7ed',
     'thesubdb',
 ]
+DEFAULT_UPDATE_TIMESTAMP = False
+DEFAULT_UPDATE_PERMISSIONS = False
+DEFAULT_VIDEO_PERMISSIONS = 0o644
 DEFAULT_SINGLE = False
 DEFAULT_FORCE = 'no'
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
@@ -295,6 +316,10 @@ DEFAULT_MIN_VIDEO_SIZE_MB = 150
 
 # stat is used to test if the .srt file was fetched okay or not
 from os import stat
+# used for updating timestamp of the video
+from os import utime
+# used for updating video permissions
+from os import chmod
 
 class SubliminalScript(PostProcessScript, SchedulerScript):
     """A wrapper to Subliminal written for NZBGet
@@ -812,6 +837,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         if not self.validate(keys=(
             'MinSize',
             'Single',
+            'UpdateTimestamp',
+            'UpdatePermissions',
+            'VideoPermissions',
             'Providers',
             'MovieProviders',
             'TVShowProviders',
@@ -833,8 +861,23 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         single_mode = self.parse_bool(
             self.get('Single', DEFAULT_SINGLE))
 
+        # Update Timestamp
+        update_timestamp = self.parse_bool(
+            self.get('UpdateTimestamp', DEFAULT_UPDATE_TIMESTAMP))
+
+        # Update Permissions
+        update_permissions = self.parse_bool(
+            self.get('UpdatePermissions', DEFAULT_UPDATE_PERMISSIONS))
+        try:
+            video_permissions = int('0o%d' % self.get(
+                'VideoPermissions',
+                int(DEFAULT_VIDEO_PERMISSIONS),
+            ))
+        except (ValueError, TypeError):
+            video_permissions = DEFAULT_VIDEO_PERMISSIONS
+
         # Build file list
-        files = self.get_files(suffix_filter=video_extension)
+        files = self.get_files(suffix_filter=video_extension, fullstats=True)
 
         # Apply Filters
         _files = dict([ (k, v) for (k, v) in files.items() if \
@@ -856,13 +899,34 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         self.logger.info('Found %d matched file(s).' % len(_files))
 
-        if self.debug:
-            for file in _files:
+        for file in _files:
+            if self.debug:
                 size = 0.0
                 if files[file]['filesize'] > 0:
                     size = (float(files[file]['filesize']) / 1048576.0)
 
                 self.logger.debug('Scanning "%s" (%.2f MB)' % (file, size))
+
+            # Update Permissions (if specified to do so)
+            if update_permissions:
+                self.logger.debug(
+                    'Updating video permissions to %o', video_permissions,
+                )
+                try:
+                    chmod(file, video_permissions)
+                except:
+                    self.logger.error(
+                        'Failed to update video permissions for "%s"' % file,
+                    )
+            # Update Timestamps (if specified to do so)
+            if update_timestamp:
+                self.logger.debug('Updating video timestamps')
+                try:
+                    utime(file, None)
+                except:
+                    self.logger.error(
+                        'Failed to update timestamp for "%s"' % file,
+                    )
 
         if _files:
             return self.subliminal_fetch(
