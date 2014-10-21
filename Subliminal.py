@@ -66,11 +66,6 @@
 # is specified.
 #Single=yes
 
-# Overwrite Mode (yes, no).
-#
-# Overwrite existing subtitles if they exist.
-#Overwrite=no
-
 # Subtitle Fetch Mode (ImpairedOnly, StandardOnly, BestScore, ImpairedFirst, StandardFirst).
 #
 # Define the types of subtitles you would like to scan for, the options
@@ -110,7 +105,7 @@
 # file anyway.  The sample/preview videos will get filtered out by this option
 # but still allow for a subtitle checks against the real thing.
 # Setting this value to 0 (zero) will disable this filter feature and attempted
-# to fetch subtitles on all matched video formats (not recommend).
+# to fetch subtitles on all matched video formats (not recommended).
 #MinSize=150
 
 # Default Core Subtitle Providers
@@ -180,10 +175,16 @@
 # distinguishes movies from series and dated TV shows. But it needs help
 # to distinguish movies from other TV shows because they are named
 # using same conventions. If a download has associated category listed in
-# option <TvCategories>, VideoSort uses this information.
+# option <TvCategories>, Subliminal uses this information to help figure out
+# the video being scanned sometimes.
 #
 # Category names must match categories defined in NZBGet.
 #TvCategories=tv, tv2
+
+# Overwrite Mode (yes, no).
+#
+# Overwrite subtitles even if they previously exist.
+#Overwrite=no
 
 # Correct Videos Timestamp (yes, no).
 #
@@ -462,12 +463,12 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         return guess
 
     def subliminal_fetch(self, files, single_mode=True, shared=True,
-                         deobfuscate=True, use_nzbheaders=True):
+                         deobfuscate=True, use_nzbheaders=True,
+                         overwrite=False):
         """This function fetches the subtitles
         """
 
         # Get configuration
-        overwrite = self.parse_bool(self.get('Overwrite', 'no'))
         cache_dir = self.get('CACHEDIR', self.get('TEMPDIR'))
         cache_file = join(cache_dir, 'subliminal.cache.dbm')
 
@@ -837,6 +838,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         if not self.validate(keys=(
             'MinSize',
             'Single',
+            'Overwrite',
             'UpdateTimestamp',
             'UpdatePermissions',
             'VideoPermissions',
@@ -856,6 +858,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         # Environment
         video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
         minsize = int(self.get('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)) * 1048576
+
+        # Overwrite Mode
+        overwrite = self.parse_bool(self.get('Overwrite', 'no'))
 
         # Single Mode (don't download language extension)
         single_mode = self.parse_bool(
@@ -935,6 +940,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 single_mode=single_mode,
                 deobfuscate=True,
                 use_nzbheaders=True,
+                overwrite=overwrite,
             )
 
     def scheduler_main(self, *args, **kwargs):
