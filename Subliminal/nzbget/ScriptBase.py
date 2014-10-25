@@ -133,36 +133,39 @@ from Utils import ESCAPED_PATH_SEPARATOR
 from Utils import ESCAPED_WIN_PATH_SEPARATOR
 from Utils import ESCAPED_NUX_PATH_SEPARATOR
 
+# Initialize the default character set to use
+DEFAULT_CHARSET = u'utf-8'
+
 # NZB Processing Support if lxml is installed
 LXML_TYPE = None
 try:
     from lxml import etree
     from lxml.etree import XMLSyntaxError
-    LXML_TYPE = 'lxml.etree'
+    LXML_TYPE = u'lxml.etree'
 except ImportError:
     try:
         # Python 2.5
         import xml.etree.cElementTree as etree
         XMLSyntaxError = Exception
-        LXML_TYPE = 'xml.etree.cElementTree'
+        LXML_TYPE = u'xml.etree.cElementTree'
     except ImportError:
         try:
             # Python 2.5
             import xml.etree.ElementTree as etree
             XMLSyntaxError = Exception
-            LXML_TYPE = 'xml.etree.ElementTree'
+            LXML_TYPE = u'xml.etree.ElementTree'
         except ImportError:
             try:
                 # normal cElementTree install
                 import cElementTree as etree
                 XMLSyntaxError = Exception
-                LXML_TYPE = 'cElementTree'
+                LXML_TYPE = u'cElementTree'
             except ImportError:
                 try:
                     # normal ElementTree install
                     import elementtree.ElementTree as etree
                     XMLSyntaxError = Exception
-                    LXML_TYPE = 'elementtree.ElementTree'
+                    LXML_TYPE = u'elementtree.ElementTree'
                 except ImportError:
                     # No panic, we just can't use nzbfile parsing
                     pass
@@ -188,15 +191,15 @@ from urllib import quote
 from urllib import unquote
 
 # Some booleans that are read to and from nzbget
-NZBGET_BOOL_TRUE = 'yes'
-NZBGET_BOOL_FALSE = 'no'
+NZBGET_BOOL_TRUE = u'yes'
+NZBGET_BOOL_FALSE = u'no'
 
 # The following directories will never be recursively looked
 # into when using get_files()
 SKIP_DIRECTORIES = (
     # OS X Meta Directories
-    '.DS_Store',
-    '.AppleDouble',
+    u'.DS_Store',
+    u'.AppleDouble',
 )
 
 class EXIT_CODE(object):
@@ -230,17 +233,17 @@ class Health(tuple):
     """
 
     # Define Main Categories
-    SUCCESS = 'SUCCESS'
-    WARNING = 'WARNING'
-    FAILURE = 'FAILURE'
-    DELETED = 'DELETED'
+    SUCCESS = u'SUCCESS'
+    WARNING = u'WARNING'
+    FAILURE = u'FAILURE'
+    DELETED = u'DELETED'
 
     # This gets set if the category was not correctly defined (or wasn't
     # defined at all)
-    UNDEFINED = 'UNDEFINED'
+    UNDEFINED = u'UNDEFINED'
 
     # Default Sub Category if one isn't matched
-    DEFAULT_SUB = 'DEFAULT'
+    DEFAULT_SUB = u'DEFAULT'
 
     # Define Category Map
     # has_archive: The original archive files are still present such as
@@ -252,95 +255,95 @@ class Health(tuple):
         UNDEFINED: {
             # Assume debug mode because we aren't processing correct
             # values from environment
-            DEFAULT_SUB: {'has_archive': True, 'is_unpacked': True, },
+            DEFAULT_SUB: {u'has_archive': True, u'is_unpacked': True, },
         },
         SUCCESS: {
-            DEFAULT_SUB: {'has_archive': False, 'is_unpacked': True, },
+            DEFAULT_SUB: {u'has_archive': False, u'is_unpacked': True, },
             # Downloaded and par-checked or unpacked successfully. All
             # post-processing scripts were successful. The download is
             # completely OK.
-            'ALL': {}, # Use all defaults
+            u'ALL': {}, # Use all defaults
             # The download was marked as good using mark(Mark.GOOD)
-            'GOOD': {}, # Use all defaults
+            u'GOOD': {}, # Use all defaults
             # Download was successful, download health is 100.0%. No par-check
             # was made (there are no par-files). No unpack was made (there are
             # no archive files or unpack was disabled for that download or
             # globally).
-            'HEALTH': {}, # Use all defaults
+            u'HEALTH': {}, # Use all defaults
             # The hidden history item has status SUCCESS.
-            'HIDDEN': {}, # Use all defaults
+            u'HIDDEN': {}, # Use all defaults
             # Similar to SUCCESS/ALL but no post-processing scripts were
             # executed. Downloaded and par-checked successfully. No unpack was
             # made (there are no archive files or unpack was disabled for that
             # download or globally).
-            'PAR': {}, # Use all defaults
+            u'PAR': {}, # Use all defaults
             # Similar to SUCCESS/ALL but no post-processing scripts were
             # executed. Downloaded and unpacked successfully. Par-check was
             # successful or was not necessary.
-            'UNPACK': {}, # Use all defaults
+            u'UNPACK': {}, # Use all defaults
         },
 
         WARNING: {
-            DEFAULT_SUB: {'has_archive': True, 'is_unpacked': False, },
+            DEFAULT_SUB: {u'has_archive': True, u'is_unpacked': False, },
             # Par-check is required by is disabled in settings
             # (option ParCheck=Manual).
-            'DAMAGED': {}, # Use all defaults
+            u'DAMAGED': {}, # Use all defaults
             # Download health is below 100.0%. No par-check was made (there
             # are no par-files). No unpack was made (there are no archive
             # files or unpack was disabled for that download or globally).
-            'HEALTH': {}, # Use all defaults
+            u'HEALTH': {}, # Use all defaults
             # The hidden history item has status FAILURE.
-            'HIDDEN': {}, # Use all defaults
+            u'HIDDEN': {}, # Use all defaults
             # Unpack has failed because the password was not provided or was
             # wrong. Only for rar5-archives.
-            'PASSWORD': {}, # Use all defaults
+            u'PASSWORD': {}, # Use all defaults
             # Par-check has detected damage and has downloaded additional
             # par-files but the repair is disabled in settings
             # (option ParRepair=no).
-            'REPAIRABLE': {}, # Use all defaults
+            u'REPAIRABLE': {}, # Use all defaults
             # The URL was fetched successfully but an error occurred during
             # scanning of the downloaded file. The downloaded file isn't a
             # proper nzb-file. This status usually means the web-server has
             # returned an error page (HTML page) instead of the nzb-file.
-            'SCAN': {}, # Use all defaults
+            u'SCAN': {}, # Use all defaults
             # Downloaded successfully. Par-check and unpack were either
             # successful or were not performed. At least one of the
             # post-processing scripts has failed.
-            'SCRIPT': {}, # Use all defaults
+            u'SCRIPT': {}, # Use all defaults
             # The URL was fetched successfully but downloaded file was not
             # nzb-file and was skipped by the scanner.
-            'SKIPPED': {}, # Use all defaults
+            u'SKIPPED': {}, # Use all defaults
             # Unpack has failed due to not enough space on the drive.
-            'SPACE': {}, # Use all defaults
+            u'SPACE': {}, # Use all defaults
         },
 
         FAILURE: {
-            DEFAULT_SUB: {'has_archive': True, 'is_unpacked': False, },
+            DEFAULT_SUB: {u'has_archive': True, u'is_unpacked': False, },
             # The download was marked as good using mark(Mark.BAD)
-            'BAD': {}, # Use all defaults
+            u'BAD': {}, # Use all defaults
             # The download was aborted by history check.
             # Usual case is: download health is below critical health. No
             # par-check was made (there are no par-files). No unpack was made
             # (there are no archive files or unpack was disabled for that
             # download or globally).
-            'HEALTH': {}, # Use all defaults
+            u'HEALTH': {}, # Use all defaults
             # An error has occurred when moving files from intermediate
             # directory into the final destination directory.
-            'MOVE': {}, # Use all defaults
+            u'MOVE': {}, # Use all defaults
             # The par-check has failed.
-            'PAR': {}, # Use all defaults
+            u'PAR': {}, # Use all defaults
             # The unpack has failed and there are no par-files.
-            'UNPACK': {}, # Use all defaults
+            u'UNPACK': {}, # Use all defaults
         },
 
         DELETED: {
-            DEFAULT_SUB: {'has_archive': False, 'is_unpacked': False, },
+            DEFAULT_SUB: {u'has_archive': False, u'is_unpacked': False, },
             # The download was deleted by duplicate check.
-            'DUPE': {}, # Use all defaults
+            u'DUPE': {}, # Use all defaults
             # Fetching of the URL has failed.
-            'FETCH': {}, # Use all defaults
+            u'FETCH': {}, # Use all defaults
             # The download was manually deleted by user.
-            'MANUAL': {}, # Use all defaults
+            u'MANUAL': {}, # Use all defaults
         }
     }
 
@@ -393,13 +396,13 @@ class Health(tuple):
 
         # Assign Defaults
         self.has_archive = Health.HEALTH_MAP\
-                [self.category][Health.DEFAULT_SUB]['has_archive']
+                [self.category][Health.DEFAULT_SUB][u'has_archive']
         self.is_unpacked = Health.HEALTH_MAP\
-                [self.category][Health.DEFAULT_SUB]['is_unpacked']
+                [self.category][Health.DEFAULT_SUB][u'is_unpacked']
 
         try:
             self.has_archive = Health.HEALTH_MAP\
-                    [self.category][self.subcategory]['has_archive']
+                    [self.category][self.subcategory][u'has_archive']
 
         except KeyError:
             # No problem, we'll just use the defaults
@@ -407,7 +410,7 @@ class Health(tuple):
 
         try:
             self.is_unpacked = Health.HEALTH_MAP\
-                [self.category][self.subcategory]['is_unpacked']
+                [self.category][self.subcategory][u'is_unpacked']
 
         except KeyError:
             # No problem, we'll just use the defaults
@@ -446,28 +449,28 @@ PRIORITIES = (
 )
 
 # Environment variables that identify specific configuration for scripts
-SYS_ENVIRO_ID = 'NZBOP_'
+SYS_ENVIRO_ID = u'NZBOP_'
 
 # Script options
-CFG_ENVIRO_ID = 'NZBPO_'
+CFG_ENVIRO_ID = u'NZBPO_'
 
 # Shared configuration options passed through NZBGet and push(); if these
 # are found in the environment, they are saved to the `config` dictionary
-SHR_ENVIRO_ID = 'NZBR_'
+SHR_ENVIRO_ID = u'NZBR_'
 
 # Environment ID used when pushing common variables to the server
-PUSH_ENVIRO_ID = 'NZBPR_'
+PUSH_ENVIRO_ID = u'NZBPR_'
 
 # DNZB is an environment variable sometimes referenced by other scripts
-SHR_ENVIRO_DNZB_ID = '_DNZB_'
+SHR_ENVIRO_DNZB_ID = u'_DNZB_'
 
 # GUESS is an environment variable sometimes referenced by other scripts
 # it provides the guessed information for other scripts to save them
 # from re-guessing all over again.
-SHR_ENVIRO_GUESS_ID = '_GUESS_'
+SHR_ENVIRO_GUESS_ID = u'_GUESS_'
 
 # NZBGet Internal Message Passing Prefix
-NZBGET_MSG_PREFIX = '[NZB] '
+NZBGET_MSG_PREFIX = u'[NZB] '
 
 # Precompile regular expressions for speed
 SYS_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SYS_ENVIRO_ID)
@@ -485,17 +488,17 @@ SHR_GUESS_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SHR_ENVIRO_GUESS_ID)
 # at another time we can map them to the same format commonly
 # used.
 GUESS_KEY_MAP = {
-    'AUDIOCHANNELS': 'audioChannels', 'AUDIOCODEC': 'audioCodec',
-    'AUDIOPROFILE': 'audioProfile', 'BONUSNUMBER':'bonusNumber',
-    'BONUSTITLE': 'bonusTitle', 'CONTAINER':'container', 'DATE': 'date',
-    'EDITION': 'edition', 'EPISODENUMBER': 'episodeNumber',
-    'FILMNUMBER': 'filmNumber', 'FILMSERIES': 'filmSeries',
-    'FORMAT': 'format', 'LANGUAGE': 'language',
-    'RELEASEGROUP': 'releaseGroup',  'SCREENSIZE': 'screenSize',
-    'SEASON': 'season', 'SERIES': 'series', 'SPECIAL': 'special',
-    'SUBTITLELANGUAGE': 'subtitleLanguage', 'TITLE': 'title',
-    'TYPE': 'type', 'VIDEOCODEC': 'videoCodec','VTYPE': 'vtype',
-    'WEBSITE': 'website', 'YEAR': 'year',
+    u'AUDIOCHANNELS': u'audioChannels', u'AUDIOCODEC': u'audioCodec',
+    u'AUDIOPROFILE': u'audioProfile', u'BONUSNUMBER':u'bonusNumber',
+    u'BONUSTITLE': u'bonusTitle', u'CONTAINER':u'container', u'DATE': u'date',
+    u'EDITION': u'edition', u'EPISODENUMBER': u'episodeNumber',
+    u'FILMNUMBER': u'filmNumber', u'FILMSERIES': u'filmSeries',
+    u'FORMAT': u'format', u'LANGUAGE': u'language',
+    u'RELEASEGROUP': u'releaseGroup',  u'SCREENSIZE': u'screenSize',
+    u'SEASON': u'season', u'SERIES': u'series', u'SPECIAL': u'special',
+    u'SUBTITLELANGUAGE': u'subtitleLanguage', u'TITLE': u'title',
+    u'TYPE': u'type', u'VIDEOCODEC': u'videoCodec',u'VTYPE': u'vtype',
+    u'WEBSITE': u'website', u'YEAR': u'year',
 }
 
 # keys should not be complicated... make it so they aren't
@@ -527,7 +530,7 @@ class SCRIPT_MODE(object):
     # processing of downloaded files such es delete unwanted files
     # (*.url, etc.), send an e-mail notification, transfer the files to other
     # application and do any other things.
-    POSTPROCESSING = 'postprocess'
+    POSTPROCESSING = u'postprocess'
 
     # Scan scripts are called when a new file is found in the incoming nzb
     # directory (option `NzbDir`). If a file is being added via web-interface
@@ -539,7 +542,7 @@ class SCRIPT_MODE(object):
 
     # To activate a scan script or multiple scripts put them into `ScriptDir`,
     # then choose them in the option `ScanScript`.
-    SCAN = 'scan'
+    SCAN = u'scan'
 
     # Queue scripts are called after the download queue was changed. In the
     # current version the queue scripts are called only after an nzb-file was
@@ -547,13 +550,13 @@ class SCRIPT_MODE(object):
 
     # To activate a queue script or multiple scripts put them into `ScriptDir`,
     # then choose them in the option `QueueScript`.
-    QUEUE = 'queue'
+    QUEUE = u'queue'
 
     # Scheduler scripts are called by scheduler tasks (setup by the user).
 
     # To activate a scheduler script or multiple scripts put them into
     # `ScriptDir`, then choose them in the option `TaskX.Script`.
-    SCHEDULER = 'scheduler'
+    SCHEDULER = u'scheduler'
 
     # None is detected if you aren't using one of the above types
     NONE = ''
@@ -583,6 +586,9 @@ class ScriptBase(object):
         self.logger_id = __name__
         self.logger = logger
         self.debug = debug
+
+        # Initialize the default character set
+        self.charset = None
 
         # Extra debug modes used from command line; it gets to be
         # too noisy if you pass this into nzbget but if you really
@@ -640,12 +646,19 @@ class ScriptBase(object):
         except (TypeError, ValueError):
             self.version = 11
 
-        # Enabling DEBUG as a flag by specifying  near in the configuration
+        # Enabling DEBUG as a flag by specifying in the configuration
         # section of your script
         #Debug=no
         if self.debug is None:
             self.debug = self.parse_bool(
                 self.config.get('DEBUG', False))
+
+
+        # Enabling Character Set as a flag by specifying in the configuration
+        # section of your script
+        #CharSet=no
+        if self.charset is None:
+            self.charset = self.config.get('CHARSET', DEFAULT_CHARSET)
 
         # Verbose Debug
         if self.vdebug is None:
@@ -1825,15 +1838,18 @@ class ScriptBase(object):
         """Returns a dict object of the files found in the download
            directory. You can additionally pass in filters as a list or
            string) to filter the results returned.
+
+           Note: All returned content is decoded to unicode
+
               ex:
               {
-                 '/full/path/to/file.mkv': {
-                     'basename': 'file.mkv',
-                     'dirname': '/full/path/to',
+                 u'/full/path/to/file.mkv': {
+                     u'basename': u'file.mkv',
+                     u'dirname': u'/full/path/to',
                      # identify the filename (without applied extension)
-                     'filename': 'file',
+                     u'filename': u'file',
                      # always tolower() applied to:
-                     'extension': mkv,
+                     u'extension': u'mkv',
 
                      # If fullstatus == True then the following additional
                      # content is provided.
@@ -1873,6 +1889,10 @@ class ScriptBase(object):
         elif not isinstance(search_dir, basestring):
             # Unsupported
             return {}
+
+        elif not isinstance(search_dir, unicode):
+            # Convert to Unicode Type
+            search_dir = search_dir.decode(self.charset, 'ignore')
 
         # Change all filters strings lists (if they aren't already)
         if regex_filter is None:
@@ -1921,7 +1941,7 @@ class ScriptBase(object):
             regex_filter = _filters
 
         self.logger.debug("get_files('%s') with %d filter(s)" % (
-            str(search_dir),
+            search_dir,
             len(prefix_filter) + len(suffix_filter) + len(regex_filter),
         ))
 
@@ -1981,10 +2001,10 @@ class ScriptBase(object):
             # we fetch
             _file = {
                 search_dir: {
-                'basename': fname,
-                'dirname': dname,
-                'extension': splitext(basename(fname))[1].lower(),
-                'filename': splitext(basename(fname))[0],
+                u'basename': fname,
+                u'dirname': dname,
+                u'extension': unicode(splitext(basename(fname))[1].lower()),
+                u'filename': unicode(splitext(basename(fname))[0]),
                 }
             }
             if fullstats:
@@ -2019,6 +2039,7 @@ class ScriptBase(object):
                 continue
             if min_depth and min_depth > current_depth:
                 continue
+
             # Ignore Directory Handling
             if skip_directories and basename(dname) in SKIP_DIRECTORIES:
                 self.logger.vdebug(
@@ -2067,12 +2088,12 @@ class ScriptBase(object):
                         continue
 
                 # If we reach here, we store the file found
-                extension = splitext(fname)[1].lower()
                 _file = join(dname, fname)
                 files[_file] = {
-                    'basename': fname,
-                    'dirname': dname,
-                    'extension': extension,
+                    u'basename': fname,
+                    u'dirname': dname,
+                    u'extension': unicode(splitext(basename(fname))[1].lower()),
+                    u'filename': unicode(splitext(basename(fname))[0]),
                 }
 
                 if fullstats:

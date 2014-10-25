@@ -84,8 +84,8 @@ NZBGET_SCHEMA = {
 # Define just table names here that were fully declared above in
 # the schema
 NZBGET_SCHEMA_TABLES = (
-   'lookup',
-   'keystore',
+   u'lookup',
+   u'keystore',
 )
 
 # Categories allow us to further partition our keystore hash table
@@ -93,9 +93,9 @@ NZBGET_SCHEMA_TABLES = (
 # each other.
 class Category(object):
     # General Script Configuration
-    CONFIG = 'config'
+    CONFIG = u'config'
     # NZB/NZBD Defined Variables
-    NZB = 'nzb'
+    NZB = u'nzb'
 
 CATEGORIES = [ Category.CONFIG, Category.NZB, ]
 DEFAULT_CATEGORY = Category.CONFIG

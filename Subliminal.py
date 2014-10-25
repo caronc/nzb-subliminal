@@ -651,7 +651,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 if not overwrite and len(_matches):
                     self.logger.info(
                         'Skipping - Subtitles already exist for: %s' % (
-                            srt_file,
+                            srt_path,
                     ))
                     _lang.remove(l)
                     continue
@@ -1037,6 +1037,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             suffix_filter=video_extension,
             fullstats=True,
         )
+
+        print str(files)
 
         # Apply Filters
         if not force:
