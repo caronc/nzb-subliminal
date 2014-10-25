@@ -1892,7 +1892,11 @@ class ScriptBase(object):
 
         elif not isinstance(search_dir, unicode):
             # Convert to Unicode Type
-            search_dir = search_dir.decode(self.charset, 'ignore')
+            try:
+                search_dir = search_dir.decode(self.charset, errors='ignore')
+            except TypeError:
+                # Support Python <= 2.6 too
+                search_dir = search_dir.decode(self.charset, 'ignore')
 
         # Change all filters strings lists (if they aren't already)
         if regex_filter is None:
