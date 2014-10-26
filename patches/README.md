@@ -1,10 +1,7 @@
 ## Patching
 There were several libraries patched for various reasons:
-# To allow systems running Python v2.6 to still take advantage of the
-  libraries. Previously most of these python libraries only worked with
-  Python v2.7 or higher. This grants us access to a larger audience.
-# To add enhancements and/or to address outstanding bugfixes that i felt were
-  nessisary to apply.
+* To allow systems running Python v2.6 to still take advantage of the libraries. Previously most of these python libraries only worked with Python v2.7 or higher. This grants us access to a larger audience.
+* To add enhancements and/or to address outstanding bugfixes that I felt were nessisary to apply.
 
 The patches identified are exclusive the version they were created against and
 will most likely not work if applied against anything else.
