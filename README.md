@@ -65,6 +65,8 @@ should be known that Subliminal.py depends on the following packages:
 | pyOpenSSL                    | 0.14    | https://pypi.python.org/pypi/pyOpenSSL/0.14                                      |
 
 **Note:** I patched (denoted with a **[P]** above) the some of the libraries
-mentioned above in efforts to make them compatible with python 2.6.
+mentioned above in efforts to make them compatible with python 2.6 and or
+simply fix bugs and add nessesary enhancments.
 
-To be as transparent as possible, they have been provided in the _/patches_ directory.
+To be as transparent as possible, all patches have been provided in the
+_/patches_ directory.
