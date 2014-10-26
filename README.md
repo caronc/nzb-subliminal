@@ -69,4 +69,4 @@ mentioned above in efforts to make them compatible with python 2.6 and or
 simply fix bugs and add nessesary enhancments.
 
 To be as transparent as possible, all patches have been provided in the
-_/patches_ directory.
+[_/patches_](https://github.com/caronc/nzbget-subliminal/tree/master/patches) directory.
