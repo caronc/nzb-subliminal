@@ -1,4 +1,13 @@
 ## Patching
+Please note that all of the patches identified here have already been applied
+to the libraries included with nzbget-subliminal (this repository).  Hence If you
+are (or have already) downloading nzbget-subliminal, then you do not need to keep
+this directory at all.
+
+The only reason this __patches__ directory exists for developer transparency.
+The content in this directory is just a means of sharing changes I made with other
+developers who may be otherwise interested.
+
 There were several libraries patched for various reasons:
 * To allow systems running Python v2.6 to still take advantage of the libraries. Previously most of these python libraries only worked with Python v2.7 or higher. This grants us access to a larger audience.
 * To add enhancements and/or to address outstanding bugfixes that I felt were nessisary to apply.
@@ -82,6 +91,9 @@ fetched based on Movie and TV Series titles it is fed.
 
 There were a lot of changes made to this library in efforts to satisfy needs
 and incoming requests from the users of NZBGet (via their forum).
+
+I have an ongoing pull request to Subliminal's v0.7.4 branch in efforts to
+push the major changes I've added to it [here](https://github.com/Diaoul/subliminal/pull/404).
 
 | Subliminal v0.7.4 Source |
 | --------------------- |
