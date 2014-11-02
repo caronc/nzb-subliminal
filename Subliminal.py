@@ -315,6 +315,13 @@ IGNORE_FILELIST_RE = (
 # no subtitles exists for it.
 DEFAULT_MIN_VIDEO_SIZE_MB = 150
 
+# A simple regular expression that scans the video downloaded and
+# detects the season/episode information from it.
+DETECT_TVSHOW_RE = re.compile(
+    r'^.*[^A-Za-z0-9]?S([0-9]{1,4})E([0-9]{1,4}(E[0-9]{1,4})*)[^A-Za-z0-9]',
+    re.IGNORECASE,
+)
+
 # stat is used to test if the .srt file was fetched okay or not
 from os import stat
 # used for updating timestamp of the video
@@ -436,6 +443,25 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             if guess['type'] == 'movie':
                 category = self.get('CATEGORY', '').lower()
                 force_tv = category in tv_categories
+
+                matches = DETECT_TVSHOW_RE.match(filename)
+                if matches:
+                    # Enforce TV Show
+                    force_tv = True
+
+                    # Help out with guessed info
+                    _season = int(matches.group(1))
+                    _episodeList = sorted(re.split('[eE]', matches.group(2)), key=int)
+                    _episode = int(_episodeList[0])
+
+                    if u'episode' not in guess:
+                        guess[u'episode'] = _episode
+
+                    if u'season' not in guess:
+                        guess[u'season'] = _season
+
+                    if len(_episodeList) > 1 and u'episodeList' not in guess:
+                        guess[u'episodeList'] = _episodeList
 
                 date = guess.get('date')
                 if date:
