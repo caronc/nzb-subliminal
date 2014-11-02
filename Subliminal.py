@@ -780,7 +780,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                             # leave loop
                             break
 
-                        except OSError, e:
+                        except OSError as e:
                             self.logger.error(
                                 'Could not move %s to %s' % (
                                     basename(move_from),
