@@ -20,45 +20,55 @@
 #
 
 from __future__ import absolute_import, division, print_function, unicode_literals
+from collections import defaultdict
 import logging
 import os
 
-from guessit import PY2, u, guess_file_info
-from guessit.options import option_parser
+from guessit import PY2, u, guess_file_info, __version__
+from guessit.plugins import transformers
+from guessit.options import get_opts
+from guessit.__version__ import __version__
 
 
 def guess_file(filename, info='filename', options=None, **kwargs):
     options = options or {}
     filename = u(filename)
 
-    print('For:', filename)
+    if not options.get('yaml') and not options.get('show_property'):
+        print('For:', filename)
     guess = guess_file_info(filename, info, options, **kwargs)
-    if options.get('yaml'):
+
+    if not options.get('unidentified'):
         try:
-            import yaml
-            for k, v in guess.items():
-                if isinstance(v, list) and len(v) == 1:
-                    guess[k] = v[0]
-            ystr = yaml.safe_dump({filename: dict(guess)}, default_flow_style=False)
-            i = 0
-            for yline in ystr.splitlines():
-                if i == 0:
-                    print("? " + yline[:-1])
-                elif i == 1:
-                    print(":" + yline[1:])
-                else:
-                    print(yline)
-                i = i + 1
-            return
-        except ImportError:  # pragma: no cover
-            print('PyYAML not found. Using default output.')
+            del guess['unidentified']
+        except KeyError:
+            pass
+
+    if options.get('show_property'):
+        print (guess.get(options.get('show_property'), ''))
+        return
+
+    if options.get('yaml'):
+        import yaml
+        for k, v in guess.items():
+            if isinstance(v, list) and len(v) == 1:
+                guess[k] = v[0]
+        ystr = yaml.safe_dump({filename: dict(guess)}, default_flow_style=False)
+        i = 0
+        for yline in ystr.splitlines():
+            if i == 0:
+                print("? " + yline[:-1])
+            elif i == 1:
+                print(":" + yline[1:])
+            else:
+                print(yline)
+            i = i + 1
+        return
     print('GuessIt found:', guess.nice_string(options.get('advanced')))
 
 
 def _supported_properties():
-    from guessit.plugins import transformers
-
-    all_properties = {}
+    all_properties = defaultdict(list)
     transformers_properties = []
     for transformer in transformers.all_transformers():
         supported_properties = transformer.supported_properties()
@@ -66,18 +76,10 @@ def _supported_properties():
 
         if isinstance(supported_properties, dict):
             for property_name, possible_values in supported_properties.items():
-                current_possible_values = all_properties.get(property_name)
-                if current_possible_values is None:
-                    current_possible_values = []
-                    all_properties[property_name] = current_possible_values
-                if possible_values:
-                    current_possible_values.extend(possible_values)
+                all_properties[property_name].extend(possible_values)
         else:
             for property_name in supported_properties:
-                current_possible_values = all_properties.get(property_name)
-                if current_possible_values is None:
-                    current_possible_values = []
-                    all_properties[property_name] = current_possible_values
+                all_properties[property_name] # just make sure it exists
 
     return (all_properties, transformers_properties)
 
@@ -89,9 +91,18 @@ def display_transformers():
         print('[@] %s (%s)' % (transformer.name, transformer.priority))
 
 
-def display_properties(values, transformers):
+def display_properties(options):
+    values = options.values
+    transformers = options.transformers
+    name_only = options.name_only
+
     print('GuessIt properties:')
     all_properties, transformers_properties = _supported_properties()
+    if name_only:
+        # the 'container' property does not apply when using the --name-only
+        # option
+        del all_properties['container']
+
     if transformers:
         for transformer, properties_list in transformers_properties:
             print('[@] %s (%s)' % (transformer.name, transformer.priority))
@@ -101,9 +112,7 @@ def display_properties(values, transformers):
                 if property_values and values:
                     _display_property_values(property_name, indent=4)
     else:
-        properties_list = []
-        properties_list.extend(all_properties.keys())
-        properties_list.sort()
+        properties_list = sorted(all_properties.keys())
         for property_name in properties_list:
             property_values = all_properties.get(property_name)
             print('  [+] %s' % (property_name,))
@@ -163,6 +172,26 @@ def run_demo(episodes=True, movies=True, options=None):
             print('-' * 80)
             guess_file(f, options=options, type='movie')
 
+def submit_bug(filename, options):
+    import requests # only import when needed
+    from requests.exceptions import RequestException
+
+    try:
+        opts = dict((k, v) for k, v in options.__dict__.items()
+                    if v and k != 'submit_bug')
+
+        r = requests.post('http://localhost:5000/bugs', {'filename': filename,
+                                                         'version': __version__,
+                                                         'options': str(opts)})
+        if r.status_code == 200:
+            print('Successfully submitted file: %s' % r.text)
+        else:
+            print('Could not submit bug at the moment, please try again later.')
+
+    except RequestException as e:
+        print('Could not submit bug at the moment, please try again later.')
+
+
 
 def main(args=None, setup_logging=True):
     if setup_logging:
@@ -185,33 +214,69 @@ def main(args=None, setup_logging=True):
         sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout)
 
     if args:
-        options, args = option_parser.parse_args(args)
+        options, args = get_opts().parse_args(args)
     else:  # pragma: no cover
-        options, args = option_parser.parse_args()
+        options, args = get_opts().parse_args()
     if options.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
     help_required = True
     if options.properties or options.values:
-        display_properties(options.values, options.transformers)
+        display_properties(options)
         help_required = False
     elif options.transformers:
         display_transformers()
         help_required = False
+
     if options.demo:
         run_demo(episodes=True, movies=True, options=vars(options))
         help_required = False
-    else:
-        if args:
-            help_required = False
-            for filename in args:
+
+    if options.version:
+        print('+-------------------------------------------------------+')
+        print('+                   GuessIt ' + __version__ + (28-len(__version__)) * ' ' + '+')
+        print('+-------------------------------------------------------+')
+        print('|      Please report any bug or feature request at      |')
+        print('|       https://github.com/wackou/guessit/issues.       |')
+        print('+-------------------------------------------------------+')
+        help_required = False
+
+    if options.yaml:
+        try:
+            import yaml, babelfish
+            def default_representer(dumper, data):
+                return dumper.represent_str(str(data))
+            yaml.SafeDumper.add_representer(babelfish.Language, default_representer)
+            yaml.SafeDumper.add_representer(babelfish.Country, default_representer)
+        except ImportError:  # pragma: no cover
+            print('PyYAML not found. Using default output.')
+
+    filenames = []
+    if args:
+        filenames.extend(args)
+    if options.input_file:
+        input_file = open(options.input_file, 'r')
+        try:
+            filenames.extend([line.strip() for line in input_file.readlines()])
+        finally:
+            input_file.close()
+
+    filenames = filter(lambda filename: filename, filenames)
+
+    if filenames:
+        help_required = False
+        if options.submit_bug:
+            for filename in filenames:
+                submit_bug(filename, options)
+        else:
+            for filename in filenames:
                 guess_file(filename,
-                                info=options.info.split(','),
-                                options=vars(options)
-                                )
+                           info=options.info.split(','),
+                           options=vars(options))
+
 
     if help_required:  # pragma: no cover
-        option_parser.print_help()
+        get_opts().print_help()
 
 if __name__ == '__main__':
     main()

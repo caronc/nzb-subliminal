@@ -28,24 +28,24 @@ from guessit import base_text_type
 group_delimiters = ['()', '[]', '{}']
 
 # separator character regexp
-sep = r'[][,)(}:{+ /\._-]'  # regexp art, hehe :D
+sep = r'[][,)(}:{+ /~/\._-]'  # regexp art, hehe :D
 
 _dash = '-'
 _psep = '[\W_]?'
 
 
-def build_or_pattern(patterns):
+def build_or_pattern(patterns, escape=False):
     """Build a or pattern string from a list of possible patterns
     """
-    or_pattern = ''
+    or_pattern = []
     for pattern in patterns:
         if not or_pattern:
-            or_pattern += '(?:'
+            or_pattern.append('(?:')
         else:
-            or_pattern += '|'
-        or_pattern += ('(?:%s)' % pattern)
-    or_pattern += ')'
-    return or_pattern
+            or_pattern.append('|')
+        or_pattern.append('(?:%s)' % re.escape(pattern) if escape else pattern)
+    or_pattern.append(')')
+    return ''.join(or_pattern)
 
 
 def compile_pattern(pattern, enhance=True):

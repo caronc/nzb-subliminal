@@ -27,7 +27,7 @@ import logging
 from guessit import PY3, u
 from guessit.transfo import TransformerException
 from guessit.matchtree import MatchTree
-from guessit.textutils import normalize_unicode, clean_string
+from guessit.textutils import normalize_unicode, clean_default
 from guessit.guess import Guess
 import inspect
 
@@ -85,12 +85,26 @@ class IterativeMatcher(object):
             filename = filename.decode('utf-8')
 
         filename = normalize_unicode(filename)
-        self.match_tree = MatchTree(filename)
+        clean_function = None
+        if options and options.get('clean_function'):
+            clean_function = options.get('clean_function')
+            if not hasattr(clean_function, '__call__'):
+                module, function = clean_function.rsplit('.')
+                if not module:
+                    module = 'guessit.textutils'
+                clean_function = getattr(__import__(module), function)
+                if not clean_function:
+                    log.error('Can\'t find clean function %s. Default will be used.' % options.get('clean_function'))
+                    clean_function = clean_default
+        else:
+            clean_function = clean_default
+
+        self.match_tree = MatchTree(filename, clean_function=clean_function)
         self.options = options
         self._transfo_calls = []
 
         # sanity check: make sure we don't process a (mostly) empty string
-        if clean_string(filename) == '':
+        if clean_function(filename).strip() == '':
             return
 
         from guessit.plugins import transformers
@@ -102,17 +116,22 @@ class IterativeMatcher(object):
 
             # Process
             for transformer in transformers.all_transformers():
-                self._process(transformer, False)
+                disabled = options.get('disabled_transformers')
+                if not disabled or not transformer.name in disabled:
+                    self._process(transformer, False)
 
             # Post-process
             for transformer in transformers.all_transformers():
-                self._process(transformer, True)
+                disabled = options.get('disabled_transformers')
+                if not disabled or not transformer.name in disabled:
+                    self._process(transformer, True)
 
             log.debug('Found match tree:\n%s' % u(mtree))
         except TransformerException as e:
-            log.debug('An error has occured in Transformer %s: %s' % (e.transformer, e))
+            log.debug('An error has occurred in Transformer %s: %s' % (e.transformer, e))
 
     def _process(self, transformer, post=False):
+
         if not hasattr(transformer, 'should_process') or transformer.should_process(self.match_tree, self.options):
             if post:
                 transformer.post_process(self.match_tree, self.options)
@@ -138,10 +157,18 @@ class IterativeMatcher(object):
 
         type = options.get('type')
         if type and type not in valid_filetypes:
-            raise ValueError("filetype needs to be one of %s" % valid_filetypes)
+            raise ValueError("filetype needs to be one of %s" % (valid_filetypes,))
 
     def matched(self):
         return self.match_tree.matched()
+
+
+def build_guess(node, name, value=None, confidence=1.0):
+    guess = Guess({name: node.clean_value if value is None else value}, confidence=confidence)
+    if value is None:
+        guess.metadata().span = node.span
+    guess.metadata().input = node.value if value is None else value
+    return guess
 
 
 def found_property(node, name, value=None, confidence=1.0, update_guess=True, logger=None):
@@ -149,7 +176,7 @@ def found_property(node, name, value=None, confidence=1.0, update_guess=True, lo
     if not logger:
         caller_frame = inspect.stack()[1][0]
         logger = caller_frame.f_locals['self'].log
-    guess = Guess({name: node.clean_value if value is None else value}, confidence=confidence)
+    guess = build_guess(node, name, value, confidence)
     return found_guess(node, guess, update_guess=update_guess, logger=logger)
 
 
@@ -168,7 +195,8 @@ def found_guess(node, guess, update_guess=True, logger=None):
 
 def log_found_guess(guess, logger=None):
     for k, v in guess.items():
-        (logger or log).debug('Property found: %s=%s (confidence=%.2f)' % (k, v, guess.confidence(k)))
+        (logger or log).debug('Property found: %s=%s (%s) (confidence=%.2f)' %
+                              (k, v, guess.raw(k), guess.confidence(k)))
 
 
 class GuessFinder(object):
@@ -214,10 +242,14 @@ class GuessFinder(object):
                     skip_nodes = self.options.get('skip_nodes')
                     for skip_node in skip_nodes:
                         if skip_node.parent.node_idx == node.node_idx[:len(skip_node.parent.node_idx)] and\
-                            skip_node.span == span:
+                            skip_node.span == span or\
+                            skip_node.span == (span[0] + skip_node.offset, span[1] + skip_node.offset):
                             partition_spans = node.get_partition_spans(skip_node.span)
-                            partition_spans.remove(skip_node.span)
-                            break
+                            for to_remove_span in partition_spans:
+                                if to_remove_span[0] == skip_node.span[0] and to_remove_span[1] in [skip_node.span[1], skip_node.span[1] + 1]:
+                                    partition_spans.remove(to_remove_span)
+                                    break
+                            #break
 
                 if not partition_spans:
                     # restore sentinels compensation
@@ -229,19 +261,22 @@ class GuessFinder(object):
                         guess = Guess(result, confidence=self.confidence, input=string, span=span)
 
                     if not iterative:
-                        node.guess.update(guess)
+                        found_guess(node, guess, logger=self.logger)
                     else:
                         absolute_span = (span[0] + node.offset, span[1] + node.offset)
                         node.partition(span)
-                        found_child = None
-                        for child in node.children:
-                            if child.span == absolute_span:
-                                found_guess(child, guess, self.logger)
-                                found_child = child
-                                break
-                        for child in node.children:
-                            if not child is found_child:
-                                self.process_node(child)
+                        if node.is_leaf():
+                            found_guess(node, guess, logger=self.logger)
+                        else:
+                            found_child = None
+                            for child in node.children:
+                                if child.span == absolute_span:
+                                    found_guess(child, guess, logger=self.logger)
+                                    found_child = child
+                                    break
+                            for child in node.children:
+                                if not child is found_child:
+                                    self.process_node(child)
                 else:
                     for partition_span in partition_spans:
                         self.process_node(node, partial_span=partition_span)

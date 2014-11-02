@@ -45,6 +45,25 @@ def _get_span(prop, match):
         end = span[1]
 
 
+def _trim_span(span, value, blanks = sep):
+    start, end = span
+
+    for i in range(0, len(value)):
+        if value[i] in blanks:
+            start = start + 1
+        else:
+            break
+
+    for i in reversed(range(0, len(value))):
+        if value[i] in blanks:
+            end = end - 1
+        else:
+            break
+    if end <= start:
+        return -1, -1
+    return start, end
+
+
 def _get_groups(compiled_re):
     """
     Retrieves groups from re
@@ -68,10 +87,71 @@ class NoValidator(object):
         return True
 
 
+class LeftValidator(object):
+    """Make sure our match is starting by separator, or by another entry"""
+
+    def validate(self, prop, string, node, match, entry_start, entry_end):
+        span = _get_span(prop, match)
+        span = _trim_span(span, string[span[0]:span[1]])
+        start, end = span
+
+        sep_start = start <= 0 or string[start - 1] in sep
+        start_by_other = start in entry_end
+        if not sep_start and not start_by_other:
+            return False
+        return True
+
+
+class RightValidator(object):
+    """Make sure our match is ended by separator, or by another entry"""
+
+    def validate(self, prop, string, node, match, entry_start, entry_end):
+        span = _get_span(prop, match)
+        span = _trim_span(span, string[span[0]:span[1]])
+        start, end = span
+
+        sep_end = end >= len(string) or string[end] in sep
+        end_by_other = end in entry_start
+        if not sep_end and not end_by_other:
+            return False
+        return True
+
+
+class ChainedValidator(object):
+    def __init__(self, *validators):
+        self._validators = validators
+
+    def validate(self, prop, string, node, match, entry_start, entry_end):
+        for validator in self._validators:
+            if not validator.validate(prop, string, node, match, entry_start, entry_end):
+                return False
+        return True
+
+
+class SameKeyValidator(object):
+    def __init__(self, validator_function):
+        self.validator_function = validator_function
+
+    def validate(self, prop, string, node, match, entry_start, entry_end):
+        for key in prop.keys:
+            for same_value_leaf in node.root.leaves_containing(key):
+                ret = self.validator_function(same_value_leaf, key, prop, string, node, match, entry_start, entry_end)
+                if ret is not None:
+                    return ret
+        return True
+
+
+class OnlyOneValidator(SameKeyValidator):
+    def __init__(self):
+        super(OnlyOneValidator, self).__init__(lambda same_value_leaf, key, prop, string, node, match, entry_start, entry_end: False)
+
+
 class DefaultValidator(object):
     """Make sure our match is surrounded by separators, or by another entry"""
     def validate(self, prop, string, node, match, entry_start, entry_end):
-        start, end = _get_span(prop, match)
+        span = _get_span(prop, match)
+        span = _trim_span(span, string[span[0]:span[1]])
+        start, end = span
 
         sep_start = start <= 0 or string[start - 1] in sep
         sep_end = end >= len(string) or string[end] in sep
@@ -80,6 +160,30 @@ class DefaultValidator(object):
         if (sep_start or start_by_other) and (sep_end or end_by_other):
             return True
         return False
+
+
+class FunctionValidator(object):
+    def __init__(self, function):
+        self.function = function
+
+    def validate(self, prop, string, node, match, entry_start, entry_end):
+        return self.function(prop, string, node, match, entry_start, entry_end)
+
+
+class FormatterValidator(object):
+    def __init__(self, group_name=None, formatted_validator=None):
+        self.group_name = group_name
+        self.formatted_validator = formatted_validator
+
+    def validate(self, prop, string, node, match, entry_start, entry_end):
+        if self.group_name:
+            formatted = prop.format(match.group(self.group_name), self.group_name)
+        else:
+            formatted = prop.format(match.group())
+        if self.formatted_validator:
+            return self.formatted_validator(formatted)
+        else:
+            return formatted
 
 
 class WeakValidator(DefaultValidator):
@@ -130,13 +234,10 @@ class LeavesValidator(DefaultValidator):
             return False
 
         previous_ = self._validate_previous(prop, string, node, match, entry_start, entry_end)
-        if previous_ and self.both_side:
-            return previous_
         next_ = self._validate_next(prop, string, node, match, entry_start, entry_end)
 
         if previous_ is None and next_ is None:
             return super_ret
-
         if self.both_side:
             return previous_ and next_
         else:
@@ -166,7 +267,7 @@ class LeavesValidator(DefaultValidator):
 
 class _Property:
     """Represents a property configuration."""
-    def __init__(self, keys=None, pattern=None, canonical_form=None, canonical_from_pattern=True, confidence=1.0, enhance=True, global_span=False, validator=DefaultValidator(), formatter=None):
+    def __init__(self, keys=None, pattern=None, canonical_form=None, canonical_from_pattern=True, confidence=1.0, enhance=True, global_span=False, validator=DefaultValidator(), formatter=None, disabler=None, confidence_lambda=None):
         """
         :param keys: Keys of the property (format, screenSize, ...)
         :type keys: string
@@ -206,9 +307,16 @@ class _Property:
         if not self.keys:
             raise ValueError("No property key is defined")
         self.confidence = confidence
+        self.confidence_lambda = confidence_lambda
         self.global_span = global_span
         self.validator = validator
         self.formatter = formatter
+        self.disabler = disabler
+
+    def disabled(self, options):
+        if self.disabler:
+            return self.disabler(options)
+        return False
 
     def format(self, value, group_name=None):
         """Retrieves the final value from re group match value"""
@@ -286,7 +394,7 @@ class PropertiesContainer(object):
         """Unregister all defined properties"""
         self._properties.clear()
 
-    def find_properties(self, string, node, name=None, validate=True, re_match=False, sort=True, multiple=False):
+    def find_properties(self, string, node, options, name=None, validate=True, re_match=False, sort=True, multiple=False):
         """Find all distinct properties for given string
 
         If no capturing group is defined in the property, value will be grabbed from the entire match.
@@ -331,6 +439,7 @@ class PropertiesContainer(object):
         entry_end = {}
 
         entries = []
+        duplicate_matches = {}
 
         ret = []
 
@@ -339,10 +448,24 @@ class PropertiesContainer(object):
 
         # search all properties
         for prop in self.get_properties(name):
-            match = prop.compiled.match(string) if re_match else prop.compiled.search(string)
-            if match:
-                entry = prop, match
-                entries.append(entry)
+            if not prop.disabled(options):
+                valid_match = None
+                if re_match:
+                    match = prop.compiled.match(string)
+                    if match:
+                        entries.append((prop, match))
+                else:
+                    matches = list(prop.compiled.finditer(string))
+                    duplicate_matches[prop] = matches
+                    for match in matches:
+                        entries.append((prop, match))
+
+        for prop, match in entries:
+            # compute confidence
+            if prop.confidence_lambda:
+                computed_confidence = prop.confidence_lambda(match)
+                if computed_confidence is not None:
+                    prop.confidence = computed_confidence
 
         if validate:
             # compute entries start and ends
@@ -371,6 +494,9 @@ class PropertiesContainer(object):
                 for entry in invalid_entries:
                     prop, match = entry
                     entries.remove(entry)
+                    prop_duplicate_matches = duplicate_matches.get(prop)
+                    if prop_duplicate_matches:
+                        prop_duplicate_matches.remove(match)
                     invalid_span = _get_span(prop, match)
                     start = invalid_span[0]
                     end = invalid_span[1]
@@ -380,6 +506,12 @@ class PropertiesContainer(object):
                     entry_end[end].remove(prop)
                     if not entry_end.get(end):
                         del entry_end[end]
+
+        for prop, prop_duplicate_matches in duplicate_matches.items():
+            # Keeping the last valid match.
+            # Needed for the.100.109.hdtv-lol.mp4
+            for duplicate_match in prop_duplicate_matches[:-1]:
+                entries.remove((prop, duplicate_match))
 
         if multiple:
             ret = entries
@@ -392,18 +524,18 @@ class PropertiesContainer(object):
                         entries_dict[key] = []
                     entries_dict[key].append(entry)
 
-            for entries in entries_dict.values():
+            for key_entries in entries_dict.values():
                 if multiple:
-                    for entry in entries:
+                    for entry in key_entries:
                         ret.append(entry)
                 else:
                     best_ret = {}
 
                     best_prop, best_match = None, None
-                    if len(entries) == 1:
-                        best_prop, best_match = entries[0]
+                    if len(key_entries) == 1:
+                        best_prop, best_match = key_entries[0]
                     else:
-                        for prop, match in entries:
+                        for prop, match in key_entries:
                             start, end = _get_span(prop, match)
                             if not best_prop or \
                             best_prop.confidence < best_prop.confidence or \
@@ -456,7 +588,12 @@ class PropertiesContainer(object):
                                         k = name
                                     guess[k] = v
                             else:
-                                guess[name] = value
+                                if name in guess:
+                                    if not isinstance(guess[name], list):
+                                        guess[name] = [guess[name]]
+                                    guess[name].append(value)
+                                else:
+                                    guess[name] = value
                             if group_name:
                                 guess.metadata(prop).span = match.span(group_name)
             if filter(guess):

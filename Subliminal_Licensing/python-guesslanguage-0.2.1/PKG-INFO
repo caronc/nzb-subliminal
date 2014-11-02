@@ -1,0 +1,11 @@
+Metadata-Version: 1.0
+Name: guesslanguage
+Version: 0.2.1
+Summary: Guess primary language of given text
+Home-page: http://silpa.org.in/Guess_Language
+Author: Santhosh Thottingal
+Author-email: santhosh.thottingal@gmail.com
+License: LGPL-3.0
+Description: Guess the language of given text.Even
+            works for text containing multiple languages
+Platform: UNKNOWN

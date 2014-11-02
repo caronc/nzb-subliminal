@@ -25,7 +25,8 @@ from .__version__ import __version__
 
 __all__ = ['Guess', 'Language',
            'guess_file_info', 'guess_video_info',
-           'guess_movie_info', 'guess_episode_info']
+           'guess_movie_info', 'guess_episode_info',
+           'default_options']
 
 
 # Do python3 detection before importing any other module, to be sure that
@@ -85,13 +86,14 @@ else:   # pragma: no cover
     range = xrange
 
 
-from guessit.guess import Guess, merge_all
+from guessit.guess import Guess, smart_merge
 from guessit.language import Language
 from guessit.matcher import IterativeMatcher
-from guessit.textutils import clean_string, is_camel, from_camel
+from guessit.textutils import clean_default, is_camel, from_camel
+import babelfish
 import os.path
 import logging
-import json
+from copy import deepcopy
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +109,8 @@ log.addHandler(h)
 
 def _guess_filename(filename, options=None, **kwargs):
     mtree = _build_filename_mtree(filename, options=options, **kwargs)
-    _add_camel_properties(mtree, options=options)
+    if options.get('split_camel'):
+        _add_camel_properties(mtree, options=options)
     return mtree.matched()
 
 
@@ -115,7 +118,7 @@ def _build_filename_mtree(filename, options=None, **kwargs):
     mtree = IterativeMatcher(filename, options=options, **kwargs)
     second_pass_options = mtree.second_pass_options
     if second_pass_options:
-        log.info("Running 2nd pass")
+        log.debug("Running 2nd pass")
         merged_options = dict(options)
         merged_options.update(second_pass_options)
         mtree = IterativeMatcher(filename, options=merged_options, **kwargs)
@@ -131,18 +134,129 @@ def _add_camel_properties(mtree, options=None, **kwargs):
         value = leaf.value
         _guess_camel_string(mtree, value, options=options, skip_title=True, **kwargs)
 
-
 def _guess_camel_string(mtree, string, options=None, skip_title=False, **kwargs):
     if string and is_camel(string):
-        log.info('"%s" is camel cased. Try to detect more properties.' % (string,))
+        log.debug('"%s" is camel cased. Try to detect more properties.' % (string,))
         uncameled_value = from_camel(string)
-        camel_tree = _build_filename_mtree(uncameled_value, options=options, name_only=True, skip_title=skip_title, **kwargs)
+        merged_options = dict(options)
+        if 'type' in mtree.match_tree.info:
+            current_type = mtree.match_tree.info.get('type')
+            if current_type and current_type != 'unknown':
+                merged_options['type'] = current_type
+        camel_tree = _build_filename_mtree(uncameled_value, options=merged_options, name_only=True, skip_title=skip_title, **kwargs)
         if len(camel_tree.matched()) > 0:
-            # Title has changed.
             mtree.matched().update(camel_tree.matched())
             return True
     return False
 
+def guess_video_metadata(filename):
+    """Gets the video metadata properties out of a given file. The file needs to
+    exist on the filesystem to be able to be analyzed. An empty guess is
+    returned otherwise.
+
+    You need to have the Enzyme python package installed for this to work."""
+    result = Guess()
+
+    def found(prop, value):
+        result[prop] = value
+        log.debug('Found with enzyme %s: %s' % (prop, value))
+
+    # first get the size of the file, in bytes
+    try:
+        size = os.stat(filename).st_size
+        found('fileSize', size)
+
+    except Exception as e:
+        log.error('Cannot get video file size: %s' % e)
+        # file probably does not exist, we might as well return now
+        return result
+
+    # then get additional metadata from the file using enzyme, if available
+    try:
+        import enzyme
+
+        with open(filename) as f:
+            mkv = enzyme.MKV(f)
+
+            found('duration', mkv.info.duration.total_seconds())
+
+            if mkv.video_tracks:
+                video_track = mkv.video_tracks[0]
+
+                # resolution
+                if video_track.height in (480, 720, 1080):
+                    if video_track.interlaced:
+                        found('screenSize', '%di' % video_track.height)
+                    else:
+                        found('screenSize', '%dp' % video_track.height)
+                else:
+                    # TODO: do we want this?
+                    #found('screenSize', '%dx%d' % (video_track.width, video_track.height))
+                    pass
+
+                # video codec
+                if video_track.codec_id == 'V_MPEG4/ISO/AVC':
+                    found('videoCodec', 'h264')
+                elif video_track.codec_id == 'V_MPEG4/ISO/SP':
+                    found('videoCodec', 'DivX')
+                elif video_track.codec_id == 'V_MPEG4/ISO/ASP':
+                    found('videoCodec', 'XviD')
+
+            else:
+                log.warning('MKV has no video track')
+
+            if mkv.audio_tracks:
+                audio_track = mkv.audio_tracks[0]
+                # audio codec
+                if audio_track.codec_id == 'A_AC3':
+                    found('audioCodec', 'AC3')
+                elif audio_track.codec_id == 'A_DTS':
+                    found('audioCodec', 'DTS')
+                elif audio_track.codec_id == 'A_AAC':
+                    found('audioCodec', 'AAC')
+            else:
+                log.warning('MKV has no audio track')
+
+            if mkv.subtitle_tracks:
+                embedded_subtitle_languages = set()
+                for st in mkv.subtitle_tracks:
+                    try:
+                        if st.language:
+                            lang = babelfish.Language.fromalpha3b(st.language)
+                        elif st.name:
+                            lang = babelfish.Language.fromname(st.name)
+                        else:
+                            lang = babelfish.Language('und')
+
+                    except babelfish.Error:
+                        lang = babelfish.Language('und')
+
+                    embedded_subtitle_languages.add(lang)
+
+                found('subtitleLanguage', embedded_subtitle_languages)
+            else:
+                log.debug('MKV has no subtitle track')
+
+        return result
+
+    except ImportError:
+        log.error('Cannot get video file metadata, missing dependency: enzyme')
+        log.error('Please install it from PyPI, by doing eg: pip install enzyme')
+        return result
+
+    except IOError as e:
+        log.error('Could not open file: %s' % filename)
+        log.error('Make sure it exists and is available for reading on the filesystem')
+        log.error('Error: %s' % e)
+        return result
+
+    except enzyme.Error as e:
+        log.error('Cannot guess video file metadata')
+        log.error('enzyme.Error while reading file: %s' % filename)
+        log.error('Error: %s' % e)
+        return result
+
+default_options = {}
 
 def guess_file_info(filename, info=None, options=None, **kwargs):
     """info can contain the names of the various plugins, such as 'filename' to
@@ -155,6 +269,10 @@ def guess_file_info(filename, info=None, options=None, **kwargs):
     """
     info = info or 'filename'
     options = options or {}
+    if default_options:
+        merged_options = deepcopy(default_options)
+        merged_options.update(options)
+        options = merged_options
 
     result = []
     hashers = []
@@ -194,6 +312,11 @@ def guess_file_info(filename, info=None, options=None, **kwargs):
             except AttributeError:
                 log.warning('Could not compute %s hash because it is not available from python\'s hashlib module' % hashname)
 
+        elif infotype == 'video':
+            g = guess_video_metadata(filename)
+            if g:
+                result.append(g)
+
         else:
             log.warning('Invalid infotype: %s' % infotype)
 
@@ -216,7 +339,7 @@ def guess_file_info(filename, info=None, options=None, **kwargs):
         except Exception as e:
             log.warning('Could not compute hash because: %s' % e)
 
-    result = merge_all(result)
+    result = smart_merge(result)
 
     return result
 

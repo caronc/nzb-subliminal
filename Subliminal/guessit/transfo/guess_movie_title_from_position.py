@@ -41,13 +41,16 @@ class GuessMovieTitleFromPosition(Transformer):
         try to identify the remaining unknown groups by looking at their
         position relative to other known elements
         """
+        if 'title' in mtree.info:
+            return
+
         basename = mtree.node_at((-2,))
         all_valid = lambda leaf: len(leaf.clean_value) > 0
-        basename_leftover = basename.unidentified_leaves(valid=all_valid)
+        basename_leftover = list(basename.unidentified_leaves(valid=all_valid))
 
         try:
             folder = mtree.node_at((-3,))
-            folder_leftover = folder.unidentified_leaves()
+            folder_leftover = list(folder.unidentified_leaves())
         except ValueError:
             folder = None
             folder_leftover = []
@@ -69,59 +72,49 @@ class GuessMovieTitleFromPosition(Transformer):
         # group, and the folder only contains 1 unidentified one, then we have
         # a series
         # ex: Millenium Trilogy (2009)/(1)The Girl With The Dragon Tattoo(2009).mkv
-        try:
+        if len(folder_leftover) > 0 and len(basename_leftover) > 1:
             series = folder_leftover[0]
             filmNumber = basename_leftover[0]
             title = basename_leftover[1]
 
-            basename_leaves = basename.leaves()
+            basename_leaves = list(basename.leaves())
 
-            num = int(filmNumber.clean_value)
+            num = None
+            try:
+                num = int(filmNumber.clean_value)
+            except ValueError:
+                pass
 
-            self.log.debug('series: %s' % series.clean_value)
-            self.log.debug('title: %s' % title.clean_value)
-            if (series.clean_value != title.clean_value and
-                series.clean_value != filmNumber.clean_value and
-                basename_leaves.index(filmNumber) == 0 and
-                basename_leaves.index(title) == 1):
+            if num:
+                self.log.debug('series: %s' % series.clean_value)
+                self.log.debug('title: %s' % title.clean_value)
+                if (series.clean_value != title.clean_value and
+                            series.clean_value != filmNumber.clean_value and
+                            basename_leaves.index(filmNumber) == 0 and
+                            basename_leaves.index(title) == 1):
 
-                found_property(title, 'title', confidence=0.6)
-                found_property(series, 'filmSeries', confidence=0.6)
-                found_property(filmNumber, 'filmNumber', num, confidence=0.6)
-            return
-        except Exception:
-            pass
-
-        # specific cases:
-        #  - movies/tttttt (yyyy)/tttttt.ccc
-        try:
-            if mtree.node_at((-4, 0)).value.lower() == 'movies':
-                folder = mtree.node_at((-3,))
-
-                # Note:too generic, might solve all the unittests as they all
-                # contain 'movies' in their path
-                #
-                # if containing_folder.is_leaf() and not containing_folder.guess:
-                #    containing_folder.guess =
-                #        Guess({ 'title': clean_string(containing_folder.value) },
-                #              confidence=0.7)
-
-                year_group = folder.first_leaf_containing('year')
-                groups_before = folder.previous_unidentified_leaves(year_group)
-
-                found_property(groups_before[0], 'title', confidence=0.8)
+                    found_property(title, 'title', confidence=0.6)
+                    found_property(series, 'filmSeries', confidence=0.6)
+                    found_property(filmNumber, 'filmNumber', num, confidence=0.6)
                 return
 
-        except Exception:
-            pass
+        if folder:
+            year_group = folder.first_leaf_containing('year')
+            if year_group:
+                groups_before = folder.previous_unidentified_leaves(year_group)
+                if groups_before:
+                    node = next(groups_before)
+                    found_property(node, 'title', confidence=0.8)
+                    return
 
-        # if we have either format or videoCodec in the folder containing the file
-        # or one of its parents, then we should probably look for the title in
-        # there rather than in the basename
+        # if we have either format or videoCodec in the folder containing the
+        # file or one of its parents, then we should probably look for the title
+        # in there rather than in the basename
         try:
-            props = mtree.previous_leaves_containing(mtree.children[-2],
-                                                     ['videoCodec', 'format',
-                                                       'language'])
+            props = list(mtree.previous_leaves_containing(mtree.children[-2],
+                                                          ['videoCodec',
+                                                           'format',
+                                                           'language']))
         except IndexError:
             props = []
 
@@ -130,10 +123,11 @@ class GuessMovieTitleFromPosition(Transformer):
             if all(g.node_idx[0] == group_idx for g in props):
                 # if they're all in the same group, take leftover info from there
                 leftover = mtree.node_at((group_idx,)).unidentified_leaves()
-
-                if leftover:
-                    found_property(leftover[0], 'title', confidence=0.7)
+                try:
+                    found_property(next(leftover), 'title', confidence=0.7)
                     return
+                except StopIteration:
+                    pass
 
         # look for title in basename if there are some remaining unidentified
         # groups there
@@ -172,6 +166,8 @@ class GuessMovieTitleFromPosition(Transformer):
         # of the basename
         basename = mtree.node_at((-2,))
         basename_leftover = basename.unidentified_leaves(valid=lambda leaf: True)
-        if basename_leftover:
-            found_property(basename_leftover[0], 'title', confidence=0.4)
+        try:
+            found_property(next(basename_leftover), 'title', confidence=0.4)
             return
+        except StopIteration:
+            pass

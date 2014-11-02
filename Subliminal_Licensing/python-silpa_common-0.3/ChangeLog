@@ -1,0 +1,53 @@
+CHANGES
+=======
+
+0.3
+---
+
+* Handle unicode mess for python2
+* Move soundex tables to soundex module
+* export charmap, get_language and char_compare
+* Handle unicode mess in py2 only
+* install repoze.lru for py2 and pypy
+* repoze.lru is dependency for python2
+* Add char_compare and get_language functions
+* Fix README file name in long_description
+* Image tag fix
+* Make tests compatible with both py3 and py2
+* Rename README.md to README.rst and add badges
+* Flake8 fixes
+
+0.2
+---
+
+* Fix trove classifiers
+* Added Yash Sinha to AUTHORS
+* Enable testing and travis integration
+* Drop executable permission on setup.py
+* Add AUTHORS file with contributors name
+* Updated README with more details
+* define servicemethod decorator to support JSONRPC
+* Use pbr for setup file and use setup.cfg
+* Revert "normalize added" as Normalizer module serves the purpose
+* normalize added
+
+v0.1.1
+------
+
+* Improved long description and reinstroduced find_packages I should have only removed exclude=tests in last commit
+* Rename core to charmap and rename _detect_lang to detect_lang
+* - is not allowed in module name lets use silpa_common instead
+* Renamed common to silpa_common
+
+v0.1
+----
+
+* Ignore distutils stuff
+* Renamed module to silpa-common and fixed long description
+* find_packages is no longer used drop it from import
+* Ignore ropeprojects file
+* Don't exclude tests
+* pep8 standardised
+* Added langdetect
+* Create README.md
+* Initial commit

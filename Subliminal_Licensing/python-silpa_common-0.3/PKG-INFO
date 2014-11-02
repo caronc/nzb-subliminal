@@ -1,0 +1,39 @@
+Metadata-Version: 1.1
+Name: silpa_common
+Version: 0.3
+Summary: Common functions for SILPA and related modules
+Home-page: https://silpa.org.in
+Author: SILPA Developers
+Author-email: silpa-discuss@nongnu.org
+License: LGPL-2.1+
+Description: Common functions for SILPA
+        ##########################
+        
+        .. image::
+           https://travis-ci.org/Project-SILPA/silpa-common.svg
+           :target: https://travis-ci.org/Project-SILPA/silpa-common
+        
+        
+        .. image::
+           https://coveralls.io/repos/Project-SILPA/silpa-common/badge.png?branch=master
+           :target: https://coveralls.io/r/Project-SILPA/silpa-common?branch=master 
+        
+        
+        This package provides common functions needed by SILPA web application
+        itself and modules which are hosted by SILPA. There are 2 submodules
+        provided by this package
+        
+        * charmap - provides character mapping for Indic and other languages
+        * langdetect - module provides language detecting capabilities
+        * Also provides a decorator servicemethod, this should be used by
+          modules which want to expose their methods via JSONRPC modules
+        
+        
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: License :: DFSG approved
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)
+Classifier: Operating System :: OS Independent
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Information Technology
+Classifier: Programming Language :: Python

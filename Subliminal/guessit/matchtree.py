@@ -22,10 +22,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import guessit  # @UnusedImport needed for doctests
 from guessit import UnicodeMixin, base_text_type
-from guessit.textutils import clean_string, str_fill
+from guessit.textutils import clean_default, str_fill
 from guessit.patterns import group_delimiters
-from guessit.guess import (merge_similar_guesses, merge_all,
+from guessit.guess import (merge_similar_guesses, smart_merge,
                            choose_int, choose_string, Guess)
+from itertools import takewhile
 import copy
 import logging
 
@@ -73,12 +74,14 @@ class BaseMatchTree(UnicodeMixin):
     (as shown by the ``f``'s on the last-but-one line).
     """
 
-    def __init__(self, string='', span=None, parent=None):
+    def __init__(self, string='', span=None, parent=None, clean_function=None):
         self.string = string
         self.span = span or (0, len(string))
         self.parent = parent
         self.children = []
         self.guess = Guess()
+        self._clean_value = None
+        self._clean_function = clean_function or clean_default
 
     @property
     def value(self):
@@ -90,7 +93,12 @@ class BaseMatchTree(UnicodeMixin):
         """Return a cleaned value of the matched substring, with better
         presentation formatting (punctuation marks removed, duplicate
         spaces, ...)"""
-        return clean_string(self.value)
+        if self._clean_value is None:
+            self._clean_value = self.clean_string(self.value)
+        return self._clean_value
+
+    def clean_string(self, string):
+        return self._clean_function(string)
 
     @property
     def offset(self):
@@ -129,7 +137,7 @@ class BaseMatchTree(UnicodeMixin):
 
     def add_child(self, span):
         """Add a new child node to this node with the given span."""
-        child = MatchTree(self.string, span=span, parent=self)
+        child = MatchTree(self.string, span=span, parent=self, clean_function=self._clean_function)
         self.children.append(child)
         return child
 
@@ -179,7 +187,13 @@ class BaseMatchTree(UnicodeMixin):
         If this node is the root of the tree, then return ()."""
         if self.parent is None:
             return ()
-        return self.parent.node_idx + (self.parent.children.index(self),)
+        return self.parent.node_idx + (self.node_last_idx,)
+
+    @property
+    def node_last_idx(self):
+        if self.parent is None:
+            return None
+        return self.parent.children.index(self)
 
     def node_at(self, idx):
         """Return the node at the given index in the subtree rooted at
@@ -199,14 +213,14 @@ class BaseMatchTree(UnicodeMixin):
             for node in child.nodes():
                 yield node
 
-    def _leaves(self):
+    def leaves(self):
         """Return a generator over all the nodes that are leaves."""
         if self.is_leaf():
             yield self
         else:
             for child in self.children:
                 # pylint: disable=W0212
-                for leaf in child._leaves():
+                for leaf in child.leaves():
                     yield leaf
 
     def group_node(self):
@@ -230,10 +244,6 @@ class BaseMatchTree(UnicodeMixin):
                     pass
         return None
 
-    def leaves(self):
-        """Return a list of all the nodes that are leaves."""
-        return list(self._leaves())
-
     def previous_leaf(self, leaf):
         """Return previous leaf for this node"""
         return self._other_leaf(leaf, -1)
@@ -243,7 +253,7 @@ class BaseMatchTree(UnicodeMixin):
         return self._other_leaf(leaf, +1)
 
     def _other_leaf(self, leaf, offset):
-        leaves = self.leaves()
+        leaves = list(self.leaves())
         index = leaves.index(leaf) + offset
         if index > 0 and index < len(leaves):
             return leaves[index]
@@ -251,7 +261,7 @@ class BaseMatchTree(UnicodeMixin):
 
     def previous_leaves(self, leaf):
         """Return previous leaves for this node"""
-        leaves = self.leaves()
+        leaves = list(self.leaves())
         index = leaves.index(leaf)
         if index > 0 and index < len(leaves):
             previous_leaves = leaves[:index]
@@ -261,7 +271,7 @@ class BaseMatchTree(UnicodeMixin):
 
     def next_leaves(self, leaf):
         """Return next leaves for this node"""
-        leaves = self.leaves()
+        leaves = list(self.leaves())
         index = leaves.index(leaf)
         if index > 0 and index < len(leaves):
             return leaves[index + 1:len(leaves)]
@@ -348,61 +358,46 @@ class MatchTree(BaseMatchTree):
     higher-level rules.
     """
 
-    _matched_result = None
-
-    def _unidentified_leaves(self,
-                             valid=lambda leaf: len(leaf.clean_value) >= 2):
-        for leaf in self._leaves():
+    def unidentified_leaves(self,
+                            valid=lambda leaf: len(leaf.clean_value) > 0):
+        """Return a generator of leaves that are not empty."""
+        for leaf in self.leaves():
             if not leaf.guess and valid(leaf):
                 yield leaf
 
-    def unidentified_leaves(self,
-                            valid=lambda leaf: len(leaf.clean_value) >= 2):
-        """Return a list of leaves that are not empty."""
-        return list(self._unidentified_leaves(valid))
-
-    def _leaves_containing(self, property_name):
+    def leaves_containing(self, property_name):
+        """Return a generator of leaves that guessed the given property."""
         if isinstance(property_name, base_text_type):
             property_name = [property_name]
 
-        for leaf in self._leaves():
+        for leaf in self.leaves():
             for prop in property_name:
                 if prop in leaf.guess:
                     yield leaf
                     break
 
-    def leaves_containing(self, property_name):
-        """Return a list of leaves that guessed the given property."""
-        return list(self._leaves_containing(property_name))
-
     def first_leaf_containing(self, property_name):
         """Return the first leaf containing the given property."""
         try:
-            return next(self._leaves_containing(property_name))
+            return next(self.leaves_containing(property_name))
         except StopIteration:
             return None
 
-    def _previous_unidentified_leaves(self, node):
-        node_idx = node.node_idx
-        for leaf in self._unidentified_leaves():
-            if leaf.node_idx < node_idx:
-                yield leaf
-
     def previous_unidentified_leaves(self, node):
-        """Return a list of non-empty leaves that are before the given
+        """Return a generator of non-empty leaves that are before the given
         node (in the string)."""
-        return list(self._previous_unidentified_leaves(node))
-
-    def _previous_leaves_containing(self, node, property_name):
         node_idx = node.node_idx
-        for leaf in self._leaves_containing(property_name):
+        for leaf in self.unidentified_leaves():
             if leaf.node_idx < node_idx:
                 yield leaf
 
     def previous_leaves_containing(self, node, property_name):
-        """Return a list of leaves containing the given property that are
+        """Return a generator of leaves containing the given property that are
         before the given node (in the string)."""
-        return list(self._previous_leaves_containing(node, property_name))
+        node_idx = node.node_idx
+        for leaf in self.leaves_containing(property_name):
+            if leaf.node_idx < node_idx:
+                yield leaf
 
     def is_explicit(self):
         """Return whether the group was explicitly enclosed by
@@ -413,27 +408,19 @@ class MatchTree(BaseMatchTree):
         """Return a single guess that contains all the info found in the
         nodes of this tree, trying to merge properties as good as possible.
         """
-        if not self._matched_result:
+        if not getattr(self, '_matched_result', None):
             # we need to make a copy here, as the merge functions work in place and
             # calling them on the match tree would modify it
             parts = [copy.copy(node.guess) for node in self.nodes() if node.guess]
 
-            # 1- try to merge similar information together and give it a higher
-            #    confidence
-            for int_part in ('year', 'season', 'episodeNumber'):
-                merge_similar_guesses(parts, int_part, choose_int)
-
-            for string_part in ('title', 'series', 'container', 'format',
-                                'releaseGroup', 'website', 'audioCodec',
-                                'videoCodec', 'screenSize', 'episodeFormat',
-                                'audioChannels', 'idNumber'):
-                merge_similar_guesses(parts, string_part, choose_string)
-
-            # 2- merge the rest, potentially discarding information not properly
-            #    merged before
-            result = merge_all(parts,
-                               append=['language', 'subtitleLanguage', 'other', 'special'])
+            result = smart_merge(parts)
 
             log.debug('Final result: ' + result.nice_string())
             self._matched_result = result
+
+        for unidentified_leaves in self.unidentified_leaves():
+            if 'unidentified' not in self._matched_result:
+                self._matched_result['unidentified'] = []
+            self._matched_result['unidentified'].append(unidentified_leaves.clean_value)
+
         return self._matched_result

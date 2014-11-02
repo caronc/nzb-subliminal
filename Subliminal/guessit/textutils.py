@@ -48,7 +48,7 @@ def strip_brackets(s):
 _dotted_rexp = re.compile(r'(?:\W|^)(([A-Za-z]\.){2,}[A-Za-z]\.?)')
 
 
-def clean_string(st):
+def clean_default(st):
     for c in sep:
         # do not remove certain chars
         if c in ['-', ',']:
@@ -79,12 +79,15 @@ def clean_string(st):
 
     return result
 
-
 _words_rexp = re.compile('\w+', re.UNICODE)
 
 
 def find_words(s):
     return _words_rexp.findall(s.replace('_', ' '))
+
+
+def iter_words(s):
+    return _words_rexp.finditer(s.replace('_', ' '))
 
 
 def reorder_title(title, articles=('the',), separators=(',', ', ')):
