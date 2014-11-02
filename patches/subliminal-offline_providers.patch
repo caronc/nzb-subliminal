@@ -40,3 +40,13 @@ diff -Naur subliminal-0.7.4.allpatched/subliminal/api.py subliminal-0.7.4.handle
          initialized_providers[provider_entry_point.name] = provider
      try:
          for video in videos:
+@@ -302,6 +302,9 @@
+                 provider.terminate()
+             except ProviderNotAvailable:
+                 logger.warning('Provider %r is not available, unable to terminate', provider_name)
++            except socket_error as err:
++                logger.warning('Provider %r is not available, unable to terminate', provider_name)
++                logger.debug('Provider socket error: %r', str(err))
+             except:
+                 logger.exception('Unexpected error in provider %r', provider_name)
+     return downloaded_subtitles
