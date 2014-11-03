@@ -38,34 +38,35 @@ The following dependencies are already provided for you within the
 _Subliminal_ directory and no further effort is required by you. However, it
 should be known that Subliminal.py depends on the following packages:
 
-| Name                         | Version | Source                                                                           |
-| ---------------------------- |:------- |:-------------------------------------------------------------------------------- |
-| pysrt                        | 1.0.1   | https://pypi.python.org/pypi/pysrt/1.0.1                                         |
-| babelfish                    | 0.5.3   | https://pypi.python.org/pypi/babelfish/0.5.3                                     |
-| backports-ssl_match_hostname | 3.4.0.2 | https://pypi.python.org/pypi/backports.ssl_match_hostname/3.4.0.2                |
-| beautifulsoup4               | 4.3.2   | https://pypi.python.org/pypi/beautifulsoup4/4.3.2                                |
-| charade                      | 1.0.3   | https://pypi.python.org/pypi/charade/1.0.3                                       |
-| chardet                      | 2.2.1   | https://pypi.python.org/pypi/chardet/2.2.1                                       |
-| dogpile-cache                | 0.5.4   | https://pypi.python.org/pypi/dogpile.cache/0.5.4                                 |
-| dogpile-core                 | 0.4.1   | https://pypi.python.org/pypi/dogpile.core/0.4.1                                  |
-| enzyme                       | 0.4.1   | https://pypi.python.org/pypi/enzyme/0.4.1                                        |
-| guesslanguage                | 0.2.1   | https://pypi.python.org/pypi/guesslanguage/0.2.1                                 |
-| guessit                      | 0.9.3   | https://pypi.python.org/pypi/guessit/0.9.3                                       |
-| html5lib                     | 0.999   | https://pypi.python.org/pypi/html5lib/0.999                                      |
-| ndg-httpsclient              | 0.3.2   | https://pypi.python.org/pypi/ndg-httpsclient/0.3.2                               |
-| ordereddict                  | 1.1     | https://pypi.python.org/pypi/ordereddict/1.1                                     |
-| pynzbget                     | 0.2.0   | https://github.com/caronc/pynzbget                                               |
-| repoze.lru                   | 0.6     | https://pypi.python.org/pypi/repoze.lru/0.6                                      |
-| requests **[P]**             | 2.3.0   | https://pypi.python.org/pypi/requests/2.3.0                                      |
-| setuptools                   | 0.6.10  | http://svn.python.org/projects/sandbox/branches/setuptools-0.6/pkg_resources.py  |
-| silpa_common                 | 0.3     | https://pypi.python.org/pypi/silpa_common/0.3                                    |
-| six                          | 1.6.1   | https://pypi.python.org/pypi/six/1.6.1                                           |
-| stevedore                    | 0.14    | https://pypi.python.org/pypi/stevedore/0.14                                      |
-| subliminal **[P]**           | 0.7.4   | https://pypi.python.org/pypi/subliminal/0.7.4                                    |
-| pyasn1                       | 0.1.7   | https://pypi.python.org/pypi/pyasn1/0.1.7                                        |
-| pyOpenSSL                    | 0.14    | https://pypi.python.org/pypi/pyOpenSSL/0.14                                      |
-| pyxdg                        | 0.25    | https://pypi.python.org/pypi/pyxdg/0.25                                          |
-| urllib3 **[P]**              | 1.9     | https://pypi.python.org/pypi/urllib3/1.9                                         |
+| Name                         | Version | Source                                                                               |
+| ---------------------------- |:------- |:------------------------------------------------------------------------------------ |
+| pysrt                        | 1.0.1   | https://pypi.python.org/pypi/pysrt/1.0.1                                             |
+| babelfish                    | 0.5.3   | https://pypi.python.org/pypi/babelfish/0.5.3                                         |
+| backports-ssl_match_hostname | 3.4.0.2 | https://pypi.python.org/pypi/backports.ssl_match_hostname/3.4.0.2                    |
+| beautifulsoup4               | 4.3.2   | https://pypi.python.org/pypi/beautifulsoup4/4.3.2                                    |
+| charade                      | 1.0.3   | https://pypi.python.org/pypi/charade/1.0.3                                           |
+| chardet                      | 2.2.1   | https://pypi.python.org/pypi/chardet/2.2.1                                           |
+| python-dateutil              | 2.2     | https://pypi.python.org/packages/source/p/python-dateutil/python-dateutil-2.2.tar.gz |
+| dogpile-cache                | 0.5.4   | https://pypi.python.org/pypi/dogpile.cache/0.5.4                                     |
+| dogpile-core                 | 0.4.1   | https://pypi.python.org/pypi/dogpile.core/0.4.1                                      |
+| enzyme                       | 0.4.1   | https://pypi.python.org/pypi/enzyme/0.4.1                                            |
+| guesslanguage                | 0.2.1   | https://pypi.python.org/pypi/guesslanguage/0.2.1                                     |
+| guessit                      | 0.9.3   | https://pypi.python.org/pypi/guessit/0.9.3                                           |
+| html5lib                     | 0.999   | https://pypi.python.org/pypi/html5lib/0.999                                          |
+| ndg-httpsclient              | 0.3.2   | https://pypi.python.org/pypi/ndg-httpsclient/0.3.2                                   |
+| ordereddict                  | 1.1     | https://pypi.python.org/pypi/ordereddict/1.1                                         |
+| pynzbget                     | 0.2.0   | https://github.com/caronc/pynzbget                                                   |
+| repoze.lru                   | 0.6     | https://pypi.python.org/pypi/repoze.lru/0.6                                          |
+| requests **[P]**             | 2.3.0   | https://pypi.python.org/pypi/requests/2.3.0                                          |
+| setuptools                   | 0.6.10  | http://svn.python.org/projects/sandbox/branches/setuptools-0.6/pkg_resources.py      |
+| silpa_common                 | 0.3     | https://pypi.python.org/pypi/silpa_common/0.3                                        |
+| six                          | 1.6.1   | https://pypi.python.org/pypi/six/1.6.1                                               |
+| stevedore                    | 0.14    | https://pypi.python.org/pypi/stevedore/0.14                                          |
+| subliminal **[P]**           | 0.7.4   | https://pypi.python.org/pypi/subliminal/0.7.4                                        |
+| pyasn1                       | 0.1.7   | https://pypi.python.org/pypi/pyasn1/0.1.7                                            |
+| pyOpenSSL                    | 0.14    | https://pypi.python.org/pypi/pyOpenSSL/0.14                                          |
+| pyxdg                        | 0.25    | https://pypi.python.org/pypi/pyxdg/0.25                                              |
+| urllib3 **[P]**              | 1.9     | https://pypi.python.org/pypi/urllib3/1.9                                             |
 
 **Note:** I patched (denoted with a **[P]** above) the some of the libraries
 mentioned above in efforts to:
