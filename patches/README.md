@@ -23,7 +23,7 @@ subtitles or not.
 
 | Patch | Description |
 | ----- | ----------- |
-| enzyme-python.26.support.patch | Eliminates reference to logging.NullHandler() which isn't available until Python 2.7. The patch allows the library to be used with systems running Python v2.4 - v2.6.
+| [enzyme-python.26.support.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/enzyme-python.26.support.patch) | Eliminates reference to logging.NullHandler() which isn't available until Python 2.7. The patch allows the library to be used with systems running Python v2.4 - v2.6.
 
 | Enzyme v0.4.1 Sources |
 | --------------------- |
@@ -57,7 +57,7 @@ python. The actual retreival of subtitles is through this library itself.
 
 | Patch | Description |
 | ----- | ----------- |
-| requests-use.global.deps.patch | A patch put in place to eliminate reference to the extra libraries this package includes. This way we can use the ones we're already providing and maintaining instead.
+| [requests-use.global.deps.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/requests-use.global.deps.patch) | A patch put in place to eliminate reference to the extra libraries this package includes. This way we can use the ones we're already providing and maintaining instead.
 
 | Request v2.3.0 Source |
 | --------------------- |
@@ -104,16 +104,16 @@ listed since some alter files previously changed by another.
 
 | Patch | Description |
 | ----- | ----------- |
-| subliminal-reqfix.patch | Update guessit and babelfish requirements to support the newer versions.
-| subliminal-python.26.support.patch | Python v2.6 support by eliminating reference to [PEP 274](http://legacy.python.org/dev/peps/pep-0274/) (Dict Comprehensions) and reference to logging.NullHandler(). Some Babelfish adjustments were also lumped into this patch.
-| subliminal-guessit07.support.patch | Updated some guessit references to accomodate the library version packaged.
-| subliminal-hearing_impaired.ignore.option.patch | Make it so we don't have to exclusively download hearing-impared or non-hearing impaired subtitles. This gives us the flexability to download whatever best matches.
-| subliminal-double.download.patch | Eliminates a bug that seems to cause Subliminal to download more then one subtitle (overwriting the last) when there is multiple matched ones.
-| subliminal-prioritize.patch | Introduce a priortization of which subtitle to choose when both hearing-impared and/or non-hearing impaired subtitles are found.
-| subliminal-offline_providers.patch | Handle subtitle providers that aren't responding to web requests (do to maintenance or whatever) more gracefully. Prior to this patch; subliminal crashes if a provider goes offline or fails to respond.
-| subliminal-podnapisi.patch | In Aug 2014, podnapisi changed their web page structure around which effectively broke this as a viable provider to search. This patch allows subliminal to successfully search and fetch content from this location again.
-| subliminal-quote_support.patch | Some TV Shows and Movies have quotes in their title. These quotes were interfering with the potential matches on providers when being queried for subtitles.  This patch resolves this dillema.
-| subliminal-addic7ed.logging.patch | Login and Logoff of Addic7ed server made just a bit more obvious
+| [subliminal-reqfix.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-reqfix.patch) | Update guessit and babelfish requirements to support the newer versions.
+| [subliminal-python.26.support.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-python.26.support.patch) | Python v2.6 support by eliminating reference to [PEP 274](http://legacy.python.org/dev/peps/pep-0274/) (Dict Comprehensions) and reference to logging.NullHandler(). Some Babelfish adjustments were also lumped into this patch.
+| [subliminal-guessit07.support.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-guessit07.support.patch) | Updated some guessit references to accomodate the library version packaged.
+| [subliminal-hearing_impaired.ignore.option.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-hearing_impaired.ignore.option.patch) | Make it so we don't have to exclusively download hearing-impared or non-hearing impaired subtitles. This gives us the flexability to download whatever best matches.
+| [subliminal-double.download.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-double.download.patch) | Eliminates a bug that seems to cause Subliminal to download more then one subtitle (overwriting the last) when there is multiple matched ones.
+| [subliminal-prioritize.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-prioritize.patch) | Introduce a priortization of which subtitle to choose when both hearing-impared and/or non-hearing impaired subtitles are found.
+| [subliminal-offline_providers.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-offline_providers.patch) | Handle subtitle providers that aren't responding to web requests (do to maintenance or whatever) more gracefully. Prior to this patch; subliminal crashes if a provider goes offline or fails to respond.
+| [subliminal-podnapisi.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-podnapisi.patch) | In Aug 2014, podnapisi changed their web page structure around which effectively broke this as a viable provider to search. This patch allows subliminal to successfully search and fetch content from this location again.
+| [subliminal-quote_support.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-quote_support.patch) | Some TV Shows and Movies have quotes in their title. These quotes were interfering with the potential matches on providers when being queried for subtitles.  This patch resolves this dillema.
+| [subliminal-addic7ed.logging.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-addic7ed.logging.patch) | Login and Logoff of Addic7ed server made just a bit more obvious
 
 ```bash
 # Assuming you have our dependencies fullfilled
@@ -160,7 +160,7 @@ to another level).
 
 | Patch | Description |
 | ----- | ----------- |
-| requests-use.global.deps.patch | A patch put in place to eliminate reference to the extra libraries this package includes. This way we can use the ones we're already providing and maintaining instead.
+| [urllib3-use.global.deps.patch](https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/urllib3-use.global.deps.patch) | A patch put in place to eliminate reference to the extra libraries this package includes. This way we can use the ones we're already providing and maintaining instead.
 
 | Request v1.9 Source |
 | --------------------- |
