@@ -1018,7 +1018,7 @@ class ScriptBase(object):
             self.logger.warning(
                 'NZBParse - NZB-File is missing: %s' % basename(nzbfile))
 
-        except XMLSyntaxError, e:
+        except XMLSyntaxError as e:
             if e[0] is None:
                 # this is a bug with lxml in earlier versions
                 # https://bugs.launchpad.net/lxml/+bug/1185701
@@ -1043,7 +1043,7 @@ class ScriptBase(object):
                     str(e),
                 ))
 
-        except Exception, e:
+        except Exception as e:
             self.logger.error(
                 'NZBParse - NZB-File is corrupt: %s' % nzbfile,
             )

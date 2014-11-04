@@ -235,7 +235,7 @@ class Database(object):
                 self.database,
             )
 
-        except Exception, e:
+        except Exception as e:
             self.socket = None
             self.logger.error('Failed to connect SQLite Database')
             self.logger.debug(
@@ -271,11 +271,11 @@ class Database(object):
             result = self.socket.execute(*args, **kwargs)
             self.logger.vdebug('DB Executing: %s' % str(args))
 
-        except sqlite3.OperationalError, e:
+        except sqlite3.OperationalError as e:
             self.logger.debug('DB Execute OpError: %s' % str(e))
             return None
 
-        except Exception, e:
+        except Exception as e:
             self.logger.debug('DB Execute Error: %s' % str(e))
             return None
 
@@ -413,7 +413,7 @@ class Database(object):
                     (self.container, category, key),):
                     return False
 
-        except sqlite3.OperationalError, e:
+        except sqlite3.OperationalError as e:
             # Database is corrupt or changed
             self.logger.debug(
                 "Database.unset() Operational Error: %s" % str(e))
@@ -479,7 +479,7 @@ class Database(object):
             # commit changes
             self.socket.commit()
 
-        except sqlite3.OperationalError, e:
+        except sqlite3.OperationalError as e:
             # Database is corrupt or changed
             self.logger.debug(
                 "Database.set() Operational Error: %s" % str(e))
@@ -530,7 +530,7 @@ class Database(object):
                 except:
                     return default
 
-        except sqlite3.OperationalError, e:
+        except sqlite3.OperationalError as e:
             # Database is corrupt or changed
             self.logger.debug(
                 "Database.get() Operational Error: %s" % str(e))
@@ -577,7 +577,7 @@ class Database(object):
                 (self.container, category),
             )
 
-        except sqlite3.OperationalError, e:
+        except sqlite3.OperationalError as e:
             # Database is corrupt or changed
             self.logger.debug(
                 "Database.items() Operational Error: %s" % str(e))
