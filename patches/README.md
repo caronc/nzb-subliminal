@@ -113,6 +113,7 @@ listed since some alter files previously changed by another.
 | subliminal-offline_providers.patch | Handle subtitle providers that aren't responding to web requests (do to maintenance or whatever) more gracefully. Prior to this patch; subliminal crashes if a provider goes offline or fails to respond.
 | subliminal-podnapisi.patch | In Aug 2014, podnapisi changed their web page structure around which effectively broke this as a viable provider to search. This patch allows subliminal to successfully search and fetch content from this location again.
 | subliminal-quote_support.patch | Some TV Shows and Movies have quotes in their title. These quotes were interfering with the potential matches on providers when being queried for subtitles.  This patch resolves this dillema.
+| subliminal-addic7ed.logging.patch | Login and Logoff of Addic7ed server made just a bit more obvious
 
 ```bash
 # Assuming you have our dependencies fullfilled
@@ -132,6 +133,7 @@ curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/pat
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-offline_providers.patch
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-podnapisi.patch
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-quote_support.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-addic7ed.logging.patch
 
 # Extract our downloaded archive
 tar xvfz subliminal-0.7.4.tar.gz
@@ -146,6 +148,7 @@ patch -d subliminal-0.7.4 -p1 < subliminal-prioritize.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-offline_providers.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-podnapisi.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-quote_support.patch
+patch -d subliminal-0.7.4 -p1 < subliminal-addic7ed.logging.patch
 
 # You're done!
 ```
