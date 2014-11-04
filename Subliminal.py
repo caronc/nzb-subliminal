@@ -1064,8 +1064,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             fullstats=True,
         )
 
-        print str(files)
-
         # Apply Filters
         if not force:
             ref_time = datetime.now() - timedelta(hours=maxage)
