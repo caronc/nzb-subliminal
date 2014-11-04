@@ -23,6 +23,11 @@ with versions 12 and 11 as well.
 * It greatly simplifies the handling of environment variables and interaction
   to and from NZBGet
 
+Documentation
+=============
+For the most up to date information and API, visit the wiki at
+* https://github.com/caronc/pynzbget/wiki
+
 The entire framework was based on the information found here:
 * NZBGet: http://nzbget.net
 * NZBGet: scripting documentation: http://nzbget.net/Extension_scripts
@@ -35,6 +40,9 @@ The following are some of the functionality that is built in for you:
                 as if the expected configuration variables you specified
                 are present.
 
+ * health_check() - Checks the status of the retrieved content, currently
+                this is only useful during Post-Processing
+
  * push()     - pushes a variables to the NZBGet server
 
 
@@ -45,6 +53,17 @@ The following are some of the functionality that is built in for you:
                 variables. If you enable the SQLite database, set content is
                 put here as well so that it can be retrieved by another
                 script.
+
+ * unset()    - This allows you to unset values set by set() and get() as well
+                as ones set by push()
+
+ * nzb_set()  - Similar to the set() function identified above except it
+                is used to build an nzb meta hash table which can be later
+                pushed to the server using push_dnzb().
+
+ * nzb_get()  - Retieves NZB Meta information previously stored.
+
+ * nzb_unset()- Removes a variable previously set completely.
 
  * get_api()  - Retreive a simple API/RPC object built from the global
                 variables NZBGet passes into an external program when
@@ -66,6 +85,10 @@ The following are some of the functionality that is built in for you:
                   Hence: parse_list('.mkv, .avi') returns:
                       [ '.mkv', '.avi' ]
 
+ * parse_path_list() - Very smilar to parse_list() except that it is used
+                  to handle directory paths while cleaning them up at the
+                  same time.
+
  * parse_bool() - Handles all of NZBGet's configuration options such as
                   'on' and 'off' as well as 'yes' or 'no', or 'True' and
                   'False'.  It greatly simplifies the checking of these
@@ -80,6 +103,14 @@ The following are some of the functionality that is built in for you:
                   why redo grunt work if it's already done for you?
                   if no previous guess content was pushed, then an
                   empty dictionary is returned.
+
+ * push_dnzb() - You can push all nzb meta information onbtained to
+                  the NZBGet server as DNZB_ meta tags.
+
+ * pull_dnzb() - Pull all DNZB_ meta tags issued by the server and
+                 return their values in a dictionary.
+                  if no  DNZB_ (NZB Meta information) was found, then an
+                  empty dictionary is returned instead.
 
  * deobfuscate() - Take a filename and return it in a deobfuscated to the
                    best of its ability. (_PostProcessScript_ only)
@@ -130,7 +161,6 @@ class MyPostProcessScript(PostProcessScript):
         # All system environment variables (NZBOP_.*) as well as Post
         # Process script specific content (NZBPP_.*)
         # following dictionary (without the NZBOP_ or NZBPP_ prefix):
-        print 'TEMPDIR (directory is: %s' % self.get('TEMPDIR')
         print 'DIRECTORY %s' self.get('DIRECTORY')
         print 'NZBNAME %s' self.get('NZBNAME')
         print 'NZBFILENAME %s' self.get('NZBFILENAME')
@@ -143,22 +173,22 @@ class MyPostProcessScript(PostProcessScript):
         # keys that were defined by the system (such as CATEGORY, DIRECTORY,
         # etc, you may have some undesirable results.  Try to avoid reusing
         # system variables already defined (identified above):
-        self.set('MY_VAR', 'MY_VALUE')
+        self.set('MY_KEY', 'MY_VALUE')
 
         # You can fetch it back; this will also set an entry in  the
         # sqlite database for each hash references that can be pulled from
         # another script that simply calls self.get('MY_VAR')
-        print self.get('MY_VAR') # prints MY_VALUE
+        print self.get('MY_KEY') # prints MY_VALUE
 
         # You can also use push() which is similar to set()
         # except that it interacts with the NZBGet Server and does not use
         # the sqlite database. This can only be reached across other
         # scripts if the calling application is NZBGet itself
-        self.push('ANOTHER_VAR', 'ANOTHER_VALUE')
+        self.push('ANOTHER_KEY', 'ANOTHER_VALUE')
 
         # You can still however locally retrieve what you set using push()
         # with the get() function
-        print self.get('ANOTHER_VAR') # prints ANOTHER_VALUE
+        print self.get('ANOTHER_KEY') # prints ANOTHER_VALUE
 
         # Your script configuration files (NZBPP_.*) are here in this
         # dictionary (again without the NZBPP_ prefix):
@@ -196,10 +226,6 @@ Scan Script Example
 ===================
 ```
 ############################################################################
-Scan Script Usage/Example
-############################################################################
-
-############################################################################
 ### NZBGET SCAN SCRIPT                                                   ###
 #
 # Author: Your Name Goes Here <your@email.address>
@@ -234,7 +260,6 @@ class MyScanScript(ScanScript):
         # All system environment variables (NZBOP_.*) as well as Post
         # Process script specific content (NZBNP_.*)
         # following dictionary (without the NZBOP_ or NZBNP_ prefix):
-        print 'TEMPDIR (directory is: %s' % self.get('TEMPDIR')
         print 'DIRECTORY %s' self.get('DIRECTORY')
         print 'FILENAME %s' self.get('FILENAME')
         print 'NZBNAME %s' self.get('NZBNAME')
@@ -242,46 +267,6 @@ class MyScanScript(ScanScript):
         print 'PRIORITY %s' self.get('PRIORITY')
         print 'TOP %s' self.get('TOP')
         print 'PAUSED %s' self.get('PAUSED')
-
-        # Set any variable you want by any key.  Note that if you use
-        # keys that were defined by the system (such as CATEGORY, DIRECTORY,
-        # etc, you may have some undesirable results.  Try to avoid reusing
-        # system variables already defined (identified above):
-        self.set('MY_VAR', 'MY_VALUE')
-
-        # You can fetch it back; this will also set an entry in  the
-        # sqlite database for each hash references that can be pulled from
-        # another script that simply calls self.get('MY_VAR')
-        print self.get('MY_VAR') # prints MY_VALUE
-
-        # You can also use push() which is similar to set()
-        # except that it interacts with the NZBGet Server and does not use
-        # the sqlite database. This can only be reached across other
-        # scripts if the calling application is NZBGet itself
-        self.push('ANOTHER_VAR', 'ANOTHER_VALUE')
-
-        # You can still however locally retrieve what you set using push()
-        # with the get() function
-        print self.get('ANOTHER_VAR') # prints ANOTHER_VALUE
-
-        # Your script configuration files (NZBNP_.*) are here in this
-        # dictionary (again without the NZBNP_ prefix):
-        # assume you defined `Debug=no` in the first 10K of your ScanScript
-        # NZBGet translates this to `NZBNP_DEBUG` which can be retrieved
-        # as follows:
-        print 'DEBUG %s' self.get('DEBUG')
-
-        # Returns have been made easy.  Just return:
-        #   * True if everything was successful
-        #   * False if there was a problem
-        #   * None if you want to report that you've just gracefully
-                  skipped processing (this is better then False)
-                  in some circumstances. This is neither a failure or a
-                  success status.
-
-        # Feel free to use the actual exit codes as well defined by
-        # NZBGet on their website.  They have also been defined here
-        # from nzbget import EXIT_CODE
 
         return True
 
@@ -294,4 +279,120 @@ if __name__ == "__main__":
 
     # call run() and exit() using it's returned value
     exit(scanscript.run())
+```
+
+Scheduler Script Example
+=======================
+```
+############################################################################
+### NZBGET SCHEDULER SCRIPT                                               ###
+#
+# Describe your Schedule Script here
+# Author: Your Name Goes Here <your@email.address>
+#
+
+############################################################################
+### OPTIONS                                                              ###
+
+#
+# Enable NZBGet debug logging (yes, no)
+# Debug=no
+#
+
+### NZBGET SCHEDULER SCRIPT                                              ###
+############################################################################
+
+from nzbget import SchedulerScript
+
+# Now define your class while inheriting the rest
+class MySchedulerScript(SchedulerScript):
+    def main(self, *args, **kwargs):
+
+        # Version Checking, Environment Variables Present, etc
+        if not self.validate():
+            # No need to document a failure, validate will do that
+            # on the reason it failed anyway
+            return False
+
+        # write all of your code here you would have otherwise put in the
+        # script
+
+        # All system environment variables (NZBOP_.*) as well as Post
+        # Process script specific content (NZBSP_.*)
+        # following dictionary (without the NZBOP_ or NZBSP_ prefix):
+        print 'DESTDIR %s' self.get('DESTDIR')
+
+        return True
+# Call your script as follows:
+if __name__ == "__main__":
+    from sys import exit
+
+    # Create an instance of your Script
+    myscript = MySchedulerScript()
+
+    # call run() and exit() using it's returned value
+    exit(myscript.run())
+```
+
+MultiScript Example
+=======================
+```
+############################################################################
+### NZBGET POST-PROCESSING/SCHEDULER SCRIPT                              ###
+#
+# Describe your Multi Script here
+#
+# Author: Your Name Goes Here <your@email.address>
+#
+
+############################################################################
+### OPTIONS                                                              ###
+
+#
+# Enable NZBGet debug logging (yes, no)
+# Debug=no
+#
+
+### NZBGET POST-PROCESSING/SCHEDULER SCRIPT                              ###
+############################################################################
+
+from nzbget import PostProcessScript
+from nzbget import SchedulerScript
+
+# Now define your class while inheriting the rest
+class MyMultiScript(PostProcessScript, SchedulerScript):
+
+    def postprocess_main(self, *args, **kwargs):
+
+        # Version Checking, Environment Variables Present, etc
+        if not self.validate():
+            # No need to document a failure, validate will do that
+            # on the reason it failed anyway
+            return False
+
+        # write your main function for your Post Processing
+
+        return True
+
+    def scheduler_main(self, *args, **kwargs):
+
+        # Version Checking, Environment Variables Present, etc
+        if not self.validate():
+            # No need to document a failure, validate will do that
+            # on the reason it failed anyway
+            return False
+
+        # write your main function for your Post Processing
+
+        return True
+
+# Call your script as follows:
+if __name__ == "__main__":
+    from sys import exit
+
+    # Create an instance of your Script
+    myscript = MyMultiScript()
+
+    # call run() and exit() using it's returned value
+    exit(myscript.run())
 ```
