@@ -700,16 +700,23 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             )
 
             # Add Guessed Information
-            videos.extend([
-                Video.fromguess(
-                    split(entry)[1],
-                    self.guess_info(
-                        entry,
-                        shared=shared,
-                        deobfuscate=deobfuscate,
-                        use_nzbheaders=use_nzbheaders,
-                    ))
-            ])
+            try:
+                videos.extend([
+                    Video.fromguess(
+                        split(entry)[1],
+                        self.guess_info(
+                            entry,
+                            shared=shared,
+                            deobfuscate=deobfuscate,
+                            use_nzbheaders=use_nzbheaders,
+                        ),
+                    )
+                ])
+            except ValueError as e:
+                # fromguess() throws a ValueError if show matches couldn't
+                # be detected using the content guessit matched.
+                continue
+
             # Depending if we are dealing with a TV Show or A Movie, we swap
             # our list of providers
             if isinstance(videos[0], Episode):
