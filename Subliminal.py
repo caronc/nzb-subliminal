@@ -701,11 +701,17 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
             # Add Guessed Information
             try:
+                _entry = entry.encode('utf-8', errors='replace')
+            except TypeError:
+                # Support Python >= 2.6
+                _entry = entry.encode('utf-8', 'replace')
+
+            try:
                 videos.extend([
                     Video.fromguess(
-                        split(entry)[1],
+                        split(_entry)[1],
                         self.guess_info(
-                            entry,
+                            _entry,
                             shared=shared,
                             deobfuscate=deobfuscate,
                             use_nzbheaders=use_nzbheaders,
