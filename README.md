@@ -102,7 +102,7 @@ Options:
   -l LANG, --language=LANG
                         The language the fetch the subtitles in (en, fr, etc).
   -p PROVIDER1,PROVIDER2,etc, --providers=PROVIDER1,PROVIDER2,etc
-                        Specify a list of providers (use comma's as
+                        Specify a list of providers (use commas as
                         delimiters) to identify the providers you wish to use.
                         The following will be used by default: 'opensubtitles,
                         tvsubtitles,podnapisi,addic7ed,thesubdb'

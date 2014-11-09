@@ -2183,7 +2183,7 @@ class ScriptBase(object):
         Hence: parse_list('.mkv, .iso, .avi', ['.avi', '.mp4') becomes:
             ['.mkv', '.iso', '.avi', '.mp4']
 
-        The parsing is very forgiving and accepts spaces, slashes, comma's
+        The parsing is very forgiving and accepts spaces, slashes, commas
         semicolons, and pipes as delimiters
         """
 

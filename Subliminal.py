@@ -29,13 +29,13 @@
 #
 # This post-processing script is a wrapper for "Subliminal",
 # a python library to search and download subtitles, written
-# by Antoine Bertin (Diaoul Ael). All credit goes to the original author.
+# by Antoine Bertin (Diaoul Ael).
 #
 # Info about this Subliminal NZB Script:
 # Author: Chris Caron (lead2gold@gmail.com).
-# Date: Fri, Sep 14th, 2014.
+# Date: Sun, Nov  9th, 2014.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-# Script Version: 0.8.0.
+# Script Version: 0.9.0.
 #
 # NOTE: This script requires Python to be installed on your system.
 #
@@ -1158,7 +1158,7 @@ if __name__ == "__main__":
         "-p",
         "--providers",
         dest="providers",
-        help="Specify a list of providers (use comma's as delimiters) to " + \
+        help="Specify a list of providers (use commas as delimiters) to " + \
             "identify the providers you wish to use. The following will " + \
             "be used by default: '%s'" % ','.join(DEFAULT_PROVIDERS),
         metavar="PROVIDER1,PROVIDER2,etc",
