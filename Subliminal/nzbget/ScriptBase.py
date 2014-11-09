@@ -198,8 +198,8 @@ NZBGET_BOOL_FALSE = u'no'
 # into when using get_files()
 SKIP_DIRECTORIES = (
     # OS X Meta Directories
-    u'.DS_Store',
-    u'.AppleDouble',
+    '.DS_Store',
+    '.AppleDouble',
 )
 
 class EXIT_CODE(object):
