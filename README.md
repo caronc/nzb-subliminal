@@ -6,6 +6,10 @@ Subliminal is a fantastic tool that can take a file you provide to it and
 makes use of a series of websites in efforts to obtain the subtitles
 associated with it.
 
+Non-NZBGet users can also use this script via a cron (or simply call it
+from the command line) to automatically poll directories for the latest
+subtitles for the content within it. See __Command Line__ section below.
+
 Installation Instructions
 =========================
 * Ensure you have a copy of NZBGet v11 or higher which can be retrieved from http://nzbget.net
@@ -76,3 +80,88 @@ mentioned above in efforts to:
 
 To be as transparent as possible, all patches have been provided in the
 [_/patches_](https://github.com/caronc/nzbget-subliminal/tree/master/patches) directory.
+
+Command Line
+============
+Subliminal.py has a built in command line interface that can be easily tied
+to a cron entry or can be easilly called from the command line to automate
+the fetching of subtitles.
+
+Here are the switches available to you:
+```bash
+Usage: Subliminal.py [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -S DIR, --scandir=DIR
+                        The directory to scan against. Note: that by setting
+                        this variable, it is implied that you are not running
+                        this from the command line.
+  -a AGE, --maxage=AGE  The maximum age a file can be to be considered
+                        searchable. This value is represented in hours
+  -l LANG, --language=LANG
+                        The language the fetch the subtitles in (en, fr, etc).
+  -p PROVIDER1,PROVIDER2,etc, --providers=PROVIDER1,PROVIDER2,etc
+                        Specify a list of providers (use comma's as
+                        delimiters) to identify the providers you wish to use.
+                        The following will be used by default: 'opensubtitles,
+                        tvsubtitles,podnapisi,addic7ed,thesubdb'
+  -s, --single          Download content without the language code in the
+                        subtitle filename.
+  -b, --basic           Do not attempt to parse additional information from
+                        the video file. Running in a basic mode is much faster
+                        but can make it more difficult to determine the
+                        correct subtitle if more then one is matched.
+  -z SIZE_IN_MB, --minsize=SIZE_IN_MB
+                        Specify the minimum size a video must be to be worthy
+                        of of checking for subtiles. This value is interpreted
+                        in MB (Megabytes) and defaults to 150 MB.
+  -f, --force           Force a download reguardless of the file age
+  -o, --overwrite       Overwrite a subtitle in the event one is already
+                        present.
+  -m MODE, --fetch-mode=MODE
+                        Identify the fetch mode you wish to invoke, the
+                        options are: 'ImpairedOnly', 'StandardOnly',
+                        'BestScore', 'StandardFirst', 'ImpairedFirst'.  The
+                        default is BestScore
+  -U USERNAME, --addic7ed-username=USERNAME
+                        You must specify a Addic7ed username if you wish to
+                        use them as one of your chosen providers.
+  -P PASSWORD, --addic7ed-password=PASSWORD
+                        You must specify a Addic7ed password if you wish to
+                        use them as one of your chosen providers.
+  -L FILE, --logfile=FILE
+                        Send output to the specified logfile instead of
+                        stdout.
+  -D, --debug           Debug Mode
+```
+
+Here is simple example:
+```bash
+# Scan a single directory (recursively) for english subtitles
+python2 Subliminal.py -s -f -S /usr/share/TVShows
+```
+
+You can scan multiple directories with the following command:
+```bash
+# Scan a single directory (recursively) for english subtitles
+python2 Subliminal.py -s -f -S "/usr/share/TVShows, /usr/share/Movies"
+```
+
+Another nice feature this tool offers is the ability to _expire_ the
+need to check certain content.  Considering that most of us keep all our
+videos in one common location.  It would be excessive overkill to poll
+the internet each and every time for each and every file we have when we
+call this script.  We can assume, that if there are no subtitles within the
+last 24 hours for our video; there aren't going to be any.
+
+In the above examples, I provided a __--force__ (__-f__) switch which bypasses
+this feature. But if you want to set up a cron entry to scan your library on
+a regular basis, this feature can save you time and effort. A cron could be
+easily configured to scan your library every hour as so:
+```bash
+# $> crontab -e
+0 * * * * /path/to/Subliminal.py -s -S "/usr/share/TVShows, /usr/share/Movies"
+```
+If 24 hours seems to short of a window for you, then just specify the
+__--age__ (-a) switch and adjust the time to your needs.
