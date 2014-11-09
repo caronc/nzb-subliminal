@@ -1839,17 +1839,15 @@ class ScriptBase(object):
            directory. You can additionally pass in filters as a list or
            string) to filter the results returned.
 
-           Note: All returned content is decoded to unicode
-
               ex:
               {
-                 u'/full/path/to/file.mkv': {
-                     u'basename': u'file.mkv',
-                     u'dirname': u'/full/path/to',
+                 '/full/path/to/file.mkv': {
+                     'basename': 'file.mkv',
+                     'dirname': '/full/path/to',
                      # identify the filename (without applied extension)
-                     u'filename': u'file',
+                     'filename': 'file',
                      # always tolower() applied to:
-                     u'extension': u'mkv',
+                     'extension': 'mkv',
 
                      # If fullstatus == True then the following additional
                      # content is provided.
@@ -1889,14 +1887,6 @@ class ScriptBase(object):
         elif not isinstance(search_dir, basestring):
             # Unsupported
             return {}
-
-        elif not isinstance(search_dir, unicode):
-            # Convert to Unicode Type
-            try:
-                search_dir = search_dir.decode(self.charset, errors='ignore')
-            except TypeError:
-                # Support Python <= 2.6 too
-                search_dir = search_dir.decode(self.charset, 'ignore')
 
         # Change all filters strings lists (if they aren't already)
         if regex_filter is None:
@@ -2005,10 +1995,10 @@ class ScriptBase(object):
             # we fetch
             _file = {
                 search_dir: {
-                u'basename': fname,
-                u'dirname': dname,
-                u'extension': unicode(splitext(basename(fname))[1].lower()),
-                u'filename': unicode(splitext(basename(fname))[0]),
+                'basename': fname,
+                'dirname': dname,
+                'extension': splitext(basename(fname))[1].lower(),
+                'filename': splitext(basename(fname))[0],
                 }
             }
             if fullstats:
@@ -2094,10 +2084,10 @@ class ScriptBase(object):
                 # If we reach here, we store the file found
                 _file = join(dname, fname)
                 files[_file] = {
-                    u'basename': fname,
-                    u'dirname': dname,
-                    u'extension': unicode(splitext(basename(fname))[1].lower()),
-                    u'filename': unicode(splitext(basename(fname))[0]),
+                    'basename': fname,
+                    'dirname': dname,
+                    'extension': splitext(basename(fname))[1].lower(),
+                    'filename': splitext(basename(fname))[0],
                 }
 
                 if fullstats:
