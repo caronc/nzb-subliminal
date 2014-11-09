@@ -1059,7 +1059,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
         maxage = int(self.get('MaxAge', DEFAULT_MAXAGE))
         minsize = int(self.get('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)) * 1048576
-        force = self.get('Force', DEFAULT_FORCE)
+        force = self.parse_bool(self.get('Force', DEFAULT_FORCE))
         paths = self.parse_path_list(self.get('ScanDirectories'))
         single_mode = self.parse_bool(
             self.get('Single', DEFAULT_SINGLE))
