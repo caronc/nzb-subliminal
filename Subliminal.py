@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 #
 # Subliminal post-processing script for NZBGet
