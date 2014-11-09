@@ -170,5 +170,5 @@ easily configured to scan your library every hour as so:
 0 * * * * /path/to/Subliminal.py -s -S "/usr/share/TVShows, /usr/share/Movies"
 ```
 If 24 hours seems to short of a window for you, then just specify the
-__--age__ (-a) switch and adjust the time to your needs (it's value is represented
-in hours).
+__--age__ (__-a__) switch and adjust the time to your needs. Remember: it's
+value is represented in hours.
