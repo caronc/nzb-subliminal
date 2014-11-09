@@ -88,7 +88,7 @@ to a cron entry or can be easilly called from the command line to automate
 the fetching of subtitles.
 
 Here are the switches available to you:
-```bash
+```
 Usage: Subliminal.py [options]
 
 Options:
@@ -98,14 +98,16 @@ Options:
                         this variable, it is implied that you are not running
                         this from the command line.
   -a AGE, --maxage=AGE  The maximum age a file can be to be considered
-                        searchable. This value is represented in hours
+                        searchable. This value is represented in hours. The
+                        default value is 24 hours.
   -l LANG, --language=LANG
                         The language the fetch the subtitles in (en, fr, etc).
+                        The default value is 'en'.
   -p PROVIDER1,PROVIDER2,etc, --providers=PROVIDER1,PROVIDER2,etc
-                        Specify a list of providers (use commas as
-                        delimiters) to identify the providers you wish to use.
-                        The following will be used by default: 'opensubtitles,
-                        tvsubtitles,podnapisi,addic7ed,thesubdb'
+                        Specify a list of providers (use commas as delimiters)
+                        to identify the providers you wish to use. The
+                        following will be used by default: 'opensubtitles,tvsu
+                        btitles,podnapisi,addic7ed,thesubdb'
   -s, --single          Download content without the language code in the
                         subtitle filename.
   -b, --basic           Do not attempt to parse additional information from
@@ -116,14 +118,16 @@ Options:
                         Specify the minimum size a video must be to be worthy
                         of of checking for subtiles. This value is interpreted
                         in MB (Megabytes) and defaults to 150 MB.
-  -f, --force           Force a download reguardless of the file age
+  -f, --force           Force a download reguardless of the file age. This
+                        switch negates any value specified by the --age (-a)
+                        switch.
   -o, --overwrite       Overwrite a subtitle in the event one is already
                         present.
   -m MODE, --fetch-mode=MODE
                         Identify the fetch mode you wish to invoke, the
                         options are: 'ImpairedOnly', 'StandardOnly',
                         'BestScore', 'StandardFirst', 'ImpairedFirst'.  The
-                        default is BestScore
+                        default value is: 'BestScore'
   -U USERNAME, --addic7ed-username=USERNAME
                         You must specify a Addic7ed username if you wish to
                         use them as one of your chosen providers.
@@ -137,7 +141,7 @@ Options:
 ```
 
 Here is simple example:
-```
+```bash
 # Scan a single directory (recursively) for english subtitles
 python2 Subliminal.py -s -f -S /usr/share/TVShows
 ```

@@ -1144,14 +1144,16 @@ if __name__ == "__main__":
         "--maxage",
         dest="maxage",
         help="The maximum age a file can be to be considered searchable. " + \
-             "This value is represented in hours",
+             "This value is represented in hours. The default value is %d" % \
+                DEFAULT_MAXAGE + " hours.",
         metavar="AGE",
     )
     parser.add_option(
         "-l",
         "--language",
         dest="language",
-        help="The language the fetch the subtitles in (en, fr, etc).",
+        help="The language the fetch the subtitles in (en, fr, etc)." + \
+             " The default value is '%s'" % DEFAULT_LANGUAGE + ".",
         metavar="LANG",
     )
     parser.add_option(
@@ -1195,7 +1197,8 @@ if __name__ == "__main__":
         "--force",
         action="store_true",
         dest="force",
-        help="Force a download reguardless of the file age",
+        help="Force a download reguardless of the file age. This " + \
+             "switch negates any value specified by the --age (-a) switch.",
     )
     parser.add_option(
         "-o",
@@ -1210,7 +1213,7 @@ if __name__ == "__main__":
         dest="fetch_mode",
         help="Identify the fetch mode you wish to invoke," + \
         " the options are: '%s'" % "', '".join(FETCH_MODES) + ".  " +\
-        "The default is %s" % FETCH_MODE_DEFAULT,
+        "The default value is: %s" % FETCH_MODE_DEFAULT,
         metavar="MODE",
     )
     parser.add_option(
