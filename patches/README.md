@@ -114,6 +114,9 @@ listed since some alter files previously changed by another.
 | [subliminal-podnapisi.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-podnapisi.patch) | In Aug 2014, podnapisi changed their web page structure around which effectively broke this as a viable provider to search. This patch allows subliminal to successfully search and fetch content from this location again.
 | [subliminal-quote_support.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-quote_support.patch) | Some TV Shows and Movies have quotes in their title. These quotes were interfering with the potential matches on providers when being queried for subtitles.  This patch resolves this dillema.
 | [subliminal-addic7ed.logging.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-addic7ed.logging.patch) | Login and Logoff of Addic7ed server made just a bit more obvious
+| [subliminal-tvsubtitles.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-tvsubtitles.patch) | Better matching on TVSubtitles.net
+| [subliminal-double.download.pt2.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-double.download.pt2.patch) | This is an extension to an earlier patch created ([subliminal-double.download.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-double.download.patch)) which just improves on it.
+| [subliminal-clean_logging.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-clean_logging.patch) | When a provider is offline or becomes unresponsive, this patch just eliminates all the extra noise generated in the log files. I created this patch because opensubtitles seems to go offline often and the extra noise in the log files was not nessisary.
 
 ```bash
 # Assuming you have our dependencies fullfilled
@@ -134,6 +137,9 @@ curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/pat
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-podnapisi.patch
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-quote_support.patch
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-addic7ed.logging.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-tvsubtitles.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-double.download.pt2.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-clean_logging.patch
 
 # Extract our downloaded archive
 tar xvfz subliminal-0.7.4.tar.gz
@@ -149,6 +155,9 @@ patch -d subliminal-0.7.4 -p1 < subliminal-offline_providers.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-podnapisi.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-quote_support.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-addic7ed.logging.patch
+patch -d subliminal-0.7.4 -p1 < subliminal-tvsubtitles.patch
+patch -d subliminal-0.7.4 -p1 < subliminal-double.download.pt2.patch
+patch -d subliminal-0.7.4 -p1 < subliminal-clean_logging.patch
 
 # You're done!
 ```
