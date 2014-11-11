@@ -200,6 +200,7 @@ SKIP_DIRECTORIES = (
     # OS X Meta Directories
     '.DS_Store',
     '.AppleDouble',
+    '__MACOSX',
 )
 
 class EXIT_CODE(object):
