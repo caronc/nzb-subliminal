@@ -33,7 +33,7 @@
 #
 # Info about this Subliminal NZB Script:
 # Author: Chris Caron (lead2gold@gmail.com).
-# Date: Sun, Nov  9th, 2014.
+# Date: Sun, Nov 11th, 2014.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
 # Script Version: 0.9.1.
 #
