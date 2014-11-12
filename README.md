@@ -19,17 +19,17 @@ Subliminal 0.7.x branch here where I've added my own enhancements to help make
 this tool do what I want to. Enhancments such as:
 * The script pays attention to the date of the files and only acts on those that are within a certain (configurable) timeframe; _the default age is 24 hours_. This works really amazing for NZBGet users, but for those using this tool in it's standalone version may find it works for them too. This feature allows you to control how many times the internet is polled against a video that has never had subtitles posted for it.  There is more detail on this below in the __Command Line__ section on how to use _(or disable)_ this feature.
 * The script can operate in one of 5 modes:
-** __ImpairedOnly__: Only attempt to fetch subtitles that are identified as supporting the hearing impaired. _Note: This is not an enhancment and exists in the current version of subliminal._
-** __StandardOnly__: Only attempt to fetch subtitles that are _NOT_ identified as supporting the hearing impaired. _Note: This is not an enhancment and exists in the current version of subliminal._
-** __BestScore__: Just download the best matched subtitles reguardless of whether they are for the hearing impaired or not. _Note: This is the default option._
-** __ImpairedFirst__: This is similar to the __BestScore__ mode above; except the script scores (weighs) the hearing impaired matches a bit higher in efforts to make them be priority over any other subtitles matched.
-** __StandardFirst__: This is similar to the __BestScore__ mode above; except the script scores (weighs) the hearing impaired matches a bit lower in efforts to make them be the last to be considered as a match.
+   * __ImpairedOnly__: Only attempt to fetch subtitles that are identified as supporting the hearing impaired. _Note: This is not an enhancment and exists in the current version of subliminal._
+   * __StandardOnly__: Only attempt to fetch subtitles that are _NOT_ identified as supporting the hearing impaired. _Note: This is not an enhancment and exists in the current version of subliminal._
+   * __BestScore__: Just download the best matched subtitles reguardless of whether they are for the hearing impaired or not. _Note: This is the default option._
+   * __ImpairedFirst__: This is similar to the __BestScore__ mode above; except the script scores (weighs) the hearing impaired matches a bit higher in efforts to make them be priority over any other subtitles matched.
+   * __StandardFirst__: This is similar to the __BestScore__ mode above; except the script scores (weighs) the hearing impaired matches a bit lower in efforts to make them be the last to be considered as a match.
 * Python v2.6 Support. My [fork](https://github.com/caronc/subliminal/tree/0.7.x) of subliminal supports a broader audience.
 
 Installation Instructions
 =========================
-* Ensure you have at least Python v2.6 or higher installed onto your system. This script does not support Python v3.x at this time.
-* Simply place the _Subliminal.py_ and _Subliminal_ directory together inside
+1. Ensure you have at least Python v2.6 or higher installed onto your system. This script does not support Python v3.x at this time.
+2. Simply place the _Subliminal.py_ and _Subliminal_ directory together inside
   of your _nzbget/scripts_ directory.
 
 For NZBGet users, please ensure you are running (at least) NZBGet v11 or higher. You can acquire the latest version of it from http://nzbget.net
