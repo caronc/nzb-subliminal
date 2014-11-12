@@ -1,21 +1,43 @@
-Subliminal Processing script for NZBGet
-=======================================
-This is an NZB  _post-processing_ and _scheduling_ script wrapper for
-_Subliminal_. Subliminal was written by Antoine Bertin (Diaoul Ael).
-Subliminal is a fantastic tool that can take a file you provide to it and
-makes use of a series of websites in efforts to obtain the subtitles
-associated with it.
+Subliminal Processing Script
+============================
+This script was intended to be an [NZBGet](http://nzbget.net) _post-processing_
+and _scheduling_ script wrapper for _Subliminal_. However, it also works
+perfectly fine as a standalone script for others too.
 
-Non-NZBGet users can also use this script via a cron (or simply call it
-from the command line) to automatically poll directories for the latest
-subtitles for the content within it. See __Command Line__ section below.
+[Subliminal](https://github.com/Diaoul/subliminal) was written by Antoine
+Bertin (Diaoul Ael). This tool I'm hosting here merely acts as a wrapper to it
+by enhancing the great functionality Subliminal already provides. Subliminal
+allows us to take a video file (and/or a directory containing videos) you
+provide it. From there it makes use of a series of websites in efforts to
+obtain the subtitles associated with the videos it scanned. This wrapper
+extends this functionallity by controlling how many interenet requests are made
+for videos without subtitles. This script will prevents querying videos over
+and over again that simply don't have subtitles at all.
+
+I maintain a [fork](https://github.com/caronc/subliminal/tree/0.7.x) of the
+Subliminal 0.7.x branch here where I've added my own enhancements to help make
+this tool do what I want to. Enhancments such as:
+* The script pays attention to the date of the files and only acts on those that are within a time frame.  The default is 24 hours.  This works really amazing for NZBGet users, but for those using this tool as a standalone may find it works for them too.  This allows your library to be updated constantly over time and this script can be ran against it constantly. There is more detail on this below in the __Command Line__ section below on how to use _(or disable)_ this.
+* The script can operate in one of 5 modes:
+** __ImpairedOnly__: Only attempt to fetch subtitles that are identified as supporting the hearing impaired. _Note: This is not an enhancment and exists in the current version of subliminal._
+** __StandardOnly__: Only attempt to fetch subtitles that are _NOT_ identified as supporting the hearing impaired. _Note: This is not an enhancment and exists in the current version of subliminal._
+** __BestScore__: Just download the best matched subtitles reguardless of whether they are for the hearing impaired or not. _Note: This is the default option._
+** __ImpairedFirst__: This is similar to the __BestScore__ mode above; except the script scores (weighs) the hearing impaired matches a bit higher in efforts to make them be priority over any other subtitles matched.
+** __StandardFirst__: This is similar to the __BestScore__ mode above; except the script scores (weighs) the hearing impaired matches a bit lower in efforts to make them be the last to be considered as a match.
+* Python v2.6 Support. My [fork](https://github.com/caronc/subliminal/tree/0.7.x) of subliminal supports a broader audience.
 
 Installation Instructions
 =========================
-* Ensure you have Python v2.6 or higher installed onto your system.
-* Simply place the _Subliminal.py_ and _Subliminal_ directory together inside
+# Ensure you have at least Python v2.6 or higher installed onto your system. This script does not support Python v3.x at this time.
+# Simply place the _Subliminal.py_ and _Subliminal_ directory together inside
   of your _nzbget/scripts_ directory.
-* For NZBGet users, please ensure you are running (at least) NZBGet v11 or higher. You can acquire the latest version of it from http://nzbget.net
+
+For NZBGet users, please ensure you are running (at least) NZBGet v11 or higher. You can acquire the latest version of it from http://nzbget.net
+
+The Non-NZBGet users can also use this script via a cron (or simply call it
+from the command line) to automatically poll directories for the latest
+subtitles for the video content within it. See the __Command Line__ section
+below for more instructions on how to do this.
 
 **Note:** The _Subliminal_ directory provides all of the nessisary dependencies
 in order for this script to work correctly. The directory is only required
