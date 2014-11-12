@@ -28,9 +28,9 @@ this tool do what I want to. Enhancments such as:
 
 Installation Instructions
 =========================
-1. Ensure you have at least Python v2.6 or higher installed onto your system. This script does not support Python v3.x at this time.
-2. Simply place the _Subliminal.py_ and _Subliminal_ directory together inside
-  of your _nzbget/scripts_ directory.
+1. Ensure you have at least Python v2.6 or higher installed onto your system.
+2. Simply place the __Subliminal.py__ and __Subliminal__ directory together
+   * For NZBGet users: you'll want to place these inside of your _nzbget/scripts_ directory.
 
 For NZBGet users, please ensure you are running (at least) NZBGet v11 or higher. You can acquire the latest version of it from http://nzbget.net
 
