@@ -29,10 +29,8 @@ this tool do what I want to. Enhancments such as:
 Installation Instructions
 =========================
 1. Ensure you have at least Python v2.6 or higher installed onto your system.
-2. Simply place the __Subliminal.py__ and __Subliminal__ directory together
-   * For NZBGet users: you'll want to place these inside of your _nzbget/scripts_ directory.
-
-For NZBGet users, please ensure you are running (at least) NZBGet v11 or higher. You can acquire the latest version of it from http://nzbget.net
+2. Simply place the __Subliminal.py__ and __Subliminal__ directory together.
+   * __NZBGet users__: you'll want to place these inside of your _nzbget/scripts_ directory. Please ensure you are running _(at least)_ NZBGet v11.0 or higher. You can acquire the latest version of of it from [here](http://nzbget.net/download).
 
 The Non-NZBGet users can also use this script via a cron (or simply call it
 from the command line) to automatically poll directories for the latest
@@ -42,8 +40,8 @@ below for more instructions on how to do this.
 **Note:** The _Subliminal_ directory provides all of the nessisary dependencies
 in order for this script to work correctly. The directory is only required
 if you do not have the packages already available to your global
-environment. These packages are all identified under the _Dependencies_ section
-below.
+environment. These dependant packages are all identified under the
+_Dependencies_ section below.
 
 Supported Subtitle Sites
 ========================
