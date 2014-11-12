@@ -6,7 +6,7 @@ perfectly fine as a standalone script for others too.
 
 [Subliminal](https://github.com/Diaoul/subliminal) was written by Antoine
 Bertin (Diaoul Ael). This tool I'm hosting here merely acts as a wrapper to it
-by enhancing the great functionality Subliminal already provides. Subliminal
+by enhancing the great functionality it already provides. Subliminal
 allows us to take a video file (and/or a directory containing videos) you
 provide it. From there it makes use of a series of websites in efforts to
 obtain the subtitles associated with the videos it scanned. This wrapper
@@ -17,7 +17,7 @@ and over again that simply don't have subtitles at all.
 I maintain a [fork](https://github.com/caronc/subliminal/tree/0.7.x) of the
 Subliminal 0.7.x branch here where I've added my own enhancements to help make
 this tool do what I want to. Enhancments such as:
-* The script pays attention to the date of the files and only acts on those that are within a time frame.  The default is 24 hours.  This works really amazing for NZBGet users, but for those using this tool as a standalone may find it works for them too.  This allows your library to be updated constantly over time and this script can be ran against it constantly. There is more detail on this below in the __Command Line__ section below on how to use _(or disable)_ this.
+* The script pays attention to the date of the files and only acts on those that are within a certain (configurable) timeframe; _the default age is 24 hours_. This works really amazing for NZBGet users, but for those using this tool in it's standalone version may find it works for them too. This feature allows you to control how many times the internet is polled against a video that has never had subtitles posted for it.  There is more detail on this below in the __Command Line__ section on how to use _(or disable)_ this feature.
 * The script can operate in one of 5 modes:
 ** __ImpairedOnly__: Only attempt to fetch subtitles that are identified as supporting the hearing impaired. _Note: This is not an enhancment and exists in the current version of subliminal._
 ** __StandardOnly__: Only attempt to fetch subtitles that are _NOT_ identified as supporting the hearing impaired. _Note: This is not an enhancment and exists in the current version of subliminal._
@@ -28,8 +28,8 @@ this tool do what I want to. Enhancments such as:
 
 Installation Instructions
 =========================
-# Ensure you have at least Python v2.6 or higher installed onto your system. This script does not support Python v3.x at this time.
-# Simply place the _Subliminal.py_ and _Subliminal_ directory together inside
+* Ensure you have at least Python v2.6 or higher installed onto your system. This script does not support Python v3.x at this time.
+* Simply place the _Subliminal.py_ and _Subliminal_ directory together inside
   of your _nzbget/scripts_ directory.
 
 For NZBGet users, please ensure you are running (at least) NZBGet v11 or higher. You can acquire the latest version of it from http://nzbget.net
