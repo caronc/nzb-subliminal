@@ -12,10 +12,10 @@ subtitles for the content within it. See __Command Line__ section below.
 
 Installation Instructions
 =========================
-* Ensure you have a copy of NZBGet v11 or higher which can be retrieved from http://nzbget.net
 * Ensure you have Python v2.6 or higher installed onto your system.
 * Simply place the _Subliminal.py_ and _Subliminal_ directory together inside
   of your _nzbget/scripts_ directory.
+* For NZBGet users, please ensure you are running (at least) NZBGet v11 or higher. You can acquire the latest version of it from http://nzbget.net
 
 **Note:** The _Subliminal_ directory provides all of the nessisary dependencies
 in order for this script to work correctly. The directory is only required
@@ -143,13 +143,13 @@ Options:
 Here is simple example:
 ```bash
 # Scan a single directory (recursively) for english subtitles
-python2 Subliminal.py -s -f -S /usr/share/TVShows
+python Subliminal.py -s -f -S /usr/share/TVShows
 ```
 
 You can scan multiple directories with the following command:
 ```bash
 # Scan a single directory (recursively) for english subtitles
-python2 Subliminal.py -s -f -S "/usr/share/TVShows, /usr/share/Movies"
+python Subliminal.py -s -f -S "/usr/share/TVShows, /usr/share/Movies"
 ```
 
 Another nice feature this tool offers is the ability to _expire_ the
