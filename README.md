@@ -24,7 +24,7 @@ this tool do what I want to. Enhancments such as:
    * __BestScore__: Just download the best matched subtitles reguardless of whether they are for the hearing impaired or not. _Note: This is the default option._
    * __ImpairedFirst__: This is similar to the __BestScore__ mode above; except the script scores (weighs) the hearing impaired matches a bit higher in efforts to make them be priority over any other subtitles matched.
    * __StandardFirst__: This is similar to the __BestScore__ mode above; except the script scores (weighs) the hearing impaired matches a bit lower in efforts to make them be the last to be considered as a match.
-* Python v2.6 Support. I presently use my [fork](https://github.com/caronc/subliminal/tree/0.7.x) of subliminal which I backported to support an earlier verison of python in efforts to target a broader audience.
+* Python v2.6 Support in efforts to target a broader audience.
 
 Installation Instructions
 =========================
@@ -92,11 +92,10 @@ should be known that Subliminal.py depends on the following packages:
 | pyxdg                        | 0.25    | https://pypi.python.org/pypi/pyxdg/0.25                                              |
 | urllib3 **[P]**              | 1.9     | https://pypi.python.org/pypi/urllib3/1.9                                             |
 
-**Note:** I patched (denoted with a **[P]** above) the some of the libraries
-mentioned above in efforts to:
-- Make their libaries compatible with Python 2.6
-- Fix bugs to add stability to the overall functionality
-- Add nessesary enhancments that benifit the Subliminal.py (NZBGet PostProcess/Scan Script)
+**Note:** The items above denoted with a **[P]** were patched in efforts to:
+- Make their libaries compatible with Python v2.6.
+- Fix bugs to add stability to the overall functionality.
+- Add the nessesary enhancments that benifit this wrapper tool.
 
 To be as transparent as possible, all patches have been provided in the
 [_/patches_](https://github.com/caronc/nzbget-subliminal/tree/master/patches) directory.
