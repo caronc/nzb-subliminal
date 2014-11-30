@@ -717,6 +717,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 # be detected using the content guessit matched.
                 continue
 
+            # Eliminate Duplicates
+            videos = list(set(videos))
             # Depending if we are dealing with a TV Show or A Movie, we swap
             # our list of providers
             if isinstance(videos[0], Episode):
@@ -751,14 +753,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             if not subtitles:
                 self.logger.warning('No subtitles were found.')
                 continue
-
-            self.logger.info('Matched %d possible subtitle(s) for %s' % \
-                (sum([len(s) for s in subtitles.itervalues()]),
-                 basename(entry)),
-            )
-            for res in subtitles.itervalues():
-                for sub in res:
-                    self.logger.debug('Subtitle found at: %s', str(sub))
 
             for l in _lang:
                 srt_path = abspath(dirname(entry))
