@@ -1156,7 +1156,7 @@ if __name__ == "__main__":
         "--scandir",
         dest="scandir",
         help="The directory to scan against. Note: that by setting this " + \
-            "variable, it is implied that you are not running this from " + \
+            "variable, it is implied that you are running this from " + \
             "the command line.",
         metavar="DIR",
     )

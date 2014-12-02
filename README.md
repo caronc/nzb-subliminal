@@ -114,7 +114,7 @@ Options:
   -h, --help            show this help message and exit
   -S DIR, --scandir=DIR
                         The directory to scan against. Note: that by setting
-                        this variable, it is implied that you are not running
+                        this variable, it is implied that you are running
                         this from the command line.
   -a AGE, --maxage=AGE  The maximum age a file can be to be considered
                         searchable. This value is represented in hours. The
