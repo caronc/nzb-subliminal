@@ -108,6 +108,21 @@
 # to fetch subtitles on all matched video formats (not recommended).
 #MinSize=150
 
+# Minimum File Score
+#
+# When more then one subtitle is matched against a video, they are individually
+# scored based on their likelyhood of being an exact match to the video they
+# are being searched on. The highest scored match is the chosen one at the
+# end of the day.  A high score (almost perfect) is 50ish, but most videos
+# score in the high 30's and low 40's. This score identifies the elimination
+# which subtitles should not even be considered if it scores this value or
+# lower. If you set this too high, you'll never match any subtitles.  If
+# you set this too low, you'll almost always acqurie a subtitle for the video
+# in question, but it may not be the correct one.
+# If 0 is specified, the default value assigned by the subliminal core
+# application will be used.
+#MinScore=20
+
 # Default Core Subtitle Providers
 #
 # Supply a core (master) list of subtitle providers you want to reference
@@ -315,6 +330,10 @@ IGNORE_FILELIST_RE = (
 # no subtitles exists for it.
 DEFAULT_MIN_VIDEO_SIZE_MB = 150
 
+# The minimum score to accept a potentially matched subtitle that
+# was paired against a video.
+DEFAULT_MIN_VIDEO_SCORE = 20
+
 # A simple regular expression that scans the video downloaded and
 # detects the season/episode information from it.
 DETECT_TVSHOW_RE = re.compile(
@@ -497,6 +516,12 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         # Get configuration
         cache_dir = self.get('CACHEDIR', self.get('TEMPDIR'))
         cache_file = join(cache_dir, 'subliminal.cache.dbm')
+
+        # Minimum Score
+        minscore = int(self.get('MinScore', DEFAULT_MIN_VIDEO_SCORE))
+        if minscore < 0:
+            # Use Default
+            minscore = 0
 
         # Search Mode
         search_mode = self.get('SearchMode', DEFAULT_SEARCH_MODE)
@@ -743,7 +768,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     providers=providers,
                     provider_configs=provider_configs,
                     single=single_mode,
-                    min_score=None,
+                    min_score=minscore,
                     hearing_impaired=hearing_impaired,
                     hi_score_adjust=hi_score_adjust,
                 )
@@ -864,6 +889,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         if not self.validate(keys=(
             'MinSize',
+            'MinScore',
             'Single',
             'Overwrite',
             'UpdateTimestamp',
@@ -975,6 +1001,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         if not self.validate(keys=(
             'MaxAge',
             'MinSize',
+            'MinScore',
             'Single',
             'Providers',
             'MovieProviders',
@@ -1187,6 +1214,16 @@ if __name__ == "__main__":
         metavar="SIZE_IN_MB",
     )
     parser.add_option(
+        "-c",
+        "--minscore",
+        dest="minscore",
+        help="When scoring multiple matched subtitles for a video, this " + \
+        "value identifies the threshold to assume the subtitle is no good " + \
+        "and should be thrown away when being compared against others." + \
+        "It currently defaults to %d." % DEFAULT_MIN_VIDEO_SCORE,
+        metavar="MINSCORE",
+    )
+    parser.add_option(
         "-f",
         "--force",
         action="store_true",
@@ -1272,6 +1309,7 @@ if __name__ == "__main__":
     _language = options.language
     _maxage = options.maxage
     _minsize = options.minsize
+    _minscore = options.minscore
     _single_mode = options.single_mode is True
     _overwrite = options.overwrite is True
     _basic_mode = options.basic_mode is True
@@ -1303,6 +1341,15 @@ if __name__ == "__main__":
             )
             exit(EXIT_CODE.FAILURE)
 
+    if _minscore:
+        try:
+            _minscore = str(abs(int(_minscore)))
+            script.set('MinScore', _minscore)
+        except (ValueError, TypeError):
+            script.logger.error(
+                'An invalid `minscore` (%s) was specified.' % (_minscore)
+            )
+            exit(EXIT_CODE.FAILURE)
     if _overwrite:
         script.set('Overwrite', True)
 
@@ -1343,6 +1390,9 @@ if __name__ == "__main__":
 
         if not _minsize:
             script.set('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)
+
+        if not _minscore:
+            script.set('MinScore', DEFAULT_MIN_VIDEO_SCORE)
 
         if not _language:
             # Force defaults if not set
