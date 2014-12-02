@@ -137,6 +137,12 @@ Options:
                         Specify the minimum size a video must be to be worthy
                         of of checking for subtiles. This value is interpreted
                         in MB (Megabytes) and defaults to 150 MB.
+  -c MINSCORE, --minscore=MINSCORE
+                        When scoring multiple matched subtitles for a video,
+                        this value identifies the threshold to assume the
+                        subtitle is no good and should be thrown away when
+                        being compared against others. It currently defaults
+                        to 20.
   -f, --force           Force a download reguardless of the file age. This
                         switch negates any value specified by the --age (-a)
                         switch.
@@ -146,7 +152,7 @@ Options:
                         Identify the fetch mode you wish to invoke, the
                         options are: 'ImpairedOnly', 'StandardOnly',
                         'BestScore', 'StandardFirst', 'ImpairedFirst'.  The
-                        default value is: 'BestScore'
+                        default value is: BestScore
   -U USERNAME, --addic7ed-username=USERNAME
                         You must specify a Addic7ed username if you wish to
                         use them as one of your chosen providers.
