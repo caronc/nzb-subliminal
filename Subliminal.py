@@ -1219,7 +1219,7 @@ if __name__ == "__main__":
         dest="minscore",
         help="When scoring multiple matched subtitles for a video, this " + \
         "value identifies the threshold to assume the subtitle is no good " + \
-        "and should be thrown away when being compared against others." + \
+        "and should be thrown away when being compared against others. " + \
         "It currently defaults to %d." % DEFAULT_MIN_VIDEO_SCORE,
         metavar="MINSCORE",
     )
