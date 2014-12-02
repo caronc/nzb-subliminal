@@ -2094,12 +2094,25 @@ class ScriptBase(object):
                 if fullstats:
                     # Extend file information
                     stat_obj = stat(_file)
-                    files[_file]['modified'] = \
-                        datetime.fromtimestamp(stat_obj[ST_MTIME])
-                    files[_file]['accessed'] = \
-                        datetime.fromtimestamp(stat_obj[ST_ATIME])
-                    files[_file]['created'] = \
-                        datetime.fromtimestamp(stat_obj[ST_CTIME])
+                    try:
+                        files[_file]['modified'] = \
+                            datetime.fromtimestamp(stat_obj[ST_MTIME])
+                    except ValueError:
+                        files[_file]['modified'] = \
+                                datetime(1980, 1, 1, 0, 0, 0, 0)
+                    try:
+                        files[_file]['accessed'] = \
+                            datetime.fromtimestamp(stat_obj[ST_ATIME])
+                    except ValueError:
+                        files[_file]['accessed'] = \
+                                datetime(1980, 1, 1, 0, 0, 0, 0)
+                    try:
+                        files[_file]['created'] = \
+                            datetime.fromtimestamp(stat_obj[ST_CTIME])
+                    except ValueError:
+                        files[_file]['created'] = \
+                                datetime(1980, 1, 1, 0, 0, 0, 0)
+
                     files[_file]['filesize'] = stat_obj[ST_SIZE]
         # Return all files
         return files
