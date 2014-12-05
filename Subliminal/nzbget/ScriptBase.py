@@ -32,9 +32,23 @@ functionality such as:
                 put here as well so that it can be retrieved by another
                 script.
 
- * get_api()  - Retreive a simple API/RPC object built from the global
-                variables NZBGet passes into an external program when
-                called.
+ * unset()    - This allows you to unset values set by set() and get() as well
+                as ones set by push().
+
+ * nzb_set()  - Similar to the set() function identified above except it is
+                used to build an nzb meta hash table which can be later pushed
+                to the server using push_dnzb().
+
+ * add_nzb()  - Using the built in API/RPC NZBGet supports, this allows you to
+                specify a path to an NZBFile which you want to enqueue for
+                downloading.
+
+ * nzb_get()  - Retieves NZB Meta information previously stored.
+
+ * nzb_unset()- Removes a variable previously set completely.
+
+ * get_logs() - Using the built in API/RPC NZBGet supports, this retrieves and
+                returns the latest logs.
 
  * get_files()- list all files in a specified directory as well as fetching
                 their details such as filesize, modified date, etc in an
@@ -72,6 +86,13 @@ functionality such as:
                   why redo grunt work if it's already done for you?
                   if no previous guess content was pushed, then an
                   empty dictionary is returned.
+ * push_dnzb()  - You can push all nzb meta information onbtained to the
+                  NZBGet server as DNZB_ meta tags.
+
+ * pull_dnzb()  - Pull all DNZB_ meta tags issued by the server and return
+                  their values in a dictionary. if no DNZB_ (NZB Meta
+                  information) was found, then an empty dictionary is returned
+                  instead.
 
 Ideally, you'll write your script using this class as your base wrapper
 requiring you to only define a main() function and call run().
@@ -120,9 +141,6 @@ from getpass import getuser
 from logging import Logger
 from datetime import datetime
 from Utils import tidy_path
-
-# Relative Includes
-from NZBGetAPI import NZBGetAPI
 
 from Logger import VERBOSE_DEBUG
 from Logger import VERY_VERBOSE_DEBUG
@@ -189,6 +207,14 @@ from os import stat
 from urlparse import urlparse
 from urllib import quote
 from urllib import unquote
+
+from base64 import standard_b64encode
+try:
+    # Python 2
+    from xmlrpclib import ServerProxy
+except ImportError:
+    # Python 3
+    from xmlrpc.client import ServerProxy
 
 # Some booleans that are read to and from nzbget
 NZBGET_BOOL_TRUE = u'yes'
@@ -591,6 +617,10 @@ class ScriptBase(object):
         # Initialize the default character set
         self.charset = None
 
+        # API by default is not configured; it is set up when a call to
+        # an api function is made.
+        self.api = None
+
         # Extra debug modes used from command line; it gets to be
         # too noisy if you pass this into nzbget but if you really
         # insist, you can define a VDEBUG or a VVDEBUG as arguments
@@ -970,6 +1000,17 @@ class ScriptBase(object):
                 max_depth=1,
             )
 
+            nzb_dir = self.get('NZBDir', None)
+            if nzb_dir and abspath(nzb_dir) != abspath(dirname(nzbfile)):
+                _filenames = dict(
+                    _filenames.items() + self.get_files(
+                        search_dir=abspath(nzb_dir),
+                        regex_filter=file_regex,
+                        fullstats=True,
+                        max_depth=1,
+                    ).items(),
+                )
+
             if len(_filenames):
                 # sort our results by access time
                 _files = sorted (
@@ -1123,7 +1164,7 @@ class ScriptBase(object):
         parsed = urlparse('http://%s' % host)
 
         # Parse results
-        result['host'] = parsed[1].strip().lower()
+        result['host'] = parsed[1].strip()
         result['fullpath'] = quote(unquote(tidy_path(parsed[2].strip())))
         try:
             # Handle trailing slashes removed by tidy_path
@@ -1785,35 +1826,101 @@ class ScriptBase(object):
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # API Factory
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    def get_api(self):
-        """This function can be used to return a XML-RCP server
-        object using the server variables defined
+    def api_connect(self, user=None, password=None,
+                    host=None, port=None, reset=False):
+        """Configures an API connection
         """
+        if reset:
+            # Reset
+            self.api = None
 
-        # System Options required for RPC calls to work
-        required_opts = set((
-            'CONTROLIP',
-            'CONTROLPORT',
-            'CONTROLUSERNAME',
-            'CONTROLPASSWORD',
-        ))
-        # Fetch standard RCP information to simplify future commands
-        if set(self.system) & required_opts != required_opts:
-            # Not enough options to extract RCP information
-            return None
+        # If we're already connected; then there is nothing more to do
+        if self.api is not None:
+            return True
 
         # if we reach here, we have enough data to build an RCP connection
-        host = self.system['CONTROLIP']
+        if host is None:
+            host = self.system.get('ControlIP', '127.0.0.1')
+
         if host == "0.0.0.0":
             host = "127.0.0.1"
 
-        # Return API Controller
-        return NZBGetAPI(
-            self.system['CONTROLUSERNAME'],
-            self.system['CONTROLPASSWORD'],
+        #Build URL
+        xmlrpc_url = 'http://'
+
+        if user is None:
+            user = self.get('ControlUsername', '')
+        if password is None:
+            password = self.get('ControlPassword', '')
+        if port is None:
+            port = self.get('ControlPort', '6789')
+
+        if user and password:
+            xmlrpc_url += '%s:%s@' % (user, password)
+
+        xmlrpc_url += '%s:%s/xmlrpc' % ( \
             host,
-            self.system['CONTROLPORT'],
+            str(port),
         )
+
+        # Establish a connection to the server
+        try:
+            self.api = ServerProxy(xmlrpc_url)
+            self.logger.vdebug('API connected @ %s' % xmlrpc_url)
+        except:
+            self.logger.vdebug('API connection failed @ %s' % xmlrpc_url)
+            return False
+
+        return True
+
+
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # Retrieve System Logs
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def get_logs(self, max_lines=1000, reverse=False):
+        """
+        Returns log entries (via the API)
+        """
+        if not self.api_connect():
+            # Could not connect
+            return None
+
+        try:
+            logs = self.api.postqueue(10000)
+            logs = logs[0]['Log']
+        except (IndexError, KeyError):
+            # No logs
+            return []
+
+        # Return a simple ordered list of strings
+        return sorted([ '%s [%s] - %s' % (
+            datetime.fromtimestamp(int(entry['Time']))\
+                    .strftime('%Y-%m-%d %H:%M:%S'),
+            entry['Kind'], entry['Text'].strip(),
+        ) for entry in logs ], reverse=reverse)[:max_lines]
+
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # Add NZB File to Queue
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def add_nzb(self, filename):
+        """Simply add's an NZB file to NZBGet (via the API)
+        """
+        if not self.api_connect():
+            # Could not connect
+            return False
+
+        try:
+            f = open(filename, "r")
+        except:
+            return False
+
+        content = f.read()
+        f.close()
+        b64content = standard_b64encode(content)
+        try:
+            return self.api.append(filename, 'software', False, b64content)
+        except:
+            return False
 
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # File Retrieval
@@ -2339,7 +2446,7 @@ class ScriptBase(object):
             return self.script_mode
 
         if len(self.script_dict):
-            self.logger.debug('Detecting possible script mode from: %s' % \
+            self.logger.vdebug('Detecting possible script mode from: %s' % \
                          ', '.join(self.script_dict.keys()))
 
         if len(self.script_dict.keys()):
@@ -2349,11 +2456,11 @@ class ScriptBase(object):
                     if getattr(self, '%s_%s' % (k, 'sanity_check'))():
                         self.script_mode = k
                         if self.script_mode != SCRIPT_MODE.NONE:
-                            self.logger.info(
+                            self.logger.vdebug(
                                 'Script Mode: %s' % self.script_mode.upper())
                             return self.script_mode
 
-        self.logger.info('Script Mode: STANDALONE')
+        self.logger.vdebug('Script Mode: STANDALONE')
         self.script_mode = SCRIPT_MODE.NONE
 
         return self.script_mode

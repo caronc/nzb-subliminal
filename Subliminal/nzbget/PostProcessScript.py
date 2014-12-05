@@ -303,6 +303,9 @@ class PostProcessScript(ScriptBase):
         else:
             self.directory = directory
 
+        if self.directory:
+            self.directory = abspath(self.directory)
+
         # self.nzbname
         # User-friendly name of processed nzb-file as it is displayed by the
         # program.  The file path and extension are removed.  If download was
@@ -604,6 +607,93 @@ class PostProcessScript(ScriptBase):
 
         return super(PostProcessScript, self)._get_files(
             search_dir=search_dir, *args, **kwargs)
+
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # Retrieve Statistics
+    # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def get_statistics(self, nzbid=None):
+        """
+        Returns the download statistics (via the API)
+
+        The result is returned in an easy to interpret dictionary like so
+        {
+            'download_size_mb': 10.00,
+            'download_time_sec': 40.0,
+            'download_avg': 2.0,
+            'download_avg_unit': 'GB/s',
+
+            'par_prepare_time_sec': 10.00,
+            'par_repair_time_sec': 20.00,
+            'unpack_time_sec': 30.00,
+            'postprocess_time': 120.00,
+            'par_total_time_sec': 30.00,
+            'total_time_sec': 160.00,
+        }
+
+        If an error occurs, then 'None' is returned.
+        """
+
+        if not self.api_connect():
+            return None
+
+        if nzbid is None:
+            try:
+                nzbid = int(self.get('nzbID'))
+            except (AttributeError, TypeError):
+                return None
+
+        try:
+            group = [ x for x in self.api.listgroups(0) \
+                     if x['NZBID'] == nzbid ][0]
+        except IndexError:
+            return None
+
+        # Calculate statistics based on retrieved results
+        dl_size = float(group['DownloadedSizeMB'])
+        dl_time = float(group['DownloadTimeSec'])
+        dl_avg_speed = 0
+        dl_avg_speed_unit = 'MB/s'
+
+        if dl_time > 0.0:
+            dl_avg_speed = (dl_size/dl_time)
+            if dl_avg_speed < 1.0:
+                # Convert to KB/s
+                dl_avg_speed_unit = 'KB/s'
+                dl_avg_speed *= 1024.0
+            elif dl_avg_speed > 1000.0:
+                # Convert to GB/s
+                dl_avg_speed_unit = 'GB/s'
+                dl_avg_speed /= 1024.0
+
+        unpack_time = float(group['UnpackTimeSec'])
+        par_prepare_time = float(group['ParTimeSec'])
+        par_repair_time = float(group['RepairTimeSec'])
+        postprocess_time = float(group['PostTotalTimeSec'])
+
+        return {
+            # File Download Size (in MB)
+            'download_size_mb': dl_size,
+            # File Download Total Time (in seconds)
+            'download_time_sec': dl_time,
+            # File Download Average Transfer Speed
+            'download_avg': dl_avg_speed,
+            # File Download Average Transfer Speed Unit
+            'download_avg_unit': dl_avg_speed_unit,
+
+            # Time Taken to check integrity of file (in seconds)
+            'par_prepare_time_sec': par_prepare_time,
+            # Time Taken to repair file if it was damaged (in seconds)
+            'par_repair_time_sec': par_repair_time,
+            # Time Taken to unpack file from it's compressed archive(s)
+            # (in seconds)
+            'unpack_time_sec': unpack_time,
+            # General time spent post processing download (in seconds)
+            'postprocess_time': postprocess_time,
+            # General time spent verifying and repairing download (in seconds)
+            'par_total_time_sec': par_prepare_time + par_repair_time,
+            # Total estimated system time spent handling this download
+            'total_time_sec': postprocess_time + float(group['DownloadTimeSec']),
+        }
 
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # Obfuscation Handling
