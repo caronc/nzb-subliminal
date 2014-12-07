@@ -648,7 +648,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             a_password = self.get('Addic7edPassword')
 
             if not (a_username and a_password):
-                self.logger.warning(
+                self.logger.debug(
                     'Addic7ed provider dropped from Movie ' + \
                     'providers list due to missing credentials',
                 )
@@ -665,7 +665,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             a_password = self.get('Addic7edPassword')
 
             if not (a_username and a_password):
-                self.logger.warning(
+                self.logger.debug(
                     'Addic7ed provider dropped from TV Show ' + \
                     'providers list due to missing credentials',
                 )
@@ -801,7 +801,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 if isinstance(e, basestring):
                     self.logger.debug('Error message: %s' % e)
 
-                self.logger.debug('Skipping - invalid file: %s' % basename(entry))
+                self.logger.debug(
+                    'Skipping - invalid file: %s' % basename(entry),
+                )
                 continue
 
             if search_mode == SEARCH_MODE.ADVANCED:
@@ -813,14 +815,36 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     video=video,
                 )
 
+                if babelfish.Language('und') in video.subtitle_languages:
+                    # This means we found embedded subtitles, it causes the
+                    # download_best_subtitles() to skip over this because of
+                    # this. To alter the default action of ignoring searching
+                    # all together, we remove this entry here so we can keep
+                    # going.
+                    video.subtitle_languages.remove(babelfish.Language('und'))
+
+                    if not skip_embedded:
+                        self.logger.info(
+                            'Skipping - %d embedded ' % \
+                                len(video.subtitle_languages) + \
+                            'subtitle(s) already exist for: %s' % basename(entry),
+                        )
+                        continue
+
                 # Based on our results, we may need to skip searching
                 # further for subtitles
-                if not overwrite and l in video.subtitle_languages:
-                    self.logger.info(
-                        'Skipping - Embedded subtitles already exist for: %s' % (
-                            basename(entry),
-                    ))
-                    _lang.remove(l)
+                if not skip_embedded:
+                    # clean out languages we have already
+                    for l in video.subtitle_languages:
+                        if l in _lang:
+                            self.logger.info(
+                                'Skipping - Embedded %s subtitle ' % str(l) + \
+                                'already exist for: %s' % basename(entry),
+                            )
+                            _lang.remove(l)
+
+                # One last language check
+                if len(_lang) == 0:
                     continue
 
             # Depending if we are dealing with a TV Show or A Movie, we swap
