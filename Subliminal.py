@@ -769,13 +769,19 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 )
                 if not overwrite and len(_matches):
                     self.logger.debug(
-                        'Skipping - Subtitles already exist for: %s' % (
-                            srt_file,
+                        '%s subtitle match: %s' % (
+                            str(l),
+                            ', '.join([ basename(_srt) \
+                                       for _srt in _matches.keys() ]),
                     ))
                     _lang.remove(l)
                     continue
 
             if len(_lang) == 0:
+                self.logger.info(
+                    'Skipping - Subtitle(s) already exist for: %s' % (
+                    basename(entry),
+                ))
                 continue
 
             self.logger.debug('Scanning [%s] using %s lang=%s' % (
@@ -801,8 +807,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 if isinstance(e, basestring):
                     self.logger.debug('Error message: %s' % e)
 
-                self.logger.debug(
-                    'Skipping - invalid file: %s' % basename(entry),
+                self.logger.info(
+                    'Skipping - Invalid file: %s' % basename(entry),
                 )
                 continue
 
