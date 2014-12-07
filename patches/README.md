@@ -118,6 +118,7 @@ listed since some alter files previously changed by another.
 | [subliminal-double.download.pt2.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-double.download.pt2.patch) | This is an extension to an earlier patch created ([subliminal-double.download.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-double.download.patch)) which just improves on it.
 | [subliminal-clean_logging.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-clean_logging.patch) | When a provider is offline or becomes unresponsive, this patch just eliminates all the extra noise generated in the log files. I created this patch because opensubtitles seems to go offline often and the extra noise in the log files was not nessisary.
 | [subliminal-hearing_impaired.logging.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-hearing_impaired.logging.patch) | Better logging and scoring adjustments (when using _ImpairedFirst_ or _StandardFirst_) improved.
+| [subliminal-external.guessing.support.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-external.guessing.support.patch) | Allows the wrapper to do the guess work of the video in question outside of the subliminal core. But then we can pass back what we have guessed afterwards.  This was added for some optimization; previously we were guessing the video contents twice. This change will have no impact on the existing tool since the defaults of this change cause everything to appear unchanged.
 
 ```bash
 # Assuming you have our dependencies fullfilled
@@ -142,6 +143,7 @@ curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/pat
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-double.download.pt2.patch
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-clean_logging.patch
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-hearing_impaired.logging.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-external.guessing.support.patch
 
 # Extract our downloaded archive
 tar xvfz subliminal-0.7.4.tar.gz
@@ -161,6 +163,7 @@ patch -d subliminal-0.7.4 -p1 < subliminal-tvsubtitles.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-double.download.pt2.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-clean_logging.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-hearing_impaired.logging.patch
+patch -d subliminal-0.7.4 -p1 < subliminal-external.guessing.support.patch
 
 # You're done!
 ```
