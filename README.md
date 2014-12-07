@@ -114,8 +114,8 @@ Options:
   -h, --help            show this help message and exit
   -S DIR, --scandir=DIR
                         The directory to scan against. Note: that by setting
-                        this variable, it is implied that you are running
-                        this from the command line.
+                        this variable, it is implied that you are running this
+                        from the command line.
   -a AGE, --maxage=AGE  The maximum age a file can be to be considered
                         searchable. This value is represented in hours. The
                         default value is 24 hours.
@@ -143,6 +143,9 @@ Options:
                         subtitle is no good and should be thrown away when
                         being compared against others. It currently defaults
                         to 20.
+  -k, --skip-embedded   If embedded subtitles were detected, choose not to use
+                        them and continue to search for the subtitles hosted
+                        by the identified provider(s).
   -f, --force           Force a download reguardless of the file age. This
                         switch negates any value specified by the --age (-a)
                         switch.
