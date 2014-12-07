@@ -97,6 +97,20 @@
 #             time and CPU.
 #SearchMode=advanced
 
+# Skip Embedded Subtitle Matching (yes, no).
+#
+# Identify how you want to handle embedded subititles if they are detected
+# in the video file being scanned. If you set this value to 'no', you will
+# use match embedded subtitles instead and further no further script processing
+# will take place.
+# If you set this to 'yes', you will ignore the fact that embedded subtitles
+# were detected and just continue to exersice this tool to fetch some from
+# the providers identified.
+# Note: Embedded subtitles can only be detected if you are using the advanced
+#       search mode identified above. Therefore this switch has no bearing
+#       on a Basic check.
+#SkipEmbedded=yes
+
 # Minimum File Size (in MB)
 #
 # Any video that is equal to this size or larger will not be filtered out from
@@ -268,7 +282,8 @@ from subliminal import Video
 from subliminal import Episode
 from subliminal import MutexLock
 from subliminal import cache_region
-from subliminal import scan_videos
+from chardet import detect
+from subliminal import scan_video
 from subliminal import download_best_subtitles
 import babelfish
 
@@ -317,6 +332,7 @@ DEFAULT_VIDEO_PERMISSIONS = 0o644
 DEFAULT_SINGLE = False
 DEFAULT_FORCE = 'no'
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
+DEFAULT_EMBEDDED_SUBS = 'no'
 
 # A list of compiled regular expressions identifying files to not parse ever
 IGNORE_FILELIST_RE = (
@@ -347,6 +363,52 @@ from os import stat
 from os import utime
 # used for updating video permissions
 from os import chmod
+
+def decode(str_data):
+    """
+    Returns the unicode string of the data passed in
+    otherwise it throws a ValueError() exception. This function makes
+    use of the chardet library
+    """
+    if isinstance(str_data, unicode):
+        return str_data
+
+    # Convert to unicode
+    decoded = detect(str_data)
+    try:
+        str_data = str_data.decode(
+            decoded['encoding'],
+            errors='replace',
+        )
+    except UnicodeError:
+        raise ValueError(
+            '%s contains invalid characters' % (
+                str_data,
+        ))
+    except KeyError:
+        raise ValueError(
+            '%s encoding could not be detected ' % (
+                str_data,
+        ))
+
+    except TypeError:
+        try:
+            str_data = str_data.decode(
+                decoded['encoding'],
+                'replace',
+            )
+        except UnicodeError:
+            raise ValueError(
+                '%s contains invalid characters' % (
+                    str_data,
+            ))
+        except KeyError:
+            raise ValueError(
+                '%s encoding could not be detected ' % (
+                    str_data,
+            ))
+    return str_data
+
 
 class SubliminalScript(PostProcessScript, SchedulerScript):
     """A wrapper to Subliminal written for NZBGet
@@ -406,7 +468,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         if deobfuscate:
             filename = self.deobfuscate(filename)
 
-        self.logger.debug('Guessing using: %s' % filename)
+        self.logger.debug('Guessing using: %s' % filename.encode('utf-8'))
 
         # Push Guess to NZBGet
         if shared:
@@ -416,10 +478,11 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         if not guess:
             _matcher = matcher.IterativeMatcher(
-                unicode(filename),
+                decode(filename),
                 filetype='autodetect',
-                opts=['nolanguage', 'nocountry'],
+                opts={'nolanguage': True, 'nocountry': True},
             )
+
             mtree = _matcher.match_tree
             guess = _matcher.matched()
 
@@ -522,6 +585,11 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         if minscore < 0:
             # Use Default
             minscore = 0
+
+        # Use Embedded Subtitles
+        skip_embedded = self.parse_bool(
+            self.get('SkipEmbedded', DEFAULT_EMBEDDED_SUBS),
+        )
 
         # Search Mode
         search_mode = self.get('SearchMode', DEFAULT_SEARCH_MODE)
@@ -700,7 +768,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     max_depth=1,
                 )
                 if not overwrite and len(_matches):
-                    self.logger.info(
+                    self.logger.debug(
                         'Skipping - Subtitles already exist for: %s' % (
                             srt_file,
                     ))
@@ -716,37 +784,48 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 ', '.join([ str(l) for l in _lang ]),
             ))
 
-            # Scan videos
-            videos = scan_videos(
-                [full_path, ],
-                subtitles=not overwrite,
-                embedded_subtitles=not overwrite,
-                age=None,
-            )
-
-            # Add Guessed Information
             try:
-                videos.extend([
-                    Video.fromguess(
-                        split(entry)[1],
-                        self.guess_info(
-                            entry,
-                            shared=shared,
-                            deobfuscate=deobfuscate,
-                            use_nzbheaders=use_nzbheaders,
-                        ),
-                    )
-                ])
+                # Add Guessed Information
+                video = Video.fromguess(
+                    split(entry)[1],
+                    self.guess_info(
+                        entry,
+                        shared=shared,
+                        deobfuscate=deobfuscate,
+                        use_nzbheaders=use_nzbheaders,
+                    ),
+                )
             except ValueError as e:
                 # fromguess() throws a ValueError if show matches couldn't
                 # be detected using the content guessit matched.
+                if isinstance(e, basestring):
+                    self.logger.debug('Error message: %s' % e)
+
+                self.logger.debug('Skipping - invalid file: %s' % basename(entry))
                 continue
 
-            # Eliminate Duplicates
-            videos = list(set(videos))
+            if search_mode == SEARCH_MODE.ADVANCED:
+                # Deep Enzyme Scan
+                video = scan_video(
+                    full_path,
+                    subtitles=not overwrite,
+                    embedded_subtitles=not skip_embedded,
+                    video=video,
+                )
+
+                # Based on our results, we may need to skip searching
+                # further for subtitles
+                if not overwrite and l in video.subtitle_languages:
+                    self.logger.info(
+                        'Skipping - Embedded subtitles already exist for: %s' % (
+                            basename(entry),
+                    ))
+                    _lang.remove(l)
+                    continue
+
             # Depending if we are dealing with a TV Show or A Movie, we swap
             # our list of providers
-            if isinstance(videos[0], Episode):
+            if isinstance(video, Episode):
                 # use TV Series providers
                 providers = tvshow_providers
             else:
@@ -759,24 +838,20 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 )
                 continue
 
-            subtitles = {}
-            if videos:
-                # download best subtitles
-                subtitles = download_best_subtitles(
-                    videos,
-                    _lang,
-                    providers=providers,
-                    provider_configs=provider_configs,
-                    single=single_mode,
-                    min_score=minscore,
-                    hearing_impaired=hearing_impaired,
-                    hi_score_adjust=hi_score_adjust,
-                )
-            else:
-                continue
+            # download best subtitles
+            subtitles = download_best_subtitles(
+                [video, ],
+                _lang,
+                providers=providers,
+                provider_configs=provider_configs,
+                single=single_mode,
+                min_score=minscore,
+                hearing_impaired=hearing_impaired,
+                hi_score_adjust=hi_score_adjust,
+            )
 
             if not subtitles:
-                self.logger.warning('No subtitles were found.')
+                self.logger.warning('No subtitles were found for %s.' % basename(entry))
                 continue
 
             for l in _lang:
@@ -892,6 +967,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MinScore',
             'Single',
             'Overwrite',
+            'SkipEmbedded',
             'UpdateTimestamp',
             'UpdatePermissions',
             'VideoPermissions',
@@ -1003,6 +1079,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MinSize',
             'MinScore',
             'Single',
+            'SkipEmbedded',
             'Providers',
             'MovieProviders',
             'TVShowProviders',
@@ -1038,7 +1115,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         _files = dict([ (k, v) for (k, v) in files.items() if \
                       v['filesize'] >= minsize and \
                       v['modified'] >= ref_time ]).keys()
-
 
         if self.debug and len(_files) != len(files):
             # Debug Mode - Print filtered content for peace of mind and
@@ -1082,6 +1158,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         minsize = int(self.get('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)) * 1048576
         force = self.parse_bool(self.get('Force', DEFAULT_FORCE))
         paths = self.parse_path_list(self.get('ScanDirectories'))
+
+        # Single Mode (don't download language extension)
         single_mode = self.parse_bool(
             self.get('Single', DEFAULT_SINGLE))
 
@@ -1224,6 +1302,15 @@ if __name__ == "__main__":
         metavar="MINSCORE",
     )
     parser.add_option(
+        "-k",
+        "--skip-embedded",
+        dest="skip_embedded",
+        action="store_true",
+        help="If embedded subtitles were detected, choose not to use them " + \
+        "and continue to search for the subtitles hosted by the " + \
+        "identified provider(s).",
+    )
+    parser.add_option(
         "-f",
         "--force",
         action="store_true",
@@ -1312,6 +1399,7 @@ if __name__ == "__main__":
     _minscore = options.minscore
     _single_mode = options.single_mode is True
     _overwrite = options.overwrite is True
+    _skip_embedded = options.skip_embedded is True
     _basic_mode = options.basic_mode is True
     _force = options.force is True
     _providers = options.providers
@@ -1355,6 +1443,9 @@ if __name__ == "__main__":
 
     if _basic_mode:
         script.set('SearchMode', SEARCH_MODE.BASIC)
+
+    if _skip_embedded:
+        script.set('SkipEmbedded', True)
 
     if _single_mode:
         script.set('Single', True)
