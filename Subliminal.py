@@ -881,7 +881,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             )
 
             if not subtitles:
-                self.logger.warning('No subtitles were found for %s.' % basename(entry))
+                self.logger.warning('No subtitles were found for %s' % basename(entry))
                 continue
 
             for l in _lang:
