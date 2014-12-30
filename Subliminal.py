@@ -831,9 +831,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
                     if not skip_embedded:
                         self.logger.info(
-                            'Skipping - %d embedded ' % \
-                                len(video.subtitle_languages) + \
-                            'subtitle(s) already exist for: %s' % basename(entry),
+                            'Skipping - unknown embedded subtitle ' + \
+                            'language(s) already exist for: %s' % basename(entry),
                         )
                         continue
 
