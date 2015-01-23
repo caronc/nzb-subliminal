@@ -33,14 +33,12 @@
 #
 # Info about this Subliminal NZB Script:
 # Author: Chris Caron (lead2gold@gmail.com).
-# Date: Wed, Dec 10th, 2014.
+# Date: Thu, Jan 22nd, 2015.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-# Script Version: 0.9.3.
+# Script Version: 0.9.3. (No Karma)
 #
 # NOTE: This script requires Python to be installed on your system.
 #
-# NOTE: Addic7ed (http://www.addic7ed.com/) is only utilized if a valid
-#       username and password is provided.
 
 ##############################################################################
 ### OPTIONS                                                                ###
@@ -164,18 +162,6 @@
 # Providers specified should be separated by a comma and or a space.
 # An example of what one might specify here is: tvsubtitles, addic7ed
 #TVShowProviders=
-
-# Addic7ed Username
-#
-# If you wish to utilize the addic7ed provider, you are additionally required
-# to provide a username and password. Specify the `username` here.
-#Addic7edUsername=
-
-# Addic7ed Password
-#
-# If you wish to utilize the addic7ed provider, you are additionally required
-# to provide a username and password. Specify the `password` here.
-#Addic7edPassword=
 
 # File extensions for video files.
 #
@@ -642,39 +628,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             ))
 
         provider_configs = {}
-        if 'addic7ed' in movie_providers:
-            # Addic7ed Support
-            a_username = self.get('Addic7edUsername')
-            a_password = self.get('Addic7edPassword')
-
-            if not (a_username and a_password):
-                self.logger.debug(
-                    'Addic7ed provider dropped from Movie ' + \
-                    'providers list due to missing credentials',
-                )
-                movie_providers.remove('addic7ed')
-            else:
-                provider_configs['addic7ed'] = {
-                    'username': a_username,
-                    'password': a_password,
-                }
-
-        if 'addic7ed' in tvshow_providers:
-            # Addic7ed Support
-            a_username = self.get('Addic7edUsername')
-            a_password = self.get('Addic7edPassword')
-
-            if not (a_username and a_password):
-                self.logger.debug(
-                    'Addic7ed provider dropped from TV Show ' + \
-                    'providers list due to missing credentials',
-                )
-                tvshow_providers.remove('addic7ed')
-            else:
-                provider_configs['addic7ed'] = {
-                    'username': a_username,
-                    'password': a_password,
-                }
 
         lang = self.parse_list(self.get('Languages', 'en'))
         if not lang:
@@ -1004,8 +957,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MovieProviders',
             'TVShowProviders',
             'SearchMode',
-            'Addic7edUsername',
-            'Addic7edPassword',
             'FetchMode',
             'TvCategories',
             'VideoExtensions',
@@ -1113,8 +1064,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MovieProviders',
             'TVShowProviders',
             'SearchMode',
-            'Addic7edUsername',
-            'Addic7edPassword',
             'FetchMode',
             'ScanDirectories',
             'VideoExtensions',
@@ -1364,22 +1313,6 @@ if __name__ == "__main__":
         metavar="MODE",
     )
     parser.add_option(
-        "-U",
-        "--addic7ed-username",
-        dest="a_username",
-        help="You must specify a Addic7ed username if you wish to use " +\
-        "them as one of your chosen providers.",
-        metavar="USERNAME",
-    )
-    parser.add_option(
-        "-P",
-        "--addic7ed-password",
-        dest="a_password",
-        help="You must specify a Addic7ed password if you wish to use " +\
-        "them as one of your chosen providers.",
-        metavar="PASSWORD",
-    )
-    parser.add_option(
         "-L",
         "--logfile",
         dest="logfile",
@@ -1434,10 +1367,6 @@ if __name__ == "__main__":
     _providers = options.providers
     _fetch_mode = options.fetch_mode
 
-    # Addic7ed Support
-    _a_username = options.a_username
-    _a_password = options.a_password
-
     if _maxage:
         try:
             _maxage = str(abs(int(_maxage)))
@@ -1484,12 +1413,6 @@ if __name__ == "__main__":
 
     if _providers:
         script.set('Providers', _providers)
-
-    if _a_username:
-        script.set('Addic7edUsername', _a_username)
-
-    if _a_password:
-        script.set('Addic7edPassword', _a_password)
 
     if _language:
         script.set('languages', _language)
