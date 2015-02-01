@@ -494,20 +494,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 )
                 self.logger.debug(guess.nice_string())
 
-            # detect if year is part of series name
-            if guess['type'] == 'episode':
-                last_node = None
-                for node in mtree.nodes():
-                    if node.guess:
-                        if last_node != None and \
-                                node.guess.get('year') != None and \
-                                last_node.guess.get('series') != None:
-                            guess['series'] += ' ' + str(guess['year'])
-                            self.logger.debug('Detected year as part of title.')
-                            self.logger.debug(guess.nice_string())
-                            break
-                        last_node = node
-
             if guess['type'] == 'movie':
                 category = self.get('CATEGORY', '').lower()
                 force_tv = category in tv_categories
