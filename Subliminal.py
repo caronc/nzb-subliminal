@@ -208,7 +208,7 @@
 # the video being scanned sometimes.
 #
 # Category names must match categories defined in NZBGet.
-#TvCategories=tv, tv2
+#TvCategories=tv, tv2, Series
 
 # Overwrite Mode (yes, no).
 #
