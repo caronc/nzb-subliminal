@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 IGNORED_CHARACTERS_RE = re.compile('[!@#$\'"]')
 
 # Date parsing
-STRIP_DATE_RE = re.compile('\s+[\[(]?\s+[123][0-9]{3}\s+[\])]?$')
+STRIP_DATE_RE = re.compile('\s*(.+)\s*[\[(]?\s*([123][0-9]{3})\s*[\])]?\s*$')
 
 
 class Subtitle(object):
@@ -120,10 +120,10 @@ def sanitize_string(str_in, strip_date=False):
 
     str_out = IGNORED_CHARACTERS_RE.sub('', str_in).lower()
 
-    if strip_date:
-        str_out = STRIP_DATE_RE.sub('', str_out)
-
-    return str_out
+    str_date_re = STRIP_DATE_RE.match(str_in)
+    if str_date_re:
+        str_out = str(str_date_re.group(1))
+    return str_out.strip()
 
 def get_subtitle_path(video_path, language=None):
     """Create the subtitle path from the given `video_path` and `language`
