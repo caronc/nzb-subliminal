@@ -33,9 +33,9 @@
 #
 # Info about this Subliminal NZB Script:
 # Author: Chris Caron (lead2gold@gmail.com).
-# Date: Thu, Jan 22nd, 2015.
+# Date: Tue, Feb 17th, 2015.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-# Script Version: 0.9.3. (No Karma)
+# Script Version: 0.9.4. (No Karma)
 #
 # NOTE: This script requires Python to be installed on your system.
 #
@@ -493,6 +493,20 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     'An episode without episode # becomes a movie',
                 )
                 self.logger.debug(guess.nice_string())
+
+            # detect if year is part of series name
+            if guess['type'] == 'episode':
+                last_node = None
+                for node in mtree.nodes():
+                    if node.guess:
+                        if last_node != None and \
+                                node.guess.get('year') != None and \
+                                last_node.guess.get('series') != None:
+                            guess['series'] += ' ' + str(guess['year'])
+                            self.logger.debug('Detected year as part of title.')
+                            self.logger.debug(guess.nice_string())
+                            break
+                        last_node = node
 
             if guess['type'] == 'movie':
                 category = self.get('CATEGORY', '').lower()

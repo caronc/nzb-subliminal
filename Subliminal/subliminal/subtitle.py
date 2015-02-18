@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 #:  The following characters are always stripped
 IGNORED_CHARACTERS_RE = re.compile('[!@#$\'"]')
 
+# Date parsing
+STRIP_DATE_RE = re.compile('\s+[\[(]?\s+[123][0-9]{3}\s+[\])]?$')
+
 
 class Subtitle(object):
     """Base class for subtitle
@@ -88,8 +91,18 @@ class Subtitle(object):
     def __repr__(self):
         return '<%s [%s]>' % (self.__class__.__name__, self.language)
 
+def extract_title_year(str_in):
+    """
+    If the year can be extracted from the title
+    as part of it's name; then it is returned by
+    this function
+    """
+    str_date_re = STRIP_DATE_RE.match(str_in)
+    if str_date_re:
+        return str(str_date_re.group(2)).strip()
+    return ""
 
-def sanitize_string(str_in):
+def sanitize_string(str_in, strip_date=False):
     """
     Sanitizes a string passed into it by eliminating characters that might
     otherwise cause issues when attempting to locate a match on websites by
@@ -97,6 +110,7 @@ def sanitize_string(str_in):
     can be used for caching too.
 
     :param string str_in: the string to sanitize
+    :param bool strip_date: Eliminates trailing dates if found in string
     :return: sanitized string
     :rtype: string
     """
@@ -104,7 +118,12 @@ def sanitize_string(str_in):
         # handle int, float, etc
         str_in = str(str_in)
 
-    return IGNORED_CHARACTERS_RE.sub('', str_in).lower().strip()
+    str_out = IGNORED_CHARACTERS_RE.sub('', str_in).lower()
+
+    if strip_date:
+        str_out = STRIP_DATE_RE.sub('', str_out)
+
+    return str_out
 
 def get_subtitle_path(video_path, language=None):
     """Create the subtitle path from the given `video_path` and `language`
