@@ -81,7 +81,7 @@ should be known that Subliminal.py depends on the following packages:
 | html5lib                     | 0.999   | https://pypi.python.org/pypi/html5lib/0.999                                          |
 | ndg-httpsclient              | 0.3.2   | https://pypi.python.org/pypi/ndg-httpsclient/0.3.2                                   |
 | ordereddict                  | 1.1     | https://pypi.python.org/pypi/ordereddict/1.1                                         |
-| pynzbget                     | 0.2.1   | https://pypi.python.org/pypi/pynzbget/0.2.1                                          |
+| pynzbget                     | 0.2.2   | https://pypi.python.org/pypi/pynzbget/0.2.2                                          |
 | repoze.lru                   | 0.6     | https://pypi.python.org/pypi/repoze.lru/0.6                                          |
 | requests **[P]**             | 2.3.0   | https://pypi.python.org/pypi/requests/2.3.0                                          |
 | setuptools                   | 0.6.10  | http://svn.python.org/projects/sandbox/branches/setuptools-0.6/pkg_resources.py      |
