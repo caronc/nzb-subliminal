@@ -33,9 +33,9 @@
 #
 # Info about this Subliminal NZB Script:
 # Author: Chris Caron (lead2gold@gmail.com).
-# Date: Tue, Feb 23th, 2015.
+# Date: Tue, Mar 4th, 2015.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-# Script Version: 0.9.4.1 (No Karma)
+# Script Version: 0.9.4.2 (No Karma)
 #
 # NOTE: This script requires Python to be installed on your system.
 #
@@ -923,7 +923,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     continue
 
             if len(_lang) == 0:
-                self.logger.info(
+                self.logger.debug(
                     'Skipping - Subtitle(s) already exist for: %s' % (
                     basename(entry),
                 ))
@@ -953,7 +953,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 if isinstance(e, basestring):
                     self.logger.debug('Error message: %s' % e)
 
-                self.logger.info(
+                self.logger.debug(
                     'Skipping - Invalid file: %s' % basename(entry),
                 )
                 continue
@@ -976,7 +976,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     video.subtitle_languages.remove(babelfish.Language('und'))
 
                     if not skip_embedded:
-                        self.logger.info(
+                        self.logger.debug(
                             'Skipping - unknown embedded subtitle ' + \
                             'language(s) already exist for: %s' % basename(entry),
                         )
@@ -988,7 +988,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     # clean out languages we have already
                     for l in video.subtitle_languages:
                         if l in _lang:
-                            self.logger.info(
+                            self.logger.debug(
                                 'Skipping - Embedded %s subtitle ' % str(l) + \
                                 'already exist for: %s' % basename(entry),
                             )
