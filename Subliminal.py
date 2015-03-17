@@ -274,7 +274,6 @@ from subliminal import Video
 from subliminal import Episode
 from subliminal import MutexLock
 from subliminal import cache_region
-from chardet import detect
 from subliminal import scan_video
 from subliminal import download_best_subtitles
 import babelfish
@@ -367,29 +366,13 @@ def decode(str_data):
         return str_data
 
     # Convert to unicode
-    decoded = detect(str_data)
-    try:
-        str_data = str_data.decode(
-            decoded['encoding'],
-            errors='replace',
-        )
-    except UnicodeError:
-        raise ValueError(
-            '%s contains invalid characters' % (
-                str_data,
-        ))
-    except KeyError:
-        raise ValueError(
-            '%s encoding could not be detected ' % (
-                str_data,
-        ))
-
-    except TypeError:
+    for enc in ('utf-8', 'latin-1', 'ISO-8859-2'):
         try:
             str_data = str_data.decode(
-                decoded['encoding'],
-                'replace',
+                enc,
+                errors='replace',
             )
+            return str_data
         except UnicodeError:
             raise ValueError(
                 '%s contains invalid characters' % (
@@ -400,7 +383,24 @@ def decode(str_data):
                 '%s encoding could not be detected ' % (
                     str_data,
             ))
-    return str_data
+        except TypeError:
+            try:
+                str_data = str_data.decode(
+                    enc,
+                    'replace',
+                )
+                return str_data
+            except UnicodeError:
+                raise ValueError(
+                    '%s contains invalid characters' % (
+                        str_data,
+                ))
+            except KeyError:
+                raise ValueError(
+                    '%s encoding could not be detected ' % (
+                        str_data,
+                ))
+    return None
 
 
 class SubliminalScript(PostProcessScript, SchedulerScript):
@@ -461,7 +461,18 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         if deobfuscate:
             filename = self.deobfuscate(filename)
 
-        self.logger.debug('Guessing using: %s' % filename.encode('utf-8'))
+        if isinstance(filename, str):
+            _filename = decode(filename)
+            if not _filename:
+                # could not detect unicode type
+                self.logger.debug('Could not detect unicode type.')
+            else:
+                filename = _filename
+
+        if isinstance(filename, unicode):
+            self.logger.debug('Guessing using: %s' % filename.encode('utf-8'))
+        else:
+            self.logger.debug('Guessing using: %s' % filename)
 
         # Push Guess to NZBGet
         if shared:

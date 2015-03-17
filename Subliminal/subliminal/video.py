@@ -8,7 +8,7 @@ import struct
 import babelfish
 import enzyme
 import guessit
-
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -230,7 +230,7 @@ def scan_video(path, subtitles=True, embedded_subtitles=True, video=None):
         video.subtitle_languages |= scan_subtitle_languages(path)
     # enzyme
     try:
-        if filename.endswith('.mkv'):
+        if re.match('.*\.mkv$', filename, re.IGNORECASE):
             with open(path, 'rb') as f:
                 mkv = enzyme.MKV(f)
             if mkv.video_tracks:
