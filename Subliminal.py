@@ -276,6 +276,7 @@ from subliminal import MutexLock
 from subliminal import cache_region
 from subliminal import scan_video
 from subliminal import download_best_subtitles
+from chardet import detect
 import babelfish
 
 # pynzbget Script Wrappers
