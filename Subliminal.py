@@ -176,10 +176,10 @@
 # None then the subtitle is left as it was retrieved.
 #ForceEncoding=None
 
-# My Systems File Encoding (UTF-8, UTF-16, Latin-1, ISO-8859-1).
+# My Systems File Encoding (UTF-8, UTF-16, Latin-1, ISO-8859-1, ISO-8859-2).
 #
 # All systems have their own encoding; here is a loose guide you can use
-# to determine what encoding you are:
+# to determine what encoding you are (if you're not sure):
 # - UTF-8: This is the encoding used by most Linux/Unix filesystems. just
 #          check the global variable $LANG to see if that's what you are.
 # - UTF-16: This is the encoding usually used by OS/X systems.
@@ -188,6 +188,7 @@
 #            English, Spanish and French language characters.
 # - ISO-8859-1: This is the Dutch Keyboard settings; and will probably only
 #               be needed for Microsoft Windows based systems.
+# - ISO-8859-2: Czech, German, Hungarian, Polish, Romanian, Croatian, Slovak, Slovene.
 #
 # If you wish to add another encoding; just email me and i'll add it.
 # All files that are downloaded will be written to your filesystem using
@@ -341,6 +342,7 @@ DEFAULT_PROVIDERS = [
     'thesubdb',
 ]
 
+# System Encodings
 DEFAULT_ENCODINGS = (
     # Most Linux Systems
     'utf-8',
@@ -348,6 +350,9 @@ DEFAULT_ENCODINGS = (
     'latin-1',
     # Netherlands Character Encoding
     'ISO-8859-1',
+    # Czech, German, Hungarian, Polish, Romanian,
+    # Croatian, Slovak, Slovene.
+    'ISO-8859-2',
 )
 
 DEFAULT_UPDATE_TIMESTAMP = False
