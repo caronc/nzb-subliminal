@@ -170,36 +170,38 @@
 # Example=.mkv,.avi,.divx,.xvid,.mov,.wmv,.mp4,.mpg,.mpeg,.vob,.iso
 #VideoExtensions=.mkv,.avi,.divx,.xvid,.mov,.wmv,.mp4,.mpg,.mpeg,.vob,.iso
 
-# Force Subtitle Encoding (None, UTF-8, UTF-16, Latin-1, ISO-8859-1, ISO-8859-2).
+# Force Subtitle Encoding (None, UTF-8, UTF-16, ISO-8859-1, ISO-8859-2).
 #
 # Force the encoding of a subtitle file to be of a certain type. If set to
 # None, then the subtitle will left as it was retrieved.
 # - UTF-8: This is the encoding used by most Linux/Unix filesystems. just
 #          check the global variable $LANG to see if that's what you are.
 # - UTF-16: This is the encoding usually used by OS/X systems and NTFS.
-# - Latin-1: Microsoft Windows has used this encoding for years, and still
-#            do in most cases. Latin-1 (ISO-8859-7). It hosts all of the
-#            English, Spanish and French language characters.
-# - ISO-8859-1: This is the Dutch Keyboard settings; and will probably only
-#               be needed for Microsoft Windows based systems.
-# - ISO-8859-2: Czech, German, Hungarian, Polish, Romanian, Croatian, Slovak, Slovene.
+# - ISO-8859-1: Also referred to as Latin-1; Microsoft Windows used this
+#               encoding for years (in the past), and still do in some
+#               cases. It supports the English, Spanish, and French language
+#               character sets.
+# - ISO-8859-2: Also referred to as Latin-2; It supports Czech, German,
+#               Hungarian, Polish, Romanian, Croatian, Slovak, and
+#               Slovene character sets.
 #
 # If you wish to add another encoding; just email me and i'll add it.
 #ForceEncoding=None
 
-# My Systems File Encoding (UTF-8, UTF-16, Latin-1, ISO-8859-1, ISO-8859-2).
+# My Systems File Encoding (UTF-8, UTF-16, ISO-8859-1, ISO-8859-2).
 #
 # All systems have their own encoding; here is a loose guide you can use
 # to determine what encoding you are (if you're not sure):
 # - UTF-8: This is the encoding used by most Linux/Unix filesystems. just
 #          check the global variable $LANG to see if that's what you are.
 # - UTF-16: This is the encoding usually used by OS/X systems and NTFS.
-# - Latin-1: Microsoft Windows has used this encoding for years, and still
-#            do in most cases. Latin-1 (ISO-8859-7). It hosts all of the
-#            English, Spanish and French language characters.
-# - ISO-8859-1: This is the Dutch Keyboard settings; and will probably only
-#               be needed for Microsoft Windows based systems.
-# - ISO-8859-2: Czech, German, Hungarian, Polish, Romanian, Croatian, Slovak, Slovene.
+# - ISO-8859-1: Also referred to as Latin-1; Microsoft Windows used this
+#               encoding for years (in the past), and still do in some
+#               cases. It supports the English, Spanish, and French language
+#               character sets.
+# - ISO-8859-2: Also referred to as Latin-2; It supports Czech, German,
+#               Hungarian, Polish, Romanian, Croatian, Slovak, and
+#               Slovene character sets.
 #
 # If you wish to add another encoding; just email me and i'll add it.
 # All files that are downloaded will be written to your filesystem using
@@ -356,10 +358,10 @@ DEFAULT_PROVIDERS = [
 # System Encodings
 DEFAULT_ENCODINGS = (
     # Most Linux Systems
-    'utf-8',
-    # Most French/English Windows Systems
-    'latin-1',
-    # Netherlands Character Encoding
+    'UTF-8',
+    # NTFS/OS-X
+    'UTF-16',
+    # Most French/English/Spanish Windows Systems
     'ISO-8859-1',
     # Czech, German, Hungarian, Polish, Romanian,
     # Croatian, Slovak, Slovene.
@@ -1507,7 +1509,7 @@ if __name__ == "__main__":
         "-n",
         "--encoding",
         dest="encoding",
-        help="The system encoding to use (utf-8, latin-1, etc)." + \
+        help="The system encoding to use (utf-8, ISO-8859-1, etc)." + \
              " The default value is '%s'" % DEFAULT_SYSTEM_ENCODING + ".",
         metavar="ENCODING",
     )
@@ -1579,7 +1581,7 @@ if __name__ == "__main__":
         "--force-encoding",
         dest="force_encoding",
         help="Optionally specify the subtitle's file encoding to" + \
-        "a specific type (utf-8, latin-1, etc). If none is specified " + \
+        "a specific type (utf-8, ISO-8859-1, etc). If none is specified " + \
         "then the file is left as is.",
         metavar="ENCODING",
     )
