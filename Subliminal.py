@@ -170,10 +170,21 @@
 # Example=.mkv,.avi,.divx,.xvid,.mov,.wmv,.mp4,.mpg,.mpeg,.vob,.iso
 #VideoExtensions=.mkv,.avi,.divx,.xvid,.mov,.wmv,.mp4,.mpg,.mpeg,.vob,.iso
 
-# Force Subtitle Encoding (None, UTF-8, Latin-1).
+# Force Subtitle Encoding (None, UTF-8, UTF-16, Latin-1, ISO-8859-1, ISO-8859-2).
 #
 # Force the encoding of a subtitle file to be of a certain type. If set to
-# None then the subtitle is left as it was retrieved.
+# None, then the subtitle will left as it was retrieved.
+# - UTF-8: This is the encoding used by most Linux/Unix filesystems. just
+#          check the global variable $LANG to see if that's what you are.
+# - UTF-16: This is the encoding usually used by OS/X systems and NTFS.
+# - Latin-1: Microsoft Windows has used this encoding for years, and still
+#            do in most cases. Latin-1 (ISO-8859-7). It hosts all of the
+#            English, Spanish and French language characters.
+# - ISO-8859-1: This is the Dutch Keyboard settings; and will probably only
+#               be needed for Microsoft Windows based systems.
+# - ISO-8859-2: Czech, German, Hungarian, Polish, Romanian, Croatian, Slovak, Slovene.
+#
+# If you wish to add another encoding; just email me and i'll add it.
 #ForceEncoding=None
 
 # My Systems File Encoding (UTF-8, UTF-16, Latin-1, ISO-8859-1, ISO-8859-2).
@@ -182,7 +193,7 @@
 # to determine what encoding you are (if you're not sure):
 # - UTF-8: This is the encoding used by most Linux/Unix filesystems. just
 #          check the global variable $LANG to see if that's what you are.
-# - UTF-16: This is the encoding usually used by OS/X systems.
+# - UTF-16: This is the encoding usually used by OS/X systems and NTFS.
 # - Latin-1: Microsoft Windows has used this encoding for years, and still
 #            do in most cases. Latin-1 (ISO-8859-7). It hosts all of the
 #            English, Spanish and French language characters.
