@@ -194,7 +194,7 @@ def get_subtitle_path(video_path, language=None):
             subtitle_path = subtitle_path.decode('utf-8', errors='ignore')
         except TypeError:
             # python <= 2.6
-            str_data = subtitle_path.decode('utf-8', 'ignore')
+            subtitle_path = subtitle_path.decode('utf-8', 'ignore')
 
     if language is not None:
         try:

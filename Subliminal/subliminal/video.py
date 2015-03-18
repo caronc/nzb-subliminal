@@ -210,11 +210,12 @@ def scan_video(path, subtitles=True, embedded_subtitles=True, video=None):
     :raise: ValueError if cannot guess enough information from the path
 
     """
+
     dirpath, filename = os.path.split(path)
     logger.info('Scanning video %r in %r', filename, dirpath)
     if not video:
         video = Video.fromguess(
-            path,
+            path.encode('utf-8'),
             guessit.guess_file_info(path, info=['filename']),
         )
 

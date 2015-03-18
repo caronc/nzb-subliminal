@@ -176,6 +176,28 @@
 # None then the subtitle is left as it was retrieved.
 #ForceEncoding=None
 
+# My Systems File Encoding (UTF-8, UTF-16, Latin-1, ISO-8859-1).
+#
+# All systems have their own encoding; here is a loose guide you can use
+# to determine what encoding you are:
+# - UTF-8: This is the encoding used by most Linux/Unix filesystems. just
+#          check the global variable $LANG to see if that's what you are.
+# - UTF-16: This is the encoding usually used by OS/X systems.
+# - Latin-1: Microsoft Windows has used this encoding for years, and still
+#            do in most cases. Latin-1 (ISO-8859-7). It hosts all of the
+#            English, Spanish and French language characters.
+# - ISO-8859-1: This is the Dutch Keyboard settings; and will probably only
+#               be needed for Microsoft Windows based systems.
+#
+# If you wish to add another encoding; just email me and i'll add it.
+# All files that are downloaded will be written to your filesystem using
+# the same encoding your operating system uses.  Since there is no way
+# to detect this (yet), by specifying it here, you can make it possible
+# to handle files with the extended character sets.
+#
+#SystemEncoding=UTF-8
+
+
 # Cache Directory
 #
 # This directory is used for storing temporary cache files created when
@@ -318,6 +340,16 @@ DEFAULT_PROVIDERS = [
     'addic7ed',
     'thesubdb',
 ]
+
+DEFAULT_ENCODINGS = (
+    # Most Linux Systems
+    'utf-8',
+    # Most French/English Windows Systems
+    'latin-1',
+    # Netherlands Character Encoding
+    'ISO-8859-1',
+)
+
 DEFAULT_UPDATE_TIMESTAMP = False
 DEFAULT_UPDATE_PERMISSIONS = False
 DEFAULT_VIDEO_PERMISSIONS = 0o644
@@ -326,6 +358,7 @@ DEFAULT_FORCE = 'no'
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 DEFAULT_EMBEDDED_SUBS = 'no'
 DEFAULT_FORCE_ENCODING = 'None'
+DEFAULT_SYSTEM_ENCODING = 'UTF-8'
 
 # A list of compiled regular expressions identifying files to not parse ever
 IGNORE_FILELIST_RE = (
@@ -357,21 +390,36 @@ from os import utime
 # used for updating video permissions
 from os import chmod
 
-def decode(str_data):
+def decode(str_data, encoding=None):
     """
     Returns the unicode string of the data passed in
     otherwise it throws a ValueError() exception. This function makes
     use of the chardet library
+
+    If encoding == None then it is attempted to be detected by chardet
+    If encoding is a string, then only that encoding is used
+    If encoding is a list or tuple, then each item is tried before
+                giving up.
     """
     if isinstance(str_data, unicode):
         return str_data
 
+    if encoding is None:
+        decoded = detect(str_data)
+        encoding = decoded['encoding']
+
+    if isinstance(encoding, str):
+        encoding = ( encoding, )
+
+    if not isinstance(encoding, (tuple, list)):
+        return str_data
+
     # Convert to unicode
-    for enc in ('utf-8', 'latin-1', 'ISO-8859-2'):
+    for enc in encoding:
         try:
             str_data = str_data.decode(
                 enc,
-                errors='replace',
+                errors='ignore',
             )
             return str_data
         except UnicodeError:
@@ -388,7 +436,7 @@ def decode(str_data):
             try:
                 str_data = str_data.decode(
                     enc,
-                    'replace',
+                    'ignore',
                 )
                 return str_data
             except UnicodeError:
@@ -463,7 +511,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             filename = self.deobfuscate(filename)
 
         if isinstance(filename, str):
-            _filename = decode(filename)
+            system_encoding = self.get('SystemEncoding', DEFAULT_SYSTEM_ENCODING)
+            _filename = decode(filename, system_encoding)
             if not _filename:
                 # could not detect unicode type
                 self.logger.debug('Could not detect unicode type.')
@@ -1170,6 +1219,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'TvCategories',
             'VideoExtensions',
             'ForceEncoding',
+            'SystemEncoding',
             'Languages')):
 
             return False
@@ -1278,6 +1328,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'ScanDirectories',
             'VideoExtensions',
             'ForceEncoding',
+            'SystemEncoding',
             'Languages')):
 
             return False
@@ -1437,6 +1488,14 @@ if __name__ == "__main__":
         metavar="AGE",
     )
     parser.add_option(
+        "-n",
+        "--encoding",
+        dest="encoding",
+        help="The system encoding to use (utf-8, latin-1, etc)." + \
+             " The default value is '%s'" % DEFAULT_SYSTEM_ENCODING + ".",
+        metavar="ENCODING",
+    )
+    parser.add_option(
         "-l",
         "--language",
         dest="language",
@@ -1575,6 +1634,7 @@ if __name__ == "__main__":
     # careful to only set() values that have been set by an
     # external switch. Otherwise we use defaults or what might
     # already be resident in memory (environment variables).
+    _encoding = options.encoding
     _language = options.language
     _maxage = options.maxage
     _force_encoding = options.force_encoding
@@ -1639,7 +1699,10 @@ if __name__ == "__main__":
         script.set('Providers', _providers)
 
     if _language:
-        script.set('languages', _language)
+        script.set('Languages', _language)
+
+    if _encoding:
+        script.set('SystemEncoding', _encoding)
 
     if _fetch_mode:
         if _fetch_mode.upper() in [ f.upper() for f in FETCH_MODES ]:
@@ -1664,6 +1727,10 @@ if __name__ == "__main__":
         if not _language:
             # Force defaults if not set
             script.set('Languages', DEFAULT_LANGUAGE)
+
+        if not _encoding:
+            # Force defaults if not set
+            script.set('SystemEncoding', DEFAULT_SYSTEM_ENCODING)
 
         if not _fetch_mode:
             script.set('FetchMode', FETCH_MODE_DEFAULT)
