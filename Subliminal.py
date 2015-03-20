@@ -33,14 +33,12 @@
 #
 # Info about this Subliminal NZB Script:
 # Author: Chris Caron (lead2gold@gmail.com).
-# Date: Wed, Dec 10th, 2014.
+# Date: Tue, Mar 4th, 2015.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-# Script Version: 0.9.3.
+# Script Version: 0.9.4.2 (No Karma)
 #
 # NOTE: This script requires Python to be installed on your system.
 #
-# NOTE: Addic7ed (http://www.addic7ed.com/) is only utilized if a valid
-#       username and password is provided.
 
 ##############################################################################
 ### OPTIONS                                                                ###
@@ -165,24 +163,54 @@
 # An example of what one might specify here is: tvsubtitles, addic7ed
 #TVShowProviders=
 
-# Addic7ed Username
-#
-# If you wish to utilize the addic7ed provider, you are additionally required
-# to provide a username and password. Specify the `username` here.
-#Addic7edUsername=
-
-# Addic7ed Password
-#
-# If you wish to utilize the addic7ed provider, you are additionally required
-# to provide a username and password. Specify the `password` here.
-#Addic7edPassword=
-
 # File extensions for video files.
 #
 # Only files with these extensions are processed. Extensions must
 # be separated with commas.
 # Example=.mkv,.avi,.divx,.xvid,.mov,.wmv,.mp4,.mpg,.mpeg,.vob,.iso
 #VideoExtensions=.mkv,.avi,.divx,.xvid,.mov,.wmv,.mp4,.mpg,.mpeg,.vob,.iso
+
+# Force Subtitle Encoding (None, UTF-8, UTF-16, ISO-8859-1, ISO-8859-2).
+#
+# Force the encoding of a subtitle file to be of a certain type. If set to
+# None, then the subtitle will left as it was retrieved.
+# - UTF-8: This is the encoding used by most Linux/Unix filesystems. just
+#          check the global variable $LANG to see if that's what you are.
+# - UTF-16: This is the encoding usually used by OS/X systems and NTFS.
+# - ISO-8859-1: Also referred to as Latin-1; Microsoft Windows used this
+#               encoding for years (in the past), and still do in some
+#               cases. It supports the English, Spanish, and French language
+#               character sets.
+# - ISO-8859-2: Also referred to as Latin-2; It supports Czech, German,
+#               Hungarian, Polish, Romanian, Croatian, Slovak, and
+#               Slovene character sets.
+#
+# If you wish to add another encoding; just email me and i'll add it.
+#ForceEncoding=None
+
+# My Systems File Encoding (UTF-8, UTF-16, ISO-8859-1, ISO-8859-2).
+#
+# All systems have their own encoding; here is a loose guide you can use
+# to determine what encoding you are (if you're not sure):
+# - UTF-8: This is the encoding used by most Linux/Unix filesystems. just
+#          check the global variable $LANG to see if that's what you are.
+# - UTF-16: This is the encoding usually used by OS/X systems and NTFS.
+# - ISO-8859-1: Also referred to as Latin-1; Microsoft Windows used this
+#               encoding for years (in the past), and still do in some
+#               cases. It supports the English, Spanish, and French language
+#               character sets.
+# - ISO-8859-2: Also referred to as Latin-2; It supports Czech, German,
+#               Hungarian, Polish, Romanian, Croatian, Slovak, and
+#               Slovene character sets.
+#
+# If you wish to add another encoding; just email me and i'll add it.
+# All files that are downloaded will be written to your filesystem using
+# the same encoding your operating system uses.  Since there is no way
+# to detect this (yet), by specifying it here, you can make it possible
+# to handle files with the extended character sets.
+#
+#SystemEncoding=UTF-8
+
 
 # Cache Directory
 #
@@ -282,9 +310,9 @@ from subliminal import Video
 from subliminal import Episode
 from subliminal import MutexLock
 from subliminal import cache_region
-from chardet import detect
 from subliminal import scan_video
 from subliminal import download_best_subtitles
+from chardet import detect
 import babelfish
 
 # pynzbget Script Wrappers
@@ -326,6 +354,20 @@ DEFAULT_PROVIDERS = [
     'addic7ed',
     'thesubdb',
 ]
+
+# System Encodings
+DEFAULT_ENCODINGS = (
+    # Most Linux Systems
+    'UTF-8',
+    # NTFS/OS-X
+    'UTF-16',
+    # Most French/English/Spanish Windows Systems
+    'ISO-8859-1',
+    # Czech, German, Hungarian, Polish, Romanian,
+    # Croatian, Slovak, Slovene.
+    'ISO-8859-2',
+)
+
 DEFAULT_UPDATE_TIMESTAMP = False
 DEFAULT_UPDATE_PERMISSIONS = False
 DEFAULT_VIDEO_PERMISSIONS = 0o644
@@ -333,6 +375,8 @@ DEFAULT_SINGLE = False
 DEFAULT_FORCE = 'no'
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 DEFAULT_EMBEDDED_SUBS = 'no'
+DEFAULT_FORCE_ENCODING = 'None'
+DEFAULT_SYSTEM_ENCODING = 'UTF-8'
 
 # A list of compiled regular expressions identifying files to not parse ever
 IGNORE_FILELIST_RE = (
@@ -364,39 +408,38 @@ from os import utime
 # used for updating video permissions
 from os import chmod
 
-def decode(str_data):
+def decode(str_data, encoding=None):
     """
     Returns the unicode string of the data passed in
     otherwise it throws a ValueError() exception. This function makes
     use of the chardet library
+
+    If encoding == None then it is attempted to be detected by chardet
+    If encoding is a string, then only that encoding is used
+    If encoding is a list or tuple, then each item is tried before
+                giving up.
     """
     if isinstance(str_data, unicode):
         return str_data
 
-    # Convert to unicode
-    decoded = detect(str_data)
-    try:
-        str_data = str_data.decode(
-            decoded['encoding'],
-            errors='replace',
-        )
-    except UnicodeError:
-        raise ValueError(
-            '%s contains invalid characters' % (
-                str_data,
-        ))
-    except KeyError:
-        raise ValueError(
-            '%s encoding could not be detected ' % (
-                str_data,
-        ))
+    if encoding is None:
+        decoded = detect(str_data)
+        encoding = decoded['encoding']
 
-    except TypeError:
+    if isinstance(encoding, str):
+        encoding = ( encoding, )
+
+    if not isinstance(encoding, (tuple, list)):
+        return str_data
+
+    # Convert to unicode
+    for enc in encoding:
         try:
             str_data = str_data.decode(
-                decoded['encoding'],
-                'replace',
+                enc,
+                errors='ignore',
             )
+            return str_data
         except UnicodeError:
             raise ValueError(
                 '%s contains invalid characters' % (
@@ -407,7 +450,24 @@ def decode(str_data):
                 '%s encoding could not be detected ' % (
                     str_data,
             ))
-    return str_data
+        except TypeError:
+            try:
+                str_data = str_data.decode(
+                    enc,
+                    'ignore',
+                )
+                return str_data
+            except UnicodeError:
+                raise ValueError(
+                    '%s contains invalid characters' % (
+                        str_data,
+                ))
+            except KeyError:
+                raise ValueError(
+                    '%s encoding could not be detected ' % (
+                        str_data,
+                ))
+    return None
 
 
 class SubliminalScript(PostProcessScript, SchedulerScript):
@@ -468,7 +528,19 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         if deobfuscate:
             filename = self.deobfuscate(filename)
 
-        self.logger.debug('Guessing using: %s' % filename.encode('utf-8'))
+        if isinstance(filename, str):
+            system_encoding = self.get('SystemEncoding', DEFAULT_SYSTEM_ENCODING)
+            _filename = decode(filename, system_encoding)
+            if not _filename:
+                # could not detect unicode type
+                self.logger.debug('Could not detect unicode type.')
+            else:
+                filename = _filename
+
+        if isinstance(filename, unicode):
+            self.logger.debug('Guessing using: %s' % filename.encode('utf-8'))
+        else:
+            self.logger.debug('Guessing using: %s' % filename)
 
         # Push Guess to NZBGet
         if shared:
@@ -570,6 +642,182 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         return guess
 
+    def convert_encoding(self, fname, encoding):
+        """Takes a filename and encoding and converts it's contents
+        """
+        self.logger.debug(
+            'Detecting subtitle encoding for %s' % \
+            basename(fname),
+        )
+
+        tmp_fname = '%s.tmp' % fname
+        old_fname = '%s.old' % fname
+        try:
+            unlink(tmp_fname)
+            #self.logger.debug(
+            #    'Removed temporary srt re-encode file : %s' % \
+            #    basename(tmp_fname),
+            #)
+        except:
+            # no problem
+            pass
+        try:
+            unlink(old_fname)
+            #self.logger.debug(
+            #    'Removed old srt re-encode file : %s' % \
+            #    basename(old_fname),
+            #)
+        except:
+            # no problem
+            pass
+
+        try:
+            f = open(fname, 'r')
+        except IOError:
+            self.logger.error(
+                'Could not open %s for encoding testing' % \
+                basename(fname),
+            )
+            return False
+
+        try:
+            fw = open(tmp_fname, 'w')
+        except:
+            self.logger.error(
+                'Could not create new file %s.' % \
+                basename(tmp_fname),
+            )
+            try:
+                f.close()
+            except:
+                pass
+            return False
+
+        def readchunk():
+            """Lazy function (generator) to read a file piece by piece.
+            Default chunk size: 1000k."""
+            return f.read(1048576*1024)
+
+        for chunk in iter(readchunk, ''):
+            detected = detect(chunk)
+            if detected['encoding'] is not None:
+                self.logger.debug(
+                    "Detecting '%s' (%f confidence) subtitle encoding for %s" % (
+                    detected['encoding'],
+                    detected['confidence'],
+                    basename(fname),
+                    )
+                )
+
+                if detected['encoding'].lower() not in [ encoding.lower(), 'ascii' ]:
+                    try:
+                        chunk = chunk.decode(
+                            detected['encoding'], errors='replace')\
+                                .encode(encoding, errors='replace')
+                    except UnicodeError:
+                        raise ValueError(
+                            '%s contains invalid characters' % (
+                                basename(fname),
+                        ))
+                    except KeyError:
+                        raise ValueError(
+                            '%s encoding could not be detected ' % (
+                                basename(fname),
+                        ))
+
+                    except TypeError:
+                        try:
+                            chunk = chunk.decode(
+                            detected['encoding'], 'replace')\
+                                .encode(encoding, 'replace')
+                        except UnicodeError:
+                            raise ValueError(
+                                '%s contains invalid characters' % (
+                                    basename(fname),
+                            ))
+                        except KeyError:
+                            raise ValueError(
+                                '%s encoding could not be detected ' % (
+                                    basename(fname),
+                            ))
+
+            try:
+                fw.write(chunk)
+            except:
+                self.logger.error(
+                    'Could not write to new file %s.' % \
+                    basename(tmp_fname),
+                )
+                try:
+                    f.close()
+                except:
+                    pass
+                try:
+                    fw.close()
+                except:
+                    pass
+                return False
+
+        try:
+            f.close()
+        except:
+            pass
+        try:
+            fw.close()
+        except:
+            pass
+
+        try:
+            move(fname, old_fname)
+        except OSError:
+            self.logger.error(
+                'Could not move %s to %s' % (
+                    basename(fname),
+                    basename(old_fname),
+                )
+            )
+            try:
+                unlink(tmp_fname)
+            except:
+                pass
+            return False
+
+        try:
+            move(tmp_fname, fname)
+        except OSError:
+            self.logger.error(
+                'Could not move %s to %s' % (
+                    basename(tmp_fname),
+                    basename(fname),
+                )
+            )
+            try:
+                unlink(fname)
+            except:
+                pass
+            try:
+                move(old_fname, fname)
+            except:
+                pass
+            try:
+                unlink(tmp_fname)
+            except:
+                pass
+            return False
+
+        try:
+            unlink(old_fname)
+        except:
+            pass
+
+        self.logger.info(
+            "Converted %s to '%s' encoding." % (
+                basename(fname),
+                encoding,
+            )
+        )
+        return True
+
     def subliminal_fetch(self, files, single_mode=True, shared=True,
                          deobfuscate=True, use_nzbheaders=True,
                          overwrite=False):
@@ -579,6 +827,11 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         # Get configuration
         cache_dir = self.get('CACHEDIR', self.get('TEMPDIR'))
         cache_file = join(cache_dir, 'subliminal.cache.dbm')
+
+        # Encoding
+        force_encoding = self.get('ForceEncoding', DEFAULT_FORCE_ENCODING)
+        if force_encoding.lower() == 'none':
+            force_encoding = None
 
         # Minimum Score
         minscore = int(self.get('MinScore', DEFAULT_MIN_VIDEO_SCORE))
@@ -642,39 +895,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             ))
 
         provider_configs = {}
-        if 'addic7ed' in movie_providers:
-            # Addic7ed Support
-            a_username = self.get('Addic7edUsername')
-            a_password = self.get('Addic7edPassword')
-
-            if not (a_username and a_password):
-                self.logger.debug(
-                    'Addic7ed provider dropped from Movie ' + \
-                    'providers list due to missing credentials',
-                )
-                movie_providers.remove('addic7ed')
-            else:
-                provider_configs['addic7ed'] = {
-                    'username': a_username,
-                    'password': a_password,
-                }
-
-        if 'addic7ed' in tvshow_providers:
-            # Addic7ed Support
-            a_username = self.get('Addic7edUsername')
-            a_password = self.get('Addic7edPassword')
-
-            if not (a_username and a_password):
-                self.logger.debug(
-                    'Addic7ed provider dropped from TV Show ' + \
-                    'providers list due to missing credentials',
-                )
-                tvshow_providers.remove('addic7ed')
-            else:
-                provider_configs['addic7ed'] = {
-                    'username': a_username,
-                    'password': a_password,
-                }
 
         lang = self.parse_list(self.get('Languages', 'en'))
         if not lang:
@@ -774,14 +994,19 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                             ', '.join([ basename(_srt) \
                                        for _srt in _matches.keys() ]),
                     ))
+                    # File Conversion Option
+                    #if force_encoding:
+                    #    for _srt in _matches.keys():
+                    #        self.convert_encoding(_srt, force_encoding)
                     _lang.remove(l)
                     continue
 
             if len(_lang) == 0:
-                self.logger.info(
+                self.logger.debug(
                     'Skipping - Subtitle(s) already exist for: %s' % (
                     basename(entry),
                 ))
+
                 continue
 
             self.logger.debug('Scanning [%s] using %s lang=%s' % (
@@ -807,7 +1032,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 if isinstance(e, basestring):
                     self.logger.debug('Error message: %s' % e)
 
-                self.logger.info(
+                self.logger.debug(
                     'Skipping - Invalid file: %s' % basename(entry),
                 )
                 continue
@@ -830,7 +1055,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     video.subtitle_languages.remove(babelfish.Language('und'))
 
                     if not skip_embedded:
-                        self.logger.info(
+                        self.logger.debug(
                             'Skipping - unknown embedded subtitle ' + \
                             'language(s) already exist for: %s' % basename(entry),
                         )
@@ -842,7 +1067,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     # clean out languages we have already
                     for l in video.subtitle_languages:
                         if l in _lang:
-                            self.logger.info(
+                            self.logger.debug(
                                 'Skipping - Embedded %s subtitle ' % str(l) + \
                                 'already exist for: %s' % basename(entry),
                             )
@@ -974,6 +1199,10 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     )
                     continue
 
+                # File Conversion Option
+                if force_encoding:
+                    self.convert_encoding(expected_file, force_encoding)
+
                 # increment counter
                 f_count += 1
 
@@ -1004,11 +1233,11 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MovieProviders',
             'TVShowProviders',
             'SearchMode',
-            'Addic7edUsername',
-            'Addic7edPassword',
             'FetchMode',
             'TvCategories',
             'VideoExtensions',
+            'ForceEncoding',
+            'SystemEncoding',
             'Languages')):
 
             return False
@@ -1113,11 +1342,11 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MovieProviders',
             'TVShowProviders',
             'SearchMode',
-            'Addic7edUsername',
-            'Addic7edPassword',
             'FetchMode',
             'ScanDirectories',
             'VideoExtensions',
+            'ForceEncoding',
+            'SystemEncoding',
             'Languages')):
 
             return False
@@ -1277,6 +1506,14 @@ if __name__ == "__main__":
         metavar="AGE",
     )
     parser.add_option(
+        "-n",
+        "--encoding",
+        dest="encoding",
+        help="The system encoding to use (utf-8, ISO-8859-1, etc)." + \
+             " The default value is '%s'" % DEFAULT_SYSTEM_ENCODING + ".",
+        metavar="ENCODING",
+    )
+    parser.add_option(
         "-l",
         "--language",
         dest="language",
@@ -1340,6 +1577,15 @@ if __name__ == "__main__":
         "identified provider(s).",
     )
     parser.add_option(
+        "-e",
+        "--force-encoding",
+        dest="force_encoding",
+        help="Optionally specify the subtitle's file encoding to" + \
+        "a specific type (utf-8, ISO-8859-1, etc). If none is specified " + \
+        "then the file is left as is.",
+        metavar="ENCODING",
+    )
+    parser.add_option(
         "-f",
         "--force",
         action="store_true",
@@ -1362,22 +1608,6 @@ if __name__ == "__main__":
         " the options are: '%s'" % "', '".join(FETCH_MODES) + ".  " +\
         "The default value is: %s" % FETCH_MODE_DEFAULT,
         metavar="MODE",
-    )
-    parser.add_option(
-        "-U",
-        "--addic7ed-username",
-        dest="a_username",
-        help="You must specify a Addic7ed username if you wish to use " +\
-        "them as one of your chosen providers.",
-        metavar="USERNAME",
-    )
-    parser.add_option(
-        "-P",
-        "--addic7ed-password",
-        dest="a_password",
-        help="You must specify a Addic7ed password if you wish to use " +\
-        "them as one of your chosen providers.",
-        metavar="PASSWORD",
     )
     parser.add_option(
         "-L",
@@ -1422,8 +1652,10 @@ if __name__ == "__main__":
     # careful to only set() values that have been set by an
     # external switch. Otherwise we use defaults or what might
     # already be resident in memory (environment variables).
+    _encoding = options.encoding
     _language = options.language
     _maxage = options.maxage
+    _force_encoding = options.force_encoding
     _minsize = options.minsize
     _minscore = options.minscore
     _single_mode = options.single_mode is True
@@ -1433,10 +1665,6 @@ if __name__ == "__main__":
     _force = options.force is True
     _providers = options.providers
     _fetch_mode = options.fetch_mode
-
-    # Addic7ed Support
-    _a_username = options.a_username
-    _a_password = options.a_password
 
     if _maxage:
         try:
@@ -1470,6 +1698,9 @@ if __name__ == "__main__":
     if _overwrite:
         script.set('Overwrite', True)
 
+    if _force_encoding:
+        script.set('ForceEncoding', _force_encoding.lower())
+
     if _basic_mode:
         script.set('SearchMode', SEARCH_MODE.BASIC)
 
@@ -1485,14 +1716,11 @@ if __name__ == "__main__":
     if _providers:
         script.set('Providers', _providers)
 
-    if _a_username:
-        script.set('Addic7edUsername', _a_username)
-
-    if _a_password:
-        script.set('Addic7edPassword', _a_password)
-
     if _language:
-        script.set('languages', _language)
+        script.set('Languages', _language)
+
+    if _encoding:
+        script.set('SystemEncoding', _encoding)
 
     if _fetch_mode:
         if _fetch_mode.upper() in [ f.upper() for f in FETCH_MODES ]:
@@ -1517,6 +1745,10 @@ if __name__ == "__main__":
         if not _language:
             # Force defaults if not set
             script.set('Languages', DEFAULT_LANGUAGE)
+
+        if not _encoding:
+            # Force defaults if not set
+            script.set('SystemEncoding', DEFAULT_SYSTEM_ENCODING)
 
         if not _fetch_mode:
             script.set('FetchMode', FETCH_MODE_DEFAULT)

@@ -12,10 +12,9 @@ import charade
 import guessit
 import requests
 from . import Provider
-from . import IGNORED_CHARACTERS_RE
-from .. import __version__
 from ..exceptions import InvalidSubtitle, ProviderNotAvailable, ProviderError
 from ..subtitle import Subtitle, is_valid_subtitle, compute_guess_matches
+from ..subtitle import sanitize_string, extract_title_year
 from ..video import Episode, Movie
 
 
@@ -47,8 +46,8 @@ class PodnapisiSubtitle(Subtitle):
         if isinstance(video, Episode):
             # series
             if video.series and \
-               IGNORED_CHARACTERS_RE.sub('', self.series).lower() == \
-               IGNORED_CHARACTERS_RE.sub('', video.series).lower():
+                sanitize_string(self.series, strip_date=True) == \
+                sanitize_string(video.series, strip_date=True):
                 matches.add('series')
             # season
             if video.season and self.season == video.season:
@@ -63,8 +62,8 @@ class PodnapisiSubtitle(Subtitle):
         elif isinstance(video, Movie):
             # title
             if video.title and \
-               IGNORED_CHARACTERS_RE.sub('', self.title).lower() == \
-               IGNORED_CHARACTERS_RE.sub('', video.title).lower():
+                sanitize_string(self.title) == \
+                sanitize_string(video.title):
                 matches.add('title')
             # year
             if video.year and self.year == video.year:
@@ -84,7 +83,7 @@ class PodnapisiProvider(Provider):
 
     def initialize(self):
         self.session = requests.Session()
-        self.session.headers = {'User-Agent': 'Subliminal/%s' % __version__}
+        self.session.headers = {'User-Agent': self.primary_user_agent }
 
     def terminate(self):
         self.session.close()
@@ -125,19 +124,28 @@ class PodnapisiProvider(Provider):
     def query(self, language, series=None, season=None, episode=None, title=None, year=None):
         params = {'sXML': 1, 'sJ': language.podnapisi}
         if series and season and episode:
-            params['sK'] = series
+            params['sK'] = sanitize_string(series, strip_date=True)
             params['sTS'] = season
             params['sTE'] = episode
+            if not year:
+                year = extract_title_year(series)
+            if year:
+                params['sY'] = year
         elif title:
-            params['sK'] = title
+            params['sK'] = sanitize_string(title)
             if year:
                 params['sY'] = year
         else:
             raise ValueError('Missing parameters series and season and episode or title')
-        logger.debug('Searching episode %r', params)
+        logger.debug('Searching series %r', params)
         subtitles = []
         while True:
             root = self.get('/ppodnapisi/search', params)
+            if not int(root.find('pagination/results').text):
+                # Before we give up, check for the year in the name and strip
+                # it out.
+                if not year:
+                    params['sY'] = year
             if not int(root.find('pagination/results').text):
                 logger.debug('No subtitle found')
                 break

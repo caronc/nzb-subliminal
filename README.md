@@ -1,8 +1,10 @@
-Subliminal Processing Script
-============================
+Subliminal No Karma Processing Script
+=====================================
 This script was intended to be an [NZBGet](http://nzbget.net) _post-processing_
 and _scheduling_ script wrapper for _Subliminal_. However, it also works
 perfectly fine as a standalone script for others too.
+
+This is the ''No Karma'' version of the tool since the [Addic7ed](http://www.addic7ed.com/) provider recently blocked anyone using anything but a web browser.  After failling to get in contact with the owner of the site, I forked my main code and created a workaround. Since Addic7ed currently blocks anyone accessing their site unless they come from a web browser, this ''No Karma'' version simply makes all of queries look like they come from a browser too. All Addic7ed login authentication was also removed since it didn't matter anyway after the changes they made.
 
 [Subliminal](https://github.com/Diaoul/subliminal) was written by Antoine
 Bertin (Diaoul Ael). This tool I'm hosting here merely acts as a wrapper to it
@@ -79,7 +81,7 @@ should be known that Subliminal.py depends on the following packages:
 | html5lib                     | 0.999   | https://pypi.python.org/pypi/html5lib/0.999                                          |
 | ndg-httpsclient              | 0.3.2   | https://pypi.python.org/pypi/ndg-httpsclient/0.3.2                                   |
 | ordereddict                  | 1.1     | https://pypi.python.org/pypi/ordereddict/1.1                                         |
-| pynzbget                     | 0.2.1   | https://pypi.python.org/pypi/pynzbget/0.2.1                                          |
+| pynzbget                     | 0.2.2   | https://pypi.python.org/pypi/pynzbget/0.2.2                                          |
 | repoze.lru                   | 0.6     | https://pypi.python.org/pypi/repoze.lru/0.6                                          |
 | requests **[P]**             | 2.3.0   | https://pypi.python.org/pypi/requests/2.3.0                                          |
 | setuptools                   | 0.6.10  | http://svn.python.org/projects/sandbox/branches/setuptools-0.6/pkg_resources.py      |
@@ -156,12 +158,6 @@ Options:
                         options are: 'ImpairedOnly', 'StandardOnly',
                         'BestScore', 'StandardFirst', 'ImpairedFirst'.  The
                         default value is: BestScore
-  -U USERNAME, --addic7ed-username=USERNAME
-                        You must specify a Addic7ed username if you wish to
-                        use them as one of your chosen providers.
-  -P PASSWORD, --addic7ed-password=PASSWORD
-                        You must specify a Addic7ed password if you wish to
-                        use them as one of your chosen providers.
   -L FILE, --logfile=FILE
                         Send output to the specified logfile instead of
                         stdout.

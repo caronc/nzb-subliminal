@@ -6,11 +6,9 @@ import bs4
 import charade
 import requests
 from . import Provider
-from . import IGNORED_CHARACTERS_RE
-from .. import __version__
 from ..cache import region
 from ..exceptions import ProviderConfigurationError, ProviderNotAvailable, InvalidSubtitle
-from ..subtitle import Subtitle, is_valid_subtitle
+from ..subtitle import Subtitle, is_valid_subtitle, sanitize_string, extract_title_year
 from ..video import Episode
 
 
@@ -62,41 +60,12 @@ class Addic7edProvider(Provider):
     video_types = (Episode,)
     server = 'http://www.addic7ed.com'
 
-    def __init__(self, username=None, password=None):
-        if username is not None and password is None or username is None and password is not None:
-            raise ProviderConfigurationError('Username and password must be specified')
-        self.username = username
-        self.password = password
-        self.logged_in = False
-
     def initialize(self):
         self.session = requests.Session()
-        self.session.headers = {'User-Agent': 'Subliminal/%s' % __version__}
-        # login
-        if self.username is not None and self.password is not None:
-            logger.debug('Logging in to Addic7ed')
-            data = {'username': self.username, 'password': self.password, 'Submit': 'Log in'}
-            try:
-                r = self.session.post(self.server + '/dologin.php', data, timeout=10, allow_redirects=False)
-            except requests.Timeout:
-                raise ProviderNotAvailable('Timeout after 10 seconds')
-            if r.status_code == 302:
-                logger.debug('Successfully logged in to Addic7ed.')
-                self.logged_in = True
-            else:
-                logger.error('Failed to login to Addic7ed!')
-
-    def terminate(self):
-        # logout
-        if self.logged_in:
-            try:
-                r = self.session.get(self.server + '/logout.php', timeout=10)
-                logger.debug('Successfully logged out of Addic7ed.')
-            except requests.Timeout:
-                raise ProviderNotAvailable('Timeout after 10 seconds')
-            if r.status_code != 200:
-                raise ProviderNotAvailable('Request failed with status code %d' % r.status_code)
-        self.session.close()
+        self.session.headers = {
+            'User-Agent': self.random_user_agent,
+            'Referer': self.server,
+        }
 
     def get(self, url, params=None):
         """Make a GET request on `url` with the given parameters
@@ -127,8 +96,7 @@ class Addic7edProvider(Provider):
         soup = self.get('/shows.php')
         show_ids = {}
         for html_show in soup.select('td.version > h3 > a[href^="/show/"]'):
-            show_ids[
-                IGNORED_CHARACTERS_RE.sub('', html_show.string).lower()] = \
+            show_ids[sanitize_string(html_show.string)] = \
                     int(html_show['href'][6:])
         return show_ids
 
@@ -153,13 +121,22 @@ class Addic7edProvider(Provider):
 
     def query(self, series, season):
         show_ids = self.get_show_ids()
-        _series = IGNORED_CHARACTERS_RE.sub('', series).lower()
-        if _series in show_ids:
-            show_id = show_ids[_series]
+        sanitized_series = sanitize_string(series)
+        if sanitized_series in show_ids:
+            show_id = show_ids[sanitized_series]
         else:
-            show_id = self.find_show_id(_series)
+            show_id = self.find_show_id(sanitized_series)
             if show_id is None:
-                return []
+                if extract_title_year(sanitized_series):
+                    logger.debug('Date detected in series title; adjusting search.')
+                    # Attempt to search again without the date
+                    sanitized_series = sanitize_string(
+                        sanitized_series,
+                        strip_date=True,
+                    )
+                    show_id = self.find_show_id(sanitized_series)
+                    if show_id is None:
+                        return []
         params = {'show_id': show_id, 'season': season}
         logger.debug('Searching subtitles %r', params)
         link = '/show/{show_id}&season={season}'.format(**params)

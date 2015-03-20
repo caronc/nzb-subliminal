@@ -120,6 +120,7 @@ listed since some alter files previously changed by another.
 | [subliminal-hearing_impaired.logging.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-hearing_impaired.logging.patch) | Better logging and scoring adjustments (when using _ImpairedFirst_ or _StandardFirst_) improved.
 | [subliminal-external.guessing.support.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-external.guessing.support.patch) | Allows the wrapper to do the guess work of the video in question outside of the subliminal core. But then we can pass back what we have guessed afterwards.  This was added for some optimization; previously we were guessing the video contents twice. This change will have no impact on the existing tool since the defaults of this change cause everything to appear unchanged.
 | [subliminal-better_debug_logging.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-better_debug_loggin.patch) | More logging when encoutering an http error
+| [subliminal-addic7ed_no_karma.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-addic7ed_no_karma.patch) | This patch was put in place since somewhere in late Dec/2014 and early Jan/2015 Addic7ed blocked all access to their site if they came from any User-Agent identified as Subliminal.  This patch makes Subliminal look like it's just a regular web browser.  I've emailed them to find work on a mutual solution where we can all benifit and never received a reply.  The nice thing about a patch is we can easliy reverse it once (or if) a compromise is ever achived.  Until now; this patch grants access to the addic7ed servers again.  This patch also eliminates the requirement for the need to specify an addic7ed user/pass combination since access with or without it does not change this situation.
 
 ```bash
 # Assuming you have our dependencies fullfilled
@@ -146,6 +147,7 @@ curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/pat
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-hearing_impaired.logging.patch
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-external.guessing.support.patch
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-better_debug_logging.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-addi7ed_no_karma.patch
 
 # Extract our downloaded archive
 tar xvfz subliminal-0.7.4.tar.gz
@@ -167,6 +169,7 @@ patch -d subliminal-0.7.4 -p1 < subliminal-clean_logging.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-hearing_impaired.logging.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-external.guessing.support.patch
 patch -d subliminal-0.7.4 -p1 < subliminal-better_debug_logging.patch
+patch -d subliminal-0.7.4 -p1 < subliminal-addic7ed_no_karma.patch
 
 # You're done!
 ```
