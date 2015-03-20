@@ -35,7 +35,7 @@
 # Author: Chris Caron (lead2gold@gmail.com).
 # Date: Tue, Mar 4th, 2015.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-# Script Version: 0.9.4.2 (No Karma)
+# Script Version: 0.9.5
 #
 # NOTE: This script requires Python to be installed on your system.
 #
