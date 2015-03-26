@@ -2245,7 +2245,16 @@ class ScriptBase(object):
 
                 if fullstats:
                     # Extend file information
-                    stat_obj = stat(_file)
+                    try:
+                        stat_obj = stat(_file)
+                    except OSError:
+                        # File was not found or recently removed
+                        del files[_file]
+                        self.logger.warning(
+                            'The file %s became inaccessible' % fname,
+                        )
+                        continue
+
                     try:
                         files[_file]['modified'] = \
                             datetime.fromtimestamp(stat_obj[ST_MTIME])
