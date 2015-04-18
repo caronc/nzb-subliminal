@@ -1633,7 +1633,12 @@ if __name__ == "__main__":
     debug = options.debug
 
     script_mode = None
-    scandir = options.scandir
+    if options.scandir:
+        scandir = options.scandir
+    elif len(_args):
+        # Support command line arguments too
+        scandir = ','.join(_args)
+
     if scandir:
         # By specifying a scandir, we know for sure the user is
         # running this as a standalone script,
@@ -1758,6 +1763,12 @@ if __name__ == "__main__":
 
         # Finally set the directory the user specified for scanning
         script.set('ScanDirectories', scandir)
+
+    if not script.script_mode and not script.get('ScanDirectories'):
+        # Provide some CLI help when ScanDirectories has been
+        # detected as not being identified
+        parser.print_help()
+        exit(1)
 
     # Attach Subliminal logging to output by connecting to its namespace
     logging.getLogger('subliminal').\
