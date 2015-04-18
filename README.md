@@ -86,7 +86,7 @@ should be known that Subliminal.py depends on the following packages:
 | silpa_common                 | 0.3     | https://pypi.python.org/pypi/silpa_common/0.3                                        |
 | six                          | 1.6.1   | https://pypi.python.org/pypi/six/1.6.1                                               |
 | stevedore                    | 0.14    | https://pypi.python.org/pypi/stevedore/0.14                                          |
-| subliminal **[P]**           | 0.7.4   | https://pypi.python.org/pypi/subliminal/0.7.4                                        |
+| subliminal **[P]**           | 0.7.5   | https://pypi.python.org/pypi/subliminal/0.7.5                                        |
 | pyasn1                       | 0.1.7   | https://pypi.python.org/pypi/pyasn1/0.1.7                                            |
 | pyOpenSSL                    | 0.14    | https://pypi.python.org/pypi/pyOpenSSL/0.14                                          |
 | pyxdg                        | 0.25    | https://pypi.python.org/pypi/pyxdg/0.25                                              |
