@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.5.4
+-----
+**release date:** 2015-01-24
+
+* Fix setuptools deprecation warning
+
 0.5.3
 -----
 **release date:** 2014-06-22

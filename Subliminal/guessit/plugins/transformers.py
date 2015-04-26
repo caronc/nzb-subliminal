@@ -54,7 +54,7 @@ class Transformer(object):  # pragma: no cover
     def post_process(self, mtree, options=None):
         pass
 
-    def register_options(self, opts, naming_opts, output_opts, information_opts, webservice_opts, other_options):
+    def register_arguments(self, opts, naming_opts, output_opts, information_opts, webservice_opts, other_options):
         pass
 
     def rate_quality(self, guess, *props):
@@ -63,15 +63,15 @@ class Transformer(object):  # pragma: no cover
 
 class CustomTransformerExtensionManager(ExtensionManager):
     def __init__(self, namespace='guessit.transformer', invoke_on_load=True,
-        invoke_args=(), invoke_kwds={}, propagate_map_exceptions=True, on_load_failure_callback=None,
+                 invoke_args=(), invoke_kwds={}, propagate_map_exceptions=True, on_load_failure_callback=None,
                  verify_requirements=False):
         super(CustomTransformerExtensionManager, self).__init__(namespace=namespace,
-                 invoke_on_load=invoke_on_load,
-                 invoke_args=invoke_args,
-                 invoke_kwds=invoke_kwds,
-                 propagate_map_exceptions=propagate_map_exceptions,
-                 on_load_failure_callback=on_load_failure_callback,
-                 verify_requirements=verify_requirements)
+                                                                invoke_on_load=invoke_on_load,
+                                                                invoke_args=invoke_args,
+                                                                invoke_kwds=invoke_kwds,
+                                                                propagate_map_exceptions=propagate_map_exceptions,
+                                                                on_load_failure_callback=on_load_failure_callback,
+                                                                verify_requirements=verify_requirements)
 
     def order_extensions(self, extensions):
         """Order the loaded transformers
@@ -87,9 +87,15 @@ class CustomTransformerExtensionManager(ExtensionManager):
 
     def _load_one_plugin(self, ep, invoke_on_load, invoke_args, invoke_kwds, verify_requirements=True):
         if not ep.dist:
-            plugin = ep.load(require=False)
+            # `require` argument of ep.load() is deprecated in newer versions of setuptools
+            if hasattr(ep, 'resolve'):
+                plugin = ep.resolve()
+            elif hasattr(ep, '_load'):
+                plugin = ep._load()
+            else:
+                plugin = ep.load(require=False)
         else:
-            plugin = ep.load(require=verify_requirements)
+            plugin = ep.load()
         if invoke_on_load:
             obj = plugin(*invoke_args, **invoke_kwds)
         else:
@@ -184,6 +190,7 @@ def add_transformer(name, module_name, class_name):
     """
 
     _extensions.register_module(name, module_name, (class_name,))
+
 
 def add_transformer(entry_point):
     """

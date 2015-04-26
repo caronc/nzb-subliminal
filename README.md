@@ -65,7 +65,7 @@ should be known that Subliminal.py depends on the following packages:
 | Name                         | Version | Source                                                                               |
 | ---------------------------- |:------- |:------------------------------------------------------------------------------------ |
 | pysrt                        | 1.0.1   | https://pypi.python.org/pypi/pysrt/1.0.1                                             |
-| babelfish                    | 0.5.3   | https://pypi.python.org/pypi/babelfish/0.5.3                                         |
+| babelfish                    | 0.5.4   | https://pypi.python.org/pypi/babelfish/0.5.4                                         |
 | backports-ssl_match_hostname | 3.4.0.2 | https://pypi.python.org/pypi/backports.ssl_match_hostname/3.4.0.2                    |
 | beautifulsoup4               | 4.3.2   | https://pypi.python.org/pypi/beautifulsoup4/4.3.2                                    |
 | charade                      | 1.0.3   | https://pypi.python.org/pypi/charade/1.0.3                                           |
@@ -75,7 +75,7 @@ should be known that Subliminal.py depends on the following packages:
 | dogpile-core                 | 0.4.1   | https://pypi.python.org/pypi/dogpile.core/0.4.1                                      |
 | enzyme                       | 0.4.1   | https://pypi.python.org/pypi/enzyme/0.4.1                                            |
 | guesslanguage                | 0.2.1   | https://pypi.python.org/pypi/guesslanguage/0.2.1                                     |
-| guessit                      | 0.9.3   | https://pypi.python.org/pypi/guessit/0.9.3                                           |
+| guessit                      | 0.10.3  | https://pypi.python.org/pypi/guessit/0.10.3                                          |
 | html5lib                     | 0.999   | https://pypi.python.org/pypi/html5lib/0.999                                          |
 | ndg-httpsclient              | 0.3.2   | https://pypi.python.org/pypi/ndg-httpsclient/0.3.2                                   |
 | ordereddict                  | 1.1     | https://pypi.python.org/pypi/ordereddict/1.1                                         |

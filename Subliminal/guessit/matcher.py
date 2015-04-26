@@ -85,7 +85,6 @@ class IterativeMatcher(object):
             filename = filename.decode('utf-8')
 
         filename = normalize_unicode(filename)
-        clean_function = None
         if options and options.get('clean_function'):
             clean_function = options.get('clean_function')
             if not hasattr(clean_function, '__call__'):
@@ -117,13 +116,13 @@ class IterativeMatcher(object):
             # Process
             for transformer in transformers.all_transformers():
                 disabled = options.get('disabled_transformers')
-                if not disabled or not transformer.name in disabled:
+                if not disabled or transformer.name not in disabled:
                     self._process(transformer, False)
 
             # Post-process
             for transformer in transformers.all_transformers():
                 disabled = options.get('disabled_transformers')
-                if not disabled or not transformer.name in disabled:
+                if not disabled or transformer.name not in disabled:
                     self._process(transformer, True)
 
             log.debug('Found match tree:\n%s' % u(mtree))
@@ -152,11 +151,11 @@ class IterativeMatcher(object):
 
     def _validate_options(self, options):
         valid_filetypes = ('subtitle', 'info', 'video',
-                   'movie', 'moviesubtitle', 'movieinfo',
-                   'episode', 'episodesubtitle', 'episodeinfo')
+                           'movie', 'moviesubtitle', 'movieinfo',
+                           'episode', 'episodesubtitle', 'episodeinfo')
 
-        type = options.get('type')
-        if type and type not in valid_filetypes:
+        type_ = options.get('type')
+        if type_ and type_ not in valid_filetypes:
             raise ValueError("filetype needs to be one of %s" % (valid_filetypes,))
 
     def matched(self):
@@ -165,9 +164,25 @@ class IterativeMatcher(object):
 
 def build_guess(node, name, value=None, confidence=1.0):
     guess = Guess({name: node.clean_value if value is None else value}, confidence=confidence)
-    if value is None:
-        guess.metadata().span = node.span
     guess.metadata().input = node.value if value is None else value
+    if value is None:
+        left_offset = 0
+        right_offset = 0
+
+        clean_value = node.clean_value
+
+        if clean_value:
+            for i in range(0, len(node.value)):
+                if clean_value[0] == node.value[i]:
+                    break
+                left_offset += 1
+
+            for i in reversed(range(0, len(node.value))):
+                if clean_value[-1] == node.value[i]:
+                    break
+                right_offset += 1
+
+        guess.metadata().span = (node.span[0] - node.offset + left_offset, node.span[1] - node.offset - right_offset)
     return guess
 
 
@@ -199,6 +214,15 @@ def log_found_guess(guess, logger=None):
                               (k, v, guess.raw(k), guess.confidence(k)))
 
 
+def _get_split_spans(node, span):
+    partition_spans = node.get_partition_spans(span)
+    for to_remove_span in partition_spans:
+        if to_remove_span[0] == span[0] and to_remove_span[1] in [span[1], span[1] + 1]:
+            partition_spans.remove(to_remove_span)
+            break
+    return partition_spans
+
+
 class GuessFinder(object):
     def __init__(self, guess_func, confidence=None, logger=None, options=None):
         self.guess_func = guess_func
@@ -211,7 +235,6 @@ class GuessFinder(object):
             self.process_node(node)
 
     def process_node(self, node, iterative=True, partial_span=None):
-        value = None
         if partial_span:
             value = node.value[partial_span[0]:partial_span[1]]
         else:
@@ -243,18 +266,20 @@ class GuessFinder(object):
                     for skip_node in skip_nodes:
                         if skip_node.parent.node_idx == node.node_idx[:len(skip_node.parent.node_idx)] and\
                             skip_node.span == span or\
-                            skip_node.span == (span[0] + skip_node.offset, span[1] + skip_node.offset):
-                            partition_spans = node.get_partition_spans(skip_node.span)
-                            for to_remove_span in partition_spans:
-                                if to_remove_span[0] == skip_node.span[0] and to_remove_span[1] in [skip_node.span[1], skip_node.span[1] + 1]:
-                                    partition_spans.remove(to_remove_span)
-                                    break
-                            #break
+                                skip_node.span == (span[0] + skip_node.offset, span[1] + skip_node.offset):
+                            if partition_spans is None:
+                                partition_spans = _get_split_spans(node, skip_node.span)
+                            else:
+                                new_partition_spans = []
+                                for partition_span in partition_spans:
+                                    tmp_node = MatchTree(value, span=partition_span, parent=node)
+                                    tmp_partitions_spans = _get_split_spans(tmp_node, skip_node.span)
+                                    new_partition_spans.extend(tmp_partitions_spans)
+                                partition_spans.extend(new_partition_spans)
 
                 if not partition_spans:
                     # restore sentinels compensation
 
-                    guess = None
                     if isinstance(result, Guess):
                         guess = result
                     else:
@@ -275,7 +300,7 @@ class GuessFinder(object):
                                     found_child = child
                                     break
                             for child in node.children:
-                                if not child is found_child:
+                                if child is not found_child:
                                     self.process_node(child)
                 else:
                     for partition_span in partition_spans:

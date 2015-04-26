@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: babelfish
-Version: 0.5.3
+Version: 0.5.4
 Summary: A module to work with countries and languages
 Home-page: https://github.com/Diaoul/babelfish
 Author: Antoine Bertin
@@ -26,6 +26,12 @@ Description: BabelFish
         
         Changelog
         =========
+        
+        0.5.4
+        -----
+        **release date:** 2015-01-24
+        
+        * Fix setuptools deprecation warning
         
         0.5.3
         -----
@@ -151,5 +157,6 @@ Classifier: Programming Language :: Python :: 2.7
 Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.2
 Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
 Classifier: Topic :: Multimedia :: Video
 Classifier: Topic :: Software Development :: Libraries :: Python Modules

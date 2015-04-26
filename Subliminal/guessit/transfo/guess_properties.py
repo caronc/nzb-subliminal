@@ -21,7 +21,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from guessit.containers import PropertiesContainer, WeakValidator, LeavesValidator, QualitiesContainer, NoValidator, \
-    ChainedValidator, DefaultValidator, OnlyOneValidator, LeftValidator
+    ChainedValidator, DefaultValidator, OnlyOneValidator, LeftValidator, NeighborValidator
 from guessit.patterns import sep, build_or_pattern
 from guessit.patterns.extension import subtitle_exts, video_exts, info_exts
 from guessit.patterns.numeral import numeral, parse_numeral
@@ -131,11 +131,12 @@ class GuessProperties(Transformer):
                 return True
 
         _digits_re = re.compile('\d+')
-        def resolutionFormatter(value):
+
+        def resolution_formatter(value):
             digits = _digits_re.findall(value)
             return 'x'.join(digits)
 
-        self.container.register_property('screenSize', '\d{3,4}-?[x\*]-?\d{3,4}', canonical_from_pattern=False, formatter=resolutionFormatter, validator=ChainedValidator(DefaultValidator(), ResolutionValidator()))
+        self.container.register_property('screenSize', '\d{3,4}-?[x\*]-?\d{3,4}', canonical_from_pattern=False, formatter=resolution_formatter, validator=ChainedValidator(DefaultValidator(), ResolutionValidator()))
 
         register_quality('screenSize', {'360p': -300,
                                         '368p': -200,
@@ -247,7 +248,7 @@ class GuessProperties(Transformer):
                                     'Netflix': ['Netflix', 'NF']
                                     })
 
-        self.container.register_property('other', 'Real', 'Fix', canonical_form='Proper', validator=WeakValidator())
+        self.container.register_property('other', 'Real', 'Fix', canonical_form='Proper', validator=NeighborValidator())
         self.container.register_property('other', 'Proper', 'Repack', 'Rerip', canonical_form='Proper')
         self.container.register_property('other', 'Fansub', canonical_form='Fansub')
         self.container.register_property('other', 'Fastsub', canonical_form='Fastsub')
@@ -276,12 +277,12 @@ class GuessProperties(Transformer):
 
     def process(self, mtree, options=None):
         GuessFinder(self.guess_properties, 1.0, self.log, options).process_nodes(mtree.unidentified_leaves())
-        properCount = 0
+        proper_count = 0
         for other_leaf in mtree.leaves_containing('other'):
             if 'other' in other_leaf.info and 'Proper' in other_leaf.info['other']:
-                properCount += 1
-        if properCount:
-            found_property(mtree, 'properCount', properCount)
+                proper_count += 1
+        if proper_count:
+            found_property(mtree, 'properCount', proper_count)
 
     def rate_quality(self, guess, *props):
         return self.qualities.rate_quality(guess, *props)
