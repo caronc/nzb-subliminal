@@ -1638,6 +1638,9 @@ if __name__ == "__main__":
     elif len(_args):
         # Support command line arguments too
         scandir = ','.join(_args)
+    else:
+        # No arguments at all specified
+        scandir = ''
 
     if scandir:
         # By specifying a scandir, we know for sure the user is
