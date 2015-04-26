@@ -95,32 +95,18 @@ and incoming requests from the users of NZBGet (via their forum).
 I have an ongoing pull request to Subliminal's v0.7.4 branch in efforts to
 push the major changes I've added to it [here](https://github.com/Diaoul/subliminal/pull/404).
 
-| Subliminal v0.7.4 Source |
+| Subliminal v0.7.5 Source |
 | --------------------- |
-| https://pypi.python.org/packages/source/s/subliminal/subliminal-0.7.4.tar.gz |
+| https://pypi.python.org/packages/source/s/subliminal/subliminal-0.7.5.tar.gz |
 
 All of the patches identified below must be applied in the order they are
 listed since some alter files previously changed by another.
 
 | Patch | Description |
 | ----- | ----------- |
-| [subliminal-reqfix.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-reqfix.patch) | Update guessit and babelfish requirements to support the newer versions.
-| [subliminal-python.26.support.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-python.26.support.patch) | Python v2.6 support by eliminating reference to [PEP 274](http://legacy.python.org/dev/peps/pep-0274/) (Dict Comprehensions) and reference to logging.NullHandler(). Some Babelfish adjustments were also lumped into this patch.
-| [subliminal-guessit07.support.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-guessit07.support.patch) | Updated some guessit references to accomodate the library version packaged.
-| [subliminal-hearing_impaired.ignore.option.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-hearing_impaired.ignore.option.patch) | Make it so we don't have to exclusively download hearing-impared or non-hearing impaired subtitles. This gives us the flexability to download whatever best matches.
-| [subliminal-double.download.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-double.download.patch) | Eliminates a bug that seems to cause Subliminal to download more then one subtitle (overwriting the last) when there is multiple matched ones.
-| [subliminal-prioritize.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-prioritize.patch) | Introduce a priortization of which subtitle to choose when both hearing-impared and/or non-hearing impaired subtitles are found.
-| [subliminal-offline_providers.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-offline_providers.patch) | Handle subtitle providers that aren't responding to web requests (do to maintenance or whatever) more gracefully. Prior to this patch; subliminal crashes if a provider goes offline or fails to respond.
-| [subliminal-podnapisi.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-podnapisi.patch) | In Aug 2014, podnapisi changed their web page structure around which effectively broke this as a viable provider to search. This patch allows subliminal to successfully search and fetch content from this location again.
-| [subliminal-quote_support.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-quote_support.patch) | Some TV Shows and Movies have quotes in their title. These quotes were interfering with the potential matches on providers when being queried for subtitles.  This patch resolves this dillema.
-| [subliminal-addic7ed.logging.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-addic7ed.logging.patch) | Login and Logoff of Addic7ed server made just a bit more obvious.
-| [subliminal-tvsubtitles.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-tvsubtitles.patch) | Better matching on TVSubtitles.net
-| [subliminal-double.download.pt2.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-double.download.pt2.patch) | This is an extension to an earlier patch created ([subliminal-double.download.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-double.download.patch)) which just improves on it.
-| [subliminal-clean_logging.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-clean_logging.patch) | When a provider is offline or becomes unresponsive, this patch just eliminates all the extra noise generated in the log files. I created this patch because opensubtitles seems to go offline often and the extra noise in the log files was not nessisary.
-| [subliminal-hearing_impaired.logging.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-hearing_impaired.logging.patch) | Better logging and scoring adjustments (when using _ImpairedFirst_ or _StandardFirst_) improved.
-| [subliminal-external.guessing.support.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-external.guessing.support.patch) | Allows the wrapper to do the guess work of the video in question outside of the subliminal core. But then we can pass back what we have guessed afterwards.  This was added for some optimization; previously we were guessing the video contents twice. This change will have no impact on the existing tool since the defaults of this change cause everything to appear unchanged.
-| [subliminal-better_debug_logging.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-better_debug_loggin.patch) | More logging when encoutering an http error
-| [subliminal-addic7ed_no_karma.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-addic7ed_no_karma.patch) | This patch was put in place since somewhere in late Dec/2014 and early Jan/2015 Addic7ed blocked all access to their site if they came from any User-Agent identified as Subliminal.  This patch makes Subliminal look like it's just a regular web browser.  I've emailed them to find work on a mutual solution where we can all benifit and never received a reply.  The nice thing about a patch is we can easliy reverse it once (or if) a compromise is ever achived.  Until now; this patch grants access to the addic7ed servers again.  This patch also eliminates the requirement for the need to specify an addic7ed user/pass combination since access with or without it does not change this situation.
+| [subliminal-unicode.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-unicode.patch) | Better Unicode character support.
+| [subliminal-podnapisi.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-podnapisi.patch) | Podnapisi site redesign patch (happened in early April of 2015)
+| [ubliminal-guessit_requirements.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/ubliminal-guessit_requirements.patch) | Guessit dependencies changed (v0.10 supported now)
 
 ```bash
 # Assuming you have our dependencies fullfilled
@@ -128,48 +114,20 @@ listed since some alter files previously changed by another.
 # - Ubuntu/Debian: sudo apt-get install curl tar patch
 #
 # Retrieve the package
-curl -L -O https://pypi.python.org/packages/source/s/subliminal/subliminal-0.7.4.tar.gz
+curl -L -O https://pypi.python.org/packages/source/s/subliminal/subliminal-0.7.5.tar.gz
 
 # Retrieve the patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-reqfix.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-python.26.support.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-guessit07.support.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-hearing_impaired.ignore.option.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-double.download.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-prioritize.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-offline_providers.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-unicode.patch
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-podnapisi.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-quote_support.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-addic7ed.logging.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-tvsubtitles.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-double.download.pt2.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-clean_logging.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-hearing_impaired.logging.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-external.guessing.support.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-better_debug_logging.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-addi7ed_no_karma.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-guessit_requirements.patch
 
 # Extract our downloaded archive
-tar xvfz subliminal-0.7.4.tar.gz
+tar xvfz subliminal-0.7.5.tar.gz
 
 # Apply our patches
-patch -d subliminal-0.7.4 -p1 < subliminal-reqfix.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-python.26.support.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-guessit07.support.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-hearing_impaired.ignore.option.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-double.download.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-prioritize.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-offline_providers.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-podnapisi.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-quote_support.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-addic7ed.logging.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-tvsubtitles.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-double.download.pt2.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-clean_logging.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-hearing_impaired.logging.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-external.guessing.support.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-better_debug_logging.patch
-patch -d subliminal-0.7.4 -p1 < subliminal-addic7ed_no_karma.patch
+patch -d subliminal-0.7.5 -p1 < subliminal-unicode.patch
+patch -d subliminal-0.7.5 -p1 < subliminal-podnapisi.patch
+patch -d subliminal-0.7.5 -p1 < subliminal-guessit_requirements.patch
 
 # You're done!
 ```

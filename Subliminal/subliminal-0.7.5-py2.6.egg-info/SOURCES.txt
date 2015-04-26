@@ -1,7 +1,6 @@
 HISTORY.rst
 LICENSE
 MANIFEST.in
-README.rst
 requirements.txt
 setup.cfg
 setup.py
@@ -25,7 +24,6 @@ subliminal/converters/podnapisi.py
 subliminal/converters/tvsubtitles.py
 subliminal/providers/__init__.py
 subliminal/providers/addic7ed.py
-subliminal/providers/bierdopje.py
 subliminal/providers/opensubtitles.py
 subliminal/providers/podnapisi.py
 subliminal/providers/thesubdb.py

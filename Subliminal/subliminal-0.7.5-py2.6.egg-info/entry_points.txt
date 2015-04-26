@@ -1,9 +1,9 @@
 [subliminal.providers]
-opensubtitles = subliminal.providers.opensubtitles:OpenSubtitlesProvider
-tvsubtitles = subliminal.providers.tvsubtitles:TVsubtitlesProvider
-podnapisi = subliminal.providers.podnapisi:PodnapisiProvider
-addic7ed = subliminal.providers.addic7ed:Addic7edProvider
 thesubdb = subliminal.providers.thesubdb:TheSubDBProvider
+opensubtitles = subliminal.providers.opensubtitles:OpenSubtitlesProvider
+addic7ed = subliminal.providers.addic7ed:Addic7edProvider
+podnapisi = subliminal.providers.podnapisi:PodnapisiProvider
+tvsubtitles = subliminal.providers.tvsubtitles:TVsubtitlesProvider
 
 [babelfish.language_converters]
 podnapisi = subliminal.converters.podnapisi:PodnapisiConverter

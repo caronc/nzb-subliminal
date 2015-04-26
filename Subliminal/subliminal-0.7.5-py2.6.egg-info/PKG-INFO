@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: subliminal
-Version: 0.7.4
+Version: 0.7.5
 Summary: Subtitles, faster than your thoughts
 Home-page: https://github.com/Diaoul/subliminal
 Author: Antoine Bertin
@@ -25,7 +25,6 @@ Description: Subliminal
         best matching subtitles. Providers are extensible through a dedicated entry point.
         
         * Addic7ed
-        * BierDopje
         * OpenSubtitles
         * Podnapisi
         * TheSubDB
@@ -67,6 +66,16 @@ Description: Subliminal
         
         Changelog
         =========
+        
+        0.7.5
+        -----
+        **release date:** 2015-03-04
+        
+        * Update requirements
+        * Remove BierDopje provider
+        * Add pre-guessed video optional argument in scan_video
+        * Improve hearing impaired support
+        * Fix TVSubtitles and Podnapisi providers
         
         0.7.4
         -----
@@ -231,6 +240,7 @@ Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Classifier: Programming Language :: Python
 Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.6
 Classifier: Programming Language :: Python :: 2.7
 Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.3
