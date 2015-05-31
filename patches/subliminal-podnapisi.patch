@@ -1,6 +1,6 @@
 diff -Naur subliminal-0.7.5/subliminal/providers/podnapisi.py subliminal-0.7.5.patched/subliminal/providers/podnapisi.py
 --- subliminal-0.7.5/subliminal/providers/podnapisi.py	2015-03-04 17:42:26.000000000 -0500
-+++ subliminal-0.7.5.patched/subliminal/providers/podnapisi.py	2015-04-26 15:25:29.000000000 -0400
++++ subliminal-0.7.5.patched/subliminal/providers/podnapisi.py	2015-05-30 20:16:04.000000000 -0400
 @@ -14,9 +14,9 @@
  from . import Provider
  from ..exceptions import InvalidSubtitle, ProviderNotAvailable, ProviderError
@@ -17,7 +17,7 @@ diff -Naur subliminal-0.7.5/subliminal/providers/podnapisi.py subliminal-0.7.5.p
 
  class PodnapisiSubtitle(Subtitle):
      provider_name = 'podnapisi'
-+    server = 'http://http://podnapisi.net'
++    server = 'http://podnapisi.net'
 +    last_url = None
 
      def __init__(self, language, id, releases, hearing_impaired, link, series=None, season=None, episode=None,  # @ReservedAssignment
@@ -83,7 +83,7 @@ diff -Naur subliminal-0.7.5/subliminal/providers/podnapisi.py subliminal-0.7.5.p
          """Make a GET request on `url` with the given parameters
 
          :param string url: part of the URL to reach with the leading slash
-@@ -106,94 +118,212 @@
+@@ -106,94 +118,208 @@
          if url_result and url_result.group(2) is None:
              prefix_url = self.server
 
@@ -212,8 +212,7 @@ diff -Naur subliminal-0.7.5/subliminal/providers/podnapisi.py subliminal-0.7.5.p
 +        else:
 +            pages = 1
 +
-+        logger.warning('Podnapisi page matches: %r' % pages)
-+
++        logger.debug('Podnapisi page matches: %r' % pages)
 +        while page < 10:
 +            # Set a hard cap on page count to 10, there is really
 +            # no reason to turn up more content then that
@@ -253,28 +252,25 @@ diff -Naur subliminal-0.7.5/subliminal/providers/podnapisi.py subliminal-0.7.5.p
 +                releases = cells[0].find('span', class_='release')
 +                if not releases:
 +                    # Fall back to general name
-+                    releases = [ cells[0].find('a', href=link[:-9]).string.strip(), ]
++                    releases = [ str(cells[0].find('a', href=link[:-9]).string.strip()), ]
 +
 +                # Store Title
 +                elif 'title' in releases:
-+                    releases = [releases['title'].string.strip(), ]
++                    releases = [ str(releases['title'].string.strip()), ]
 +                else:
 +                    # store name
-+                    releases = releases.string.strip()
++                    releases = [ str(releases.string.strip()), ]
 +
-+                # attempt to match against multi listings
-+                multi_release = cells[0].find('a', role='button', tabindex='-1')
-+                if multi_release:
-+                    # We have a match; more soup
-+                    soup = bs4.BeautifulSoup(multi_release['data-content'], ['permissive'])
-+                    rels = soup.find_all('span', class_='release')
-+                    if rels:
-+                        releases = []
-+                    for r in rels:
++                # attempt to match against multi listings (if they exist)
++                multi_release = cells[0].find_all('div', class_='release')
++                if len(multi_release):
++                    for r in multi_release:
 +                        releases.append(str(r.get_text()))
-+
 +                if isinstance(releases, basestring):
 +                    releases = [ releases, ]
++
++                # Simplify list by making it unique
++                releases = list(set(releases))
 +
 +                if series and season and episode:
 +                    try:
