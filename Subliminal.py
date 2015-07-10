@@ -1739,7 +1739,7 @@ if __name__ == "__main__":
                 FETCH_MODE_DEFAULT)
             script.set('FetchMode', FETCH_MODE_DEFAULT)
 
-    if scandir:
+    if not script.get('ScanDirectories') and scandir:
         # Set some defaults if they are not already set
         if not _maxage:
             script.set('MaxAge', DEFAULT_MAXAGE)
