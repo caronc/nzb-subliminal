@@ -79,7 +79,7 @@ should be known that Subliminal.py depends on the following packages:
 | html5lib                     | 0.999   | https://pypi.python.org/pypi/html5lib/0.999                                          |
 | ndg-httpsclient              | 0.3.2   | https://pypi.python.org/pypi/ndg-httpsclient/0.3.2                                   |
 | ordereddict                  | 1.1     | https://pypi.python.org/pypi/ordereddict/1.1                                         |
-| pynzbget                     | 0.2.2   | https://pypi.python.org/pypi/pynzbget/0.2.2                                          |
+| pynzbget                     | 0.2.3   | https://pypi.python.org/pypi/pynzbget/0.2.3                                          |
 | repoze.lru                   | 0.6     | https://pypi.python.org/pypi/repoze.lru/0.6                                          |
 | requests **[P]**             | 2.3.0   | https://pypi.python.org/pypi/requests/2.3.0                                          |
 | setuptools                   | 0.6.10  | http://svn.python.org/projects/sandbox/branches/setuptools-0.6/pkg_resources.py      |
@@ -166,12 +166,22 @@ Here is simple example:
 ```bash
 # Scan a single directory (recursively) for english subtitles
 python Subliminal.py -s -f -S /usr/share/TVShows
+
+# Or just omit the (recently) depricated -S switch to achive the same
+# results:
+python Subliminal.py -s -f /usr/share/TVShows
+
 ```
+
 
 You can scan multiple directories with the following command:
 ```bash
 # Scan a single directory (recursively) for english subtitles
 python Subliminal.py -s -f -S "/usr/share/TVShows, /usr/share/Movies"
+
+# Or just omit the (recently) depricated -S switch to achive the same
+# results:
+python Subliminal.py -s -f /usr/share/TVShows /usr/share/Movies
 ```
 
 Another nice feature this tool offers is the ability to _expire_ the
@@ -189,7 +199,7 @@ a regular basis, this feature can save you time and effort. A cron could be
 easily configured to scan your library every hour as so:
 ```bash
 # $> crontab -e
-0 * * * * /path/to/Subliminal.py -s -S "/usr/share/TVShows, /usr/share/Movies"
+0 * * * * /path/to/Subliminal.py -s /usr/share/TVShows /usr/share/Movies
 ```
 If 24 hours seems to short of a window for you, then just specify the
 __--age__ (__-a__) switch and adjust the time to your needs. Remember: it's
