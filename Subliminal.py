@@ -630,6 +630,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         else:
             self.logger.debug('Guessed content already provided by NZBGet!')
 
+        if 'vtype' not in guess:
+            raise ValueError("Non-guessable filename.")
+
         self.logger.debug('Type: %s' % guess['vtype'])
 
         if use_nzbheaders:
@@ -1032,7 +1035,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 if isinstance(e, basestring):
                     self.logger.debug('Error message: %s' % e)
 
-                self.logger.debug(
+                self.logger.warning(
                     'Skipping - Invalid file: %s' % basename(entry),
                 )
                 continue
