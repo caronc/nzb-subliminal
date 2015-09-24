@@ -3,8 +3,8 @@ and _scheduling_ script wrapper for _Subliminal_. However, it also works
 perfectly fine as a standalone script for others too.
 See the _Command Line_ section below for details how you can easily use this on it's own (without NZBGet).
 
-Subliminal Scheduling and Processing Script
-===========================================
+Subliminal Processing Script
+============================
 [Subliminal](https://github.com/Diaoul/subliminal) was originally written by Antoine
 Bertin (Diaoul Ael). This tool I'm hosting here merely acts as a wrapper to it
 by enhancing the great functionality it already provides. Subliminal
