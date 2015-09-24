@@ -295,7 +295,7 @@ class SchedulerScript(ScriptBase):
             taskid,
         ))
 
-        self.logger.debug('looking for  %s%s%d_([A-Z0-9_]+)$' % (
+        self.logger.debug('Looking for %s%s%d_([A-Z0-9_]+)$' % (
             SCHEDULER_ENVIRO_ID,
             TASK_ENVIRO_ID,
             taskid,
