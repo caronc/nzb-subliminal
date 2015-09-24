@@ -1,10 +1,11 @@
-Subliminal Processing Script
-============================
-This script was intended to be an [NZBGet](http://nzbget.net) _post-processing_
+__Note:__ This script was intended to be an [NZBGet](http://nzbget.net) _post-processing_
 and _scheduling_ script wrapper for _Subliminal_. However, it also works
 perfectly fine as a standalone script for others too.
+See the _Command Line_ section below for details how you can easily use this on it's own (without NZBGet).
 
-[Subliminal](https://github.com/Diaoul/subliminal) was written by Antoine
+Subliminal Scheduling and Processing Script
+===========================================
+[Subliminal](https://github.com/Diaoul/subliminal) was originally written by Antoine
 Bertin (Diaoul Ael). This tool I'm hosting here merely acts as a wrapper to it
 by enhancing the great functionality it already provides. Subliminal
 allows us to take a video file (and/or a directory containing videos) you
@@ -14,7 +15,7 @@ extends this functionallity by controlling how many interenet requests are made
 for videos without subtitles. This script will prevents querying videos over
 and over again that simply don't have subtitles at all.
 
-I maintain a [fork](https://github.com/caronc/subliminal/tree/0.7.x) of the
+I do however maintain a [fork](https://github.com/caronc/subliminal/tree/0.7.x) of the
 Subliminal 0.7.x branch here where I've added my own enhancements to help make
 this tool do what I want to. Enhancments such as:
 * The script pays attention to the date of the files and only acts on those that are within a certain (configurable) timeframe; _the default age is 24 hours_. This works really amazing for NZBGet users, but for those using this tool in it's standalone version may find it works for them too. This feature allows you to control how many times the internet is polled against a video that has never had subtitles posted for it.  There is more detail on this below in the __Command Line__ section on how to use _(or disable)_ this feature.
@@ -25,6 +26,8 @@ this tool do what I want to. Enhancments such as:
    * __ImpairedFirst__: This is similar to the __BestScore__ mode above; except the script scores (weighs) the hearing impaired matches a bit higher in efforts to make them be priority over any other subtitles matched.
    * __StandardFirst__: This is similar to the __BestScore__ mode above; except the script scores (weighs) the hearing impaired matches a bit lower in efforts to make them be the last to be considered as a match.
 * Python v2.6 Support in efforts to target a broader audience.
+
+Most of my changes actually made it back into the original source code ([pull request #404](https://github.com/Diaoul/subliminal/pull/404)). However I still like to maintain my own fork in case of an unforseen enhancment gets pushed upstream that breaks this wrapper.
 
 Installation Instructions
 =========================
