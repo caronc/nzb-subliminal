@@ -1640,7 +1640,7 @@ if __name__ == "__main__":
         scandir = options.scandir
     elif len(_args):
         # Support command line arguments too
-        scandir = ','.join(_args)
+        scandir = ', '.join(_args)
     else:
         # No arguments at all specified
         scandir = ''
