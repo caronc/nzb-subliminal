@@ -2539,6 +2539,7 @@ class ScriptBase(object):
                     if isinstance(_arg, basestring):
                         cleaned = self._path_delimiter_re.sub('|', tidy_path(_arg))
                         cleaned = self._path_win_re.sub('|\\1', cleaned)
+                        cleaned = self._path_winnw_re.sub('|\\1', cleaned)
                         cleaned = self._path_win_drive_re.sub('|\\1:\\2', cleaned)
                         result += cleaned.split('|')
 
