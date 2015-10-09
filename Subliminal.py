@@ -294,6 +294,7 @@ from os.path import splitext
 from os.path import isfile
 from os.path import isdir
 from os import unlink
+from os import chdir
 from os import makedirs
 import logging
 
@@ -859,6 +860,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     cache_dir,
                 ))
                 return False
+
+        # Change to our cache directory
+        chdir(cache_dir)
 
         # Attempt to detect a category and manage exclusive provider lists (if
         # specified)
