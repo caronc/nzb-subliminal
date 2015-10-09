@@ -861,8 +861,19 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 ))
                 return False
 
-        # Change to our cache directory
-        chdir(cache_dir)
+        # Change to our cache directory; we do this because subliminal (the one
+        # we wrap downloads content to the directory we're standing in at
+        # first).  This causes a problem if we're in a system directory which
+        # some admin's like to remove write permission from (for good reason
+        # too).  Our cache directory acts as a good temporary location to work
+        # out of.
+        try:
+            chdir(cache_dir)
+        except OSError:
+            self.logger.error('Could not access directory %s' % (
+                cache_dir,
+            ))
+            return False
 
         # Attempt to detect a category and manage exclusive provider lists (if
         # specified)
