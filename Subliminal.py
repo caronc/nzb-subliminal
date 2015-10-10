@@ -301,7 +301,7 @@ import logging
 # This is required if the below environment variables
 # are not included in your environment already
 import sys
-sys.path.insert(0, join(dirname(__file__), 'Subliminal'))
+sys.path.insert(0, join(abspath(dirname(__file__)), 'Subliminal'))
 
 # Script dependencies identified below
 from guessit import matcher
