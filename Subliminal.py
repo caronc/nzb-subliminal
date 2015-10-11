@@ -211,6 +211,14 @@
 #
 #SystemEncoding=UTF-8
 
+# Cross Reference File Paths.
+#
+# Specify directories local to NZBGet that contain subtitles previously
+# downloaded.  Once found, they'll be automatically moved over and will
+# take priority over actually checking the internet. You can specify
+# more then one local directory using the space (and or comma) to
+# delimit each entry.
+#XRefPaths=
 
 # Cache Directory
 #
@@ -292,6 +300,7 @@ from os.path import abspath
 from os.path import dirname
 from os.path import splitext
 from os.path import isfile
+from os.path import exists
 from os.path import isdir
 from os import unlink
 from os import chdir
@@ -346,6 +355,7 @@ class SEARCH_MODE(object):
 # Some Default Environment Variables (used with CLI)
 DEFAULT_EXTENSIONS = \
         '.mkv,.avi,.divx,.xvid,.mov,.wmv,.mp4,.mpg,.mpeg,.vob,.iso'
+
 DEFAULT_MAXAGE = 24
 DEFAULT_LANGUAGE = 'en'
 DEFAULT_PROVIDERS = [
@@ -474,6 +484,11 @@ def decode(str_data, encoding=None):
 class SubliminalScript(PostProcessScript, SchedulerScript):
     """A wrapper to Subliminal written for NZBGet
     """
+
+    # A list of possible subtitles to use found locally
+    # that take priority over a check on the internet
+    # if matched.
+    xref_paths = []
 
     def apply_nzbheaders(self, guess):
         """ Applies NZB headers (if exist) """
@@ -918,6 +933,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         if not lang:
             self.logger.error('No valid language was set')
             return False
+
         if len(lang) > 1 and single_mode:
             # More then 1 language specifies implies not to use single mode
             single_mode = False
@@ -966,6 +982,65 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             lang = set( babelfish.Language.fromietf(l) for l in lang )
         except babelfish.Error:
             self.logger.error('An error occured processing the language list')
+
+        # Now we build a list of local subtitle founds (if any exist or were
+        # defined)
+        xref_paths = {}
+        if len(self.xref_paths) > 0:
+            # Fetch Scan Paths
+            xref_paths = self.get_files(
+                    self.xref_paths,
+                    suffix_filter='.srt',
+                    max_depth=1,
+            )
+            # xref_paths = dict([
+            #     (basename(k), v) for (k, v) in self.get_files(
+            #         self.xref_paths,
+            #         suffix_filter='.srt',
+            #         max_depth=1,
+            #     ).iteritems()
+            # ])
+
+            srt_extract_re = re.compile(
+                '^(.*?)((\.[a-z]{2})?\.srt)$',
+                re.IGNORECASE,
+            )
+            for key in xref_paths.keys():
+                match = srt_extract_re.match(key)
+                if not match:
+                    continue
+
+                entry = match.group(1)
+                try:
+                    # Add Guessed Information; but we simulate a video file
+                    # to help our guessed path
+                    xref_paths[key]['video'] = Video.fromguess(
+                        '%s.mkv' % basename(entry),
+                        self.guess_info(
+                            '%s.mkv' % entry,
+                            shared=False,
+                            deobfuscate=False,
+                            use_nzbheaders=False,
+                        )
+                    )
+                    # Store some meta information we can use later to help
+                    # assemble our filename
+                    xref_paths[key]['_file_prefix'] = entry
+                    xref_paths[key]['_file_suffix'] = match.group(2)
+
+                except ValueError as e:
+                    # fromguess() throws a ValueError if show matches couldn't
+                    # be detected using the content guessit matched.
+                    if isinstance(e, basestring):
+                        self.logger.debug('Error message: %s' % e)
+
+                    self.logger.warning(
+                        'Ignoring un-detectable srt file: %s' % basename(key),
+                    )
+
+                    # Remove entry
+                    del xref_paths[key]
+                    continue
 
         # Configure cache
         cache_region.configure(
@@ -1109,6 +1184,73 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     'There were no valid providers for this video type.',
                 )
                 continue
+
+            # early match
+            local_match = False
+            if len(xref_paths) > 0:
+                # Check cross reference paths first
+
+                for key in xref_paths.keys():
+                    if video == xref_paths[key]['video']:
+                        # Move our fetched file to it's final destination
+                        self.logger.info('Found local (xref) match %s' % \
+                                             basename(key))
+
+                        # Toggle flag
+                        local_match = True
+
+                        # re fetch our file
+                        match = srt_extract_re.match(key)
+
+                        srt_path = abspath(dirname(entry))
+                        srt_file = basename(splitext(entry)[0])
+
+                        dst_file = '%s%s' % (
+                            join(srt_path, srt_file),
+                            xref_paths[key]['_file_suffix'],
+                        )
+
+                        if exists(dst_file):
+                            self.logger.warning(
+                                'The subtitle %s exists already (Skipping).' % (
+                                basename(dst_file),
+                            ))
+                            continue
+
+
+                        if key == dst_file:
+                            self.logger.warning(
+                                'The xref dir and video dir are the same;' +\
+                                'Ignoring %s.' % (
+                                basename(dst_file),
+                            ))
+
+                        try:
+                            move(key, dst_file)
+                            self.logger.info('Placed %s' % (
+                                basename(dst_file),
+                            ))
+
+                        except OSError:
+                            self.logger.error(
+                                'Could not move %s to %s' % (
+                                    basename(key),
+                                    basename(dst_file),
+                                )
+                            )
+
+                        # Remove entry (since we matched it already now)
+                        del xref_paths[key]
+
+                        # Early exit
+                        break
+
+                if local_match:
+                    # increment counter
+                    f_count += 1
+
+                    # Go back to top; we're done
+                    continue
 
             # download best subtitles
             subtitles = download_best_subtitles(
@@ -1254,6 +1396,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'FetchMode',
             'TvCategories',
             'VideoExtensions',
+            'XRefPaths',
             'ForceEncoding',
             'SystemEncoding',
             'Languages')):
@@ -1263,6 +1406,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         # Environment
         video_extension = self.get('VideoExtensions', DEFAULT_EXTENSIONS)
         minsize = int(self.get('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)) * 1048576
+        self.xref_paths = self.parse_path_list(self.get('XRefPaths'))
 
         # Overwrite Mode
         overwrite = self.parse_bool(self.get('Overwrite', 'no'))
@@ -1363,6 +1507,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'FetchMode',
             'ScanDirectories',
             'VideoExtensions',
+            'XRefPaths',
             'ForceEncoding',
             'SystemEncoding',
             'Languages')):
@@ -1374,6 +1519,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         maxage = int(self.get('MaxAge', DEFAULT_MAXAGE))
         minsize = int(self.get('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)) * 1048576
         paths = self.parse_path_list(self.get('ScanDirectories'))
+        self.xref_paths = self.parse_path_list(self.get('XRefPaths'))
 
         # Single Mode (don't download language extension)
         single_mode = self.parse_bool(
@@ -1434,6 +1580,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         minsize = int(self.get('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)) * 1048576
         force = self.parse_bool(self.get('Force', DEFAULT_FORCE))
         paths = self.parse_path_list(self.get('ScanDirectories'))
+        self.xref_paths = self.parse_path_list(self.get('XRefPaths'))
 
         # Single Mode (don't download language extension)
         single_mode = self.parse_bool(
@@ -1567,6 +1714,16 @@ if __name__ == "__main__":
             "more then one is matched."
     )
     parser.add_option(
+        "-x",
+        "--cross-reference",
+        dest="xrefpath",
+        help="Specify an optional list of directories to scan for subs " + \
+            "first before checking on the internet. This is for " +\
+            "directories containing subs (.srt files) that you have " +\
+            "already downloaded ahead of time.",
+        metavar="PATH1, PATH2, PATH3, etc",
+    )
+    parser.add_option(
         "-z",
         "--minsize",
         dest="minsize",
@@ -1688,6 +1845,7 @@ if __name__ == "__main__":
     _overwrite = options.overwrite is True
     _skip_embedded = options.skip_embedded is True
     _basic_mode = options.basic_mode is True
+    _xrefpath = options.xrefpath
     _force = options.force is True
     _providers = options.providers
     _fetch_mode = options.fetch_mode
@@ -1729,6 +1887,9 @@ if __name__ == "__main__":
 
     if _basic_mode:
         script.set('SearchMode', SEARCH_MODE.BASIC)
+
+    if _xrefpath:
+        script.set('XRefPaths', _xrefpath)
 
     if _skip_embedded:
         script.set('SkipEmbedded', True)
