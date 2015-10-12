@@ -122,6 +122,9 @@ Options:
   -a AGE, --maxage=AGE  The maximum age a file can be to be considered
                         searchable. This value is represented in hours. The
                         default value is 24 hours.
+  -n ENCODING, --encoding=ENCODING
+                        The system encoding to use (utf-8, ISO-8859-1, etc).
+                        The default value is 'UTF-8'.
   -l LANG, --language=LANG
                         The language the fetch the subtitles in (en, fr, etc).
                         The default value is 'en'.
@@ -136,6 +139,11 @@ Options:
                         the video file. Running in a basic mode is much faster
                         but can make it more difficult to determine the
                         correct subtitle if more then one is matched.
+  -x PATH1,PATH2,etc, --cross-reference=PATH1,PATH2,etc
+                        Specify an optional list of directories to scan for
+                        subs first before checking on the internet. This is
+                        for directories containing subs (.srt files) that you
+                        have already downloaded ahead of time.
   -z SIZE_IN_MB, --minsize=SIZE_IN_MB
                         Specify the minimum size a video must be to be worthy
                         of of checking for subtiles. This value is interpreted
@@ -149,6 +157,10 @@ Options:
   -k, --skip-embedded   If embedded subtitles were detected, choose not to use
                         them and continue to search for the subtitles hosted
                         by the identified provider(s).
+  -e ENCODING, --force-encoding=ENCODING
+                        Optionally specify the subtitle's file encoding toa
+                        specific type (utf-8, ISO-8859-1, etc). If none is
+                        specified then the file is left as is.
   -f, --force           Force a download reguardless of the file age. This
                         switch negates any value specified by the --age (-a)
                         switch.

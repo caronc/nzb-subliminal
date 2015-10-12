@@ -1721,7 +1721,7 @@ if __name__ == "__main__":
             "first before checking on the internet. This is for " +\
             "directories containing subs (.srt files) that you have " +\
             "already downloaded ahead of time.",
-        metavar="PATH1, PATH2, PATH3, etc",
+        metavar="PATH1,PATH2,etc",
     )
     parser.add_option(
         "-z",
