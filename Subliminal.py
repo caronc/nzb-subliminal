@@ -1242,9 +1242,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                         # Remove entry (since we matched it already now)
                         del xref_paths[key]
 
-                        # Early exit
-                        break
-
                 if local_match:
                     # increment counter
                     f_count += 1
