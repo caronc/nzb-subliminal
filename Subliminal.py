@@ -1215,29 +1215,28 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                                 'The subtitle %s exists already (Skipping).' % (
                                 basename(dst_file),
                             ))
-                            continue
 
-
-                        if key == dst_file:
+                        elif key == dst_file:
                             self.logger.warning(
                                 'The xref dir and video dir are the same;' +\
                                 'Ignoring %s.' % (
                                 basename(dst_file),
                             ))
 
-                        try:
-                            move(key, dst_file)
-                            self.logger.info('Placed %s' % (
-                                basename(dst_file),
-                            ))
-
-                        except OSError:
-                            self.logger.error(
-                                'Could not move %s to %s' % (
-                                    basename(key),
+                        else:
+                            try:
+                                move(key, dst_file)
+                                self.logger.info('Placed %s' % (
                                     basename(dst_file),
+                                ))
+
+                            except OSError:
+                                self.logger.error(
+                                    'Could not move %s to %s' % (
+                                        basename(key),
+                                        basename(dst_file),
+                                    )
                                 )
-                            )
 
                         # Remove entry (since we matched it already now)
                         del xref_paths[key]
