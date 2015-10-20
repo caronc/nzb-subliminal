@@ -60,7 +60,7 @@
 # Subliminal Single Mode Setting (yes, no).
 #
 # Download content without the language code in the subtitles filename.
-# Note: this is forced to 'no' in the event more then one Language
+# NOTE: this is forced to 'no' in the event more then one Language
 # is specified.
 #Single=yes
 
@@ -104,7 +104,7 @@
 # If you set this to 'yes', you will ignore the fact that embedded subtitles
 # were detected and just continue to exersice this tool to fetch some from
 # the providers identified.
-# Note: Embedded subtitles can only be detected if you are using the advanced
+# NOTE: Embedded subtitles can only be detected if you are using the advanced
 #       search mode identified above. Therefore this switch has no bearing
 #       on a Basic check.
 #SkipEmbedded=yes
@@ -232,8 +232,6 @@
 # to get a verbose output from subliminal.
 #Debug=no
 
-### POST-PROCESSING MODE                                                   ###
-
 # List of TV categories.
 #
 # Comma separated list of categories for TV. VideoSort automatically
@@ -242,6 +240,7 @@
 # using same conventions. If a download has associated category listed in
 # option <TvCategories>, Subliminal uses this information to help figure out
 # the video being scanned sometimes.
+# NOTE: This option is only applied to Post Processing.
 #
 # Category names must match categories defined in NZBGet.
 #TvCategories=tv, tv2, Series
@@ -249,33 +248,36 @@
 # Overwrite Mode (yes, no).
 #
 # Overwrite subtitles even if they previously exist.
+# NOTE: This option is only applied to Post Processing.
 #Overwrite=no
 
 # Correct Videos Timestamp (yes, no).
 #
 # Set this to yes if you want freshly downloaded videos to have their file
 # timestamp updated to `now`.
+# NOTE: This option is only applied to Post Processing.
 #UpdateTimestamp=yes
 
 # Correct Video Permissions (yes, no).
 #
 # Set this to yes if you want to adjust the permissions associated with
 # all downloaded videos (Unix/Linux only).
+# NOTE: This option is only applied to Post Processing.
 #UpdatePermissions=no
 
 # Video Permission Value
 #
 # Specify the video permissions to set. This is only used if UpdatePermissions
 # (identified above) is set to yes.
+# NOTE: This option is only applied to Post Processing.
 #VideoPermissions=644
-
-### SCHEDULER MODE                                                         ###
 
 # Directories to Scan
 #
 # Specify any number of directories this script can (recursively) check
 # delimited by a comma and or space. ie: /home/nuxref/mystuff, /path/no3, etc
-# For windows users, you can specify: C:\My Downloads, \\My\Network\Path, etc
+# For windows users, you can specify: C:\My Downloads, \\My\Network\Path, etc.
+# NOTE: This option is only applied to Scheduling.
 #ScanDirectories=
 
 # Maximum File Age
@@ -284,7 +286,9 @@
 # there are still no subtitles after this duration, then there never will
 # be.  This option prevents thrashing and requesting subtitles for something
 # over and over again for no reason. This value is identified in hours
-# relative to each file checked
+# relative to each file checked.
+#
+# NOTE: This option is only applied to Scheduling.
 #MaxAge=24
 
 ### NZBGET POST-PROCESSING/SCHEDULER SCRIPT                                ###
