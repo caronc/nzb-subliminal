@@ -3,7 +3,7 @@
 #
 # Subliminal post-processing script for NZBGet
 #
-# Copyright (C) 2014 Chris Caron <lead2gold@gmail.com>
+# Copyright (C) 2015 Chris Caron <lead2gold@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published by
@@ -33,9 +33,9 @@
 #
 # Info about this Subliminal NZB Script:
 # Author: Chris Caron (lead2gold@gmail.com).
-# Date: Tue, May 30th, 2015.
+# Date: Wed, Oct 21st, 2015.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-# Script Version: 0.9.6
+# Script Version: 0.9.7
 #
 # NOTE: This script requires Python to be installed on your system.
 #
