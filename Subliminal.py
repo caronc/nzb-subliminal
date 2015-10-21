@@ -226,12 +226,6 @@
 # fetching subtitles.
 #CacheDir=${TempDir}/subliminal
 
-# Enable debug logging (yes, no).
-#
-# If subtitles are not downloaded as expected, activate debug logging
-# to get a verbose output from subliminal.
-#Debug=no
-
 # List of TV categories.
 #
 # Comma separated list of categories for TV. VideoSort automatically
@@ -290,6 +284,13 @@
 #
 # NOTE: This option is only applied to Scheduling.
 #MaxAge=24
+
+# Enable debug logging (yes, no).
+#
+# If subtitles are not downloaded as expected, activate debug logging
+# to get a more verbose output from subliminal. This will greatly help in
+# diagnosing the problem.
+#Debug=no
 
 ### NZBGET POST-PROCESSING/SCHEDULER SCRIPT                                ###
 ##############################################################################
