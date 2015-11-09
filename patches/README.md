@@ -84,55 +84,7 @@ patch -d requests-2.3.0 -p1 < requests-use.global.deps.patch
 # You're done!
 ```
 
-### Subliminal v0.7.4
-The foundation of the nzbget-subliminal wrapper. This is the core application
-which makes use of all of the libraries hosted so that subtitles can be
-fetched based on Movie and TV Series titles it is fed.
-
-There were a lot of changes made to this library in efforts to satisfy needs
-and incoming requests from the users of NZBGet (via their forum).
-
-I have an ongoing pull request to Subliminal's v0.7.4 branch in efforts to
-push the major changes I've added to it [here](https://github.com/Diaoul/subliminal/pull/404).
-
-| Subliminal v0.7.5 Source |
-| --------------------- |
-| https://pypi.python.org/packages/source/s/subliminal/subliminal-0.7.5.tar.gz |
-
-All of the patches identified below must be applied in the order they are
-listed since some alter files previously changed by another.
-
-| Patch | Description |
-| ----- | ----------- |
-| [subliminal-unicode.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-unicode.patch) | Better Unicode character support.
-| [subliminal-podnapisi.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-podnapisi.patch) | Podnapisi site redesign patch (happened in early April of 2015)
-| [ubliminal-guessit_requirements.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/ubliminal-guessit_requirements.patch) | Guessit dependencies changed (v0.10 supported now)
-
-```bash
-# Assuming you have our dependencies fullfilled
-# - RedHat/CentOS/Fedora: yum install -y curl tar patch
-# - Ubuntu/Debian: sudo apt-get install curl tar patch
-#
-# Retrieve the package
-curl -L -O https://pypi.python.org/packages/source/s/subliminal/subliminal-0.7.5.tar.gz
-
-# Retrieve the patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-unicode.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-podnapisi.patch
-curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-guessit_requirements.patch
-
-# Extract our downloaded archive
-tar xvfz subliminal-0.7.5.tar.gz
-
-# Apply our patches
-patch -d subliminal-0.7.5 -p1 < subliminal-unicode.patch
-patch -d subliminal-0.7.5 -p1 < subliminal-podnapisi.patch
-patch -d subliminal-0.7.5 -p1 < subliminal-guessit_requirements.patch
-
-# You're done!
-```
-
-### Urllib3 v1.9
+### Urllib3 v1.12
 Urllib3 is a dependency of Requests (identified above).  It provides web page
 interaction simplifying some common steps (which requests then further takes
 to another level).
@@ -141,9 +93,9 @@ to another level).
 | ----- | ----------- |
 | [urllib3-use.global.deps.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/urllib3-use.global.deps.patch) | A patch put in place to eliminate reference to the extra libraries this package includes. This way we can use the ones we're already providing and maintaining instead.
 
-| Request v1.9 Source |
+| Request v1.12 Source |
 | --------------------- |
-| https://pypi.python.org/packages/source/u/urllib3/url.ib3-1.9.tar.gz |
+| https://pypi.python.org/packages/source/u/urllib3/urllib3-1.12.tar.gz |
 
 You can apply the patch as follows (Linux example):
 ```bash
@@ -152,16 +104,16 @@ You can apply the patch as follows (Linux example):
 # - Ubuntu/Debian: sudo apt-get install curl tar patch
 #
 # Retrieve the package
-curl -L -O https://pypi.python.org/packages/source/u/urllib3/urllib3-1.9.tar.gz
+curl -L -O https://pypi.python.org/packages/source/u/urllib3/urllib3-1.12.tar.gz
 
 # Retrieve the patch
 curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/urllib3-use.global.deps.patch
 
 # Extract our downloaded archive
-tar xvfz urllib3-1.9.tar.gz
+tar xvfz urllib3-1.12.tar.gz
 
 # Apply our patch
-patch -d urllib3-1.9 -p1 < urllib3-use.global.deps.patch
+patch -d urllib3-1.12 -p1 < urllib3-use.global.deps.patch
 
 # You're done!
 ```
