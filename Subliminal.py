@@ -1007,7 +1007,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             # ])
 
             srt_extract_re = re.compile(
-                '^(.*?)((\.[a-z]{2})?\.srt)$',
+                '^(.*?)((?P<lang3>(?P<lang2>\.[a-z]{2})[a-z]?)?(?P<extension>\.srt))$',
                 re.IGNORECASE,
             )
             for key in xref_paths.keys():
@@ -1031,7 +1031,10 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     # Store some meta information we can use later to help
                     # assemble our filename
                     xref_paths[key]['_file_prefix'] = entry
-                    xref_paths[key]['_file_suffix'] = match.group(2)
+                    xref_paths[key]['_file_suffix'] = '%s%s' % (
+                        match.group('lang2'),
+                        match.group('extension'),
+                    )
 
                 except ValueError as e:
                     # fromguess() throws a ValueError if show matches couldn't
@@ -1075,7 +1078,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 srt_file = basename(splitext(entry)[0])
                 srt_file_re = re.escape(srt_file)
                 srt_lang = str(l)
-                srt_regex = '^(%s\.srt|%s\.%s.srt)$' % (
+                srt_regex = '^(%s\.srt|%s\.%s[a-z]?.srt)$' % (
                     srt_file_re, srt_file_re, srt_lang
                 )
 
@@ -1272,7 +1275,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             for l in _lang:
                 srt_path = abspath(dirname(entry))
                 srt_file = basename(splitext(entry)[0])
-                srt_lang = str(l)
+                srt_lang = str(l)[0:2]
 
                 if single_mode:
                     expected_file = join(srt_path, '%s.srt' % srt_file)
