@@ -424,6 +424,51 @@ from os import utime
 # used for updating video permissions
 from os import chmod
 
+def _to_alpha2(lang):
+    """
+    A wrapper to babbelfish to lookup the alpha2 code associated with
+    a language defined by it's ISO 639-2 Terminology (T) and
+    Bibliographic (B) alpha3 code.
+
+    None is returned if the code could not be resolved otherwise
+    the 2 leter alpha2 code is returned.
+    """
+    _lang = None
+    if len(lang) > 3:
+        try:
+            # Try by name (such as English, French, Dutch, etc)
+            _lang = babelfish.Language.fromcode(lang, 'name')
+            return _lang
+
+        except babelfish.exceptions.LanguageReverseError:
+            pass
+
+    elif len(lang) == 3:
+        try:
+            # Terminology
+            _lang = babelfish.Language.fromcode(lang, 'alpha3t')
+            return _lang
+
+        except babelfish.exceptions.LanguageReverseError:
+            try:
+                # Bibliographic
+                _lang = babelfish.Language.fromcode(lang, 'alpha3b')
+                return _lang
+
+            except babelfish.exceptions.LanguageReverseError:
+                pass
+
+    elif len(lang) == 2:
+        try:
+            _lang = babelfish.Language.fromcode(lang, 'alpha2')
+            return _lang
+
+        except babelfish.exceptions.LanguageReverseError:
+            pass
+
+    return _lang
+
+
 def decode(str_data, encoding=None):
     """
     Returns the unicode string of the data passed in
@@ -983,10 +1028,15 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         else: # FETCH_MODE.BESTSCORE
             pass
 
-        try:
-            lang = set( babelfish.Language.fromietf(l) for l in lang )
-        except babelfish.Error:
+        lang = set(_to_alpha2(l) for l in lang)
+        if None in lang:
+            # Eliminate this entry
+            lang.remove(None)
+
+        if not len(lang):
+            # No Languages to process
             self.logger.error('An error occured processing the language list')
+            return None
 
         # Now we build a list of local subtitle founds (if any exist or were
         # defined)
@@ -1007,7 +1057,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             # ])
 
             srt_extract_re = re.compile(
-                '^(.*?)((?P<lang3>(?P<lang2>\.[a-z]{2})[a-z]?)?(?P<extension>\.srt))$',
+                '^(?<name>.*?)(?P<alpha>\.[a-z]{2}[a-z]?)?(?P<extension>\.srt))$',
                 re.IGNORECASE,
             )
             for key in xref_paths.keys():
@@ -1015,7 +1065,17 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 if not match:
                     continue
 
-                entry = match.group(1)
+                entry = match.group('name')
+                alpha2 = _to_alpha2(match.group('alpha')[1:])
+                if alpha2 is None:
+                    # Treat the Alpha as part of the filename since it's not a
+                    # valid language code
+                    entry += match.group('alpha')
+                    alpha2 = ''
+                else:
+                    # Get expected language code
+                    alpha2 = alpha2.alpha2
+
                 try:
                     # Add Guessed Information; but we simulate a video file
                     # to help our guessed path
@@ -1030,11 +1090,16 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     )
                     # Store some meta information we can use later to help
                     # assemble our filename
-                    xref_paths[key]['_file_prefix'] = entry
-                    xref_paths[key]['_file_suffix'] = '%s%s' % (
-                        match.group('lang2'),
-                        match.group('extension'),
-                    )
+                    if alpha2:
+                        xref_paths[key]['_file_prefix'] = match.group('name')
+                        xref_paths[key]['_file_suffix'] = '%s%s' % (
+                            match.group('alpha'),
+                            match.group('extension'),
+                        )
+                    else:
+                        xref_paths[key]['_file_prefix'] = entry
+                        xref_paths[key]['_file_suffix'] = \
+                                match.group('extension')
 
                 except ValueError as e:
                     # fromguess() throws a ValueError if show matches couldn't
@@ -1077,10 +1142,14 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 srt_path = dirname(entry)
                 srt_file = basename(splitext(entry)[0])
                 srt_file_re = re.escape(srt_file)
-                srt_lang = str(l)
-                srt_regex = '^(%s\.srt|%s\.%s[a-z]?.srt)$' % (
-                    srt_file_re, srt_file_re, srt_lang
-                )
+                if l.alpha3t == l.alpha3b:
+                    srt_regex = '^(%s(\.(%s|%s))?.srt)$' % (
+                        srt_file_re, l.alpha3t, l.alpha2,
+                    )
+                else:
+                    srt_regex = '^(%s(\.(%s|%s|%s))?.srt)$' % (
+                        srt_file_re, l.alpha3t, l.alpha3b, l.alpha2,
+                    )
 
                 # look in the directory and extract all matches
                 _matches = self.get_files(
@@ -1275,7 +1344,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             for l in _lang:
                 srt_path = abspath(dirname(entry))
                 srt_file = basename(splitext(entry)[0])
-                srt_lang = str(l)[0:2]
+                srt_lang = l.alpha2
 
                 if single_mode:
                     expected_file = join(srt_path, '%s.srt' % srt_file)
