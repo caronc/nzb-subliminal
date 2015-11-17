@@ -1161,7 +1161,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
             # Now encode our file so that we're working with the same
             # encoding as everything else.
-            _entry = entry.encode()
+            entry = _entry.encode(system_encoding)
 
             # We want our file to be encoded for
             # Create a copy of the lang object
