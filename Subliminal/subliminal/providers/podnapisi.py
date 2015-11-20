@@ -256,7 +256,17 @@ class PodnapisiProvider(Provider):
                     releases = [ str(releases['title'].string.strip()), ]
                 else:
                     # store name
-                    releases = [ str(releases.string.strip()), ]
+                    try:
+                        releases = [ str(releases.string.strip()), ]
+                    except UnicodeError:
+                        releases = [
+                            releases.string\
+                                    .decode(
+                                        charade.detect(
+                                            releases.string)['encoding'],
+                                        'replace',
+                                    ),
+                        ]
 
                 # attempt to match against multi listings (if they exist)
                 multi_release = cells[0].find_all('div', class_='release')

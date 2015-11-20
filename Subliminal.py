@@ -1125,6 +1125,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         # initialize fetch counter
         f_count = 0
 
+        # Default system encoding
+        system_encoding = self.get('SystemEncoding', DEFAULT_SYSTEM_ENCODING)
+
         for entry in files:
             if True in [ v.match(entry) is not None \
                         for v in IGNORE_FILELIST_RE ]:
@@ -1135,12 +1138,38 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             if search_mode == SEARCH_MODE.BASIC:
                 full_path = join(cache_dir, basename(entry))
 
+            # Figure out the encoding of the file
+            detected_encoding = system_encoding
+            if isinstance(entry, str):
+                try:
+                    _entry = entry.decode(detected_encoding)
+
+                except UnicodeError:
+                    decoded = detect(entry)
+                    detected_encoding = decoded['encoding']
+                    self.logger.debug(
+                        'Detected %s file encoding' % detected_encoding,
+                    )
+                    try:
+                        _entry = entry.decode(detected_encoding)
+
+                    except UnicodeError:
+                        # We failed to decode our file
+                        self.logger.debug(
+                            'Skipping - Unknown character encoding: %s' % \
+                            basename(entry))
+
+            # Now encode our file so that we're working with the same
+            # encoding as everything else.
+            entry = _entry.encode(system_encoding)
+
+            # We want our file to be encoded for
             # Create a copy of the lang object
             _lang = set(lang)
             for l in lang:
                 # Check that file doesn't already exist
-                srt_path = dirname(entry)
-                srt_file = basename(splitext(entry)[0])
+                srt_path = dirname(_entry)
+                srt_file = basename(splitext(_entry)[0])
                 srt_file_re = re.escape(srt_file)
                 if l.alpha3t == l.alpha3b:
                     srt_regex = '^(%s(\.(%s|%s))?.srt)$' % (
@@ -1174,7 +1203,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             if len(_lang) == 0:
                 self.logger.debug(
                     'Skipping - Subtitle(s) already exist for: %s' % (
-                    basename(entry),
+                    basename(_entry),
                 ))
 
                 continue
@@ -1188,9 +1217,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             try:
                 # Add Guessed Information
                 video = Video.fromguess(
-                    split(entry)[1],
+                    split(_entry)[1],
                     self.guess_info(
-                        entry,
+                        _entry,
                         shared=shared,
                         deobfuscate=deobfuscate,
                         use_nzbheaders=use_nzbheaders,
@@ -1203,7 +1232,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     self.logger.debug('Error message: %s' % e)
 
                 self.logger.warning(
-                    'Skipping - Invalid file: %s' % basename(entry),
+                    'Skipping - Invalid file: %s' % basename(_entry),
                 )
                 continue
 
@@ -1227,7 +1256,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     if not skip_embedded:
                         self.logger.debug(
                             'Skipping - unknown embedded subtitle ' + \
-                            'language(s) already exist for: %s' % basename(entry),
+                            'language(s) already exist for: %s' % basename(_entry),
                         )
                         continue
 
@@ -1239,7 +1268,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                         if l in _lang:
                             self.logger.debug(
                                 'Skipping - Embedded %s subtitle ' % str(l) + \
-                                'already exist for: %s' % basename(entry),
+                                'already exist for: %s' % basename(_entry),
                             )
                             _lang.remove(l)
 
@@ -1279,8 +1308,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                         # re fetch our file
                         match = srt_extract_re.match(key)
 
-                        srt_path = abspath(dirname(entry))
-                        srt_file = basename(splitext(entry)[0])
+                        srt_path = abspath(dirname(_entry))
+                        srt_file = basename(splitext(_entry)[0])
 
                         dst_file = '%s%s' % (
                             join(srt_path, srt_file),
@@ -1338,12 +1367,12 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             )
 
             if not subtitles:
-                self.logger.warning('No subtitles were found for %s' % basename(entry))
+                self.logger.warning('No subtitles were found for %s' % basename(_entry))
                 continue
 
             for l in _lang:
-                srt_path = abspath(dirname(entry))
-                srt_file = basename(splitext(entry)[0])
+                srt_path = abspath(dirname(_entry))
+                srt_file = basename(splitext(_entry)[0])
                 srt_lang = l.alpha2
 
                 if single_mode:
