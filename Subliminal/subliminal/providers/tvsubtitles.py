@@ -7,7 +7,7 @@ import contextlib
 import zipfile
 import babelfish
 import bs4
-import charade
+import chardet
 import requests
 from . import Provider
 from ..cache import region
@@ -189,7 +189,7 @@ class TVsubtitlesProvider(Provider):
             if len(zf.namelist()) > 1:
                 raise ProviderError('More than one file to unzip')
             subtitle_bytes = zf.read(zf.namelist()[0])
-        subtitle_text = subtitle_bytes.decode(charade.detect(subtitle_bytes)['encoding'], 'replace')
+        subtitle_text = subtitle_bytes.decode(chardet.detect(subtitle_bytes)['encoding'], 'replace')
         if not is_valid_subtitle(subtitle_text):
             raise InvalidSubtitle
         return subtitle_text

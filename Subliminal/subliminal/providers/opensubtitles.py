@@ -154,7 +154,8 @@ class OpenSubtitlesProvider(Provider):
         except xmlrpclib.ProtocolError:
             raise ProviderNotAvailable
         if response['status'] != '200 OK':
-            raise ProviderError('Download failed with status %r' % response['status'])
+            raise ProviderError(
+                'Download failed with status %s' % str(response['status']))
         if not response['data']:
             raise ProviderError('Nothing to download')
         subtitle_bytes = zlib.decompress(base64.b64decode(response['data'][0]['data']), 47)

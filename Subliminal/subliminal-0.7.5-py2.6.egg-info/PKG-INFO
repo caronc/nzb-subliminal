@@ -126,7 +126,7 @@ Description: Subliminal
         * Use enzyme to parse metadata of videos
         * Use babelfish to handle languages
         * Use dogpile.cache for caching
-        * Use charade to detect subtitle encoding
+        * Use chardet to detect subtitle encoding
         * Use pysrt for subtitle validation
         * Use entry points for subtitle providers
         * New subtitle score computation

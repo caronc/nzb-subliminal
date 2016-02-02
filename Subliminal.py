@@ -764,8 +764,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         def readchunk():
             """Lazy function (generator) to read a file piece by piece.
-            Default chunk size: 8096 bytes."""
-            return f.read(8096)
+            Default chunk size: 204800 bytes (200K)."""
+            return f.read(204800)
 
         for chunk in iter(readchunk, ''):
             detected = detect(chunk)

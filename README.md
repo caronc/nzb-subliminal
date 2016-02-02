@@ -71,8 +71,7 @@ should be known that Subliminal.py depends on the following packages:
 | babelfish                    | 0.5.4   | https://pypi.python.org/pypi/babelfish/0.5.4                                         |
 | backports-ssl_match_hostname | 3.4.0.2 | https://pypi.python.org/pypi/backports.ssl_match_hostname/3.4.0.2                    |
 | beautifulsoup4               | 4.3.2   | https://pypi.python.org/pypi/beautifulsoup4/4.3.2                                    |
-| charade                      | 1.0.3   | https://pypi.python.org/pypi/charade/1.0.3                                           |
-| chardet                      | 2.2.1   | https://pypi.python.org/pypi/chardet/2.2.1                                           |
+| chardet                      | 2.3.1b  | https://github.com/chardet/chardet/archive/d7fae98a49ebaa68eb32db937017273edceb1bdc.zip |
 | python-dateutil              | 2.2     | https://pypi.python.org/packages/source/p/python-dateutil/python-dateutil-2.2.tar.gz |
 | dogpile-cache                | 0.5.4   | https://pypi.python.org/pypi/dogpile.cache/0.5.4                                     |
 | dogpile-core                 | 0.4.1   | https://pypi.python.org/pypi/dogpile.core/0.4.1                                      |
