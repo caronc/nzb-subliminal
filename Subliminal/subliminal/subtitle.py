@@ -7,6 +7,64 @@ import pysrt
 import re
 from .video import Episode, Movie
 
+from chardet import detect as chardet_detect
+from chared.detector import get_model_path, EncodingDetector
+
+# A table used to map language codes to their respected chared decoding file
+# if a mapping isn't defined on this table, then the code simply falls back
+# to chardet encoding detection. chardet is not as accurate as chared, but
+# chared has more overhead. The table will be an add on demand (if something
+# is missing)
+CHARED_LANGUAGE_MAP = {
+    u'ar': u'arabic',
+    u'hy': u'armenian',
+    u'bn': u'bengali',
+    u'bg': u'bulgarian',
+    u'ca': u'catalan',
+    u'hr': u'croatian',
+    u'cs': u'czech',
+    u'nl': u'dutch',
+    u'en': u'english',
+    u'et': u'estonian',
+    u'fi': u'finnish',
+    u'fr': u'french',
+    u'de': u'german',
+    u'el': u'greek',
+    u'gu': u'gujarati',
+    u'hi': u'hindi',
+    u'hu': u'hungarian',
+    u'is': u'icelandic',
+    u'id': u'indonesian',
+    u'ga': u'irish',
+    u'it': u'italian',
+    u'ja': u'japanese',
+    u'ko': u'korean',
+    u'lv': u'latvian',
+    u'lt': u'lithuanian',
+    u'ml': u'malayalam',
+    u'ms': u'malay',
+    u'mt': u'maltese',
+    u'nb': u'norwegian_bokmal',
+    u'fa': u'persian',
+    u'pl': u'polish',
+    u'pt': u'portuguese',
+    u'ro': u'romanian',
+    u'ru': u'russian',
+    u'sr': u'serbian',
+    u'sk': u'slovak',
+    u'sl': u'slovene',
+    u'es': u'spanish',
+    u'sv': u'swedish',
+    u'ta': u'tamil',
+    u'te': u'telugu',
+    u'th': u'thai',
+    u'tr': u'turkish',
+    u'uk': u'ukrainian',
+    u'ur': u'urdu',
+    u'vi': u'vietnamese',
+    u'cy': u'welsh',
+}
+
 STRING_SANITIZATION = {
     'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
     'Ǟ': 'A', 'Ǡ': 'A', 'Ȁ': 'A', 'Ȃ': 'A', 'Ǻ': 'A', 'Ǽ': 'AE',
@@ -56,6 +114,58 @@ PRINTABLE_ASCII_RE = re.compile(r'[^\x20-\x7E]+')
 
 # Date parsing
 STRIP_DATE_RE = re.compile('\s*(.+)\s*[\[(]?\s*([123][0-9]{3})\s*[\])]?\s*$')
+
+def detect(str_data, lang=None):
+    """
+    A wrapper to encoding detection since we try to make use of both
+    chardet and chared together.
+
+    The response is always geared to look like a chardet library call
+    thus the output is always like this:
+     {
+       'encoding': '<encoding type>',
+       'confidence': <float value between 0.0 and 100.0>,
+     }
+    """
+    if isinstance(lang, basestring):
+        if len(lang) == 2:
+            try:
+                lang = CHARED_LANGUAGE_MAP[lang]
+
+            except KeyError:
+                # No lookup
+                lang = None
+
+    if lang is None:
+        # Without knowing the language, we need to make our best
+        # guess using chardet
+        return chardet_detect(str_data)
+
+    # If we reach here, we know the language associated with the str_data
+    # being provided.  We can make a better prediction this way.
+    try:
+        model_file = get_model_path(lang)
+    except:
+        # Return best guess
+        return chardet_detect(str_data)
+
+    try:
+        encoding_detector = EncodingDetector.load(model_file)
+    except:
+        # Return best guess
+        return chardet_detect(str_data)
+
+    # Classify our data
+    clas = encoding_detector.classify(str_data)
+    if not clas:
+        # Classification wasn't possible, return best guess
+        return chardet_detect(str_data)
+
+    # chared results (return as chardet would)
+    return {
+       'encoding': clas[0],
+       'confidence': 99.999999,
+    }
 
 
 class Subtitle(object):

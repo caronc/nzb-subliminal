@@ -327,7 +327,7 @@ from subliminal import MutexLock
 from subliminal import cache_region
 from subliminal import scan_video
 from subliminal import download_best_subtitles
-from chardet import detect
+from subliminal.subtitle import detect
 import babelfish
 
 # pynzbget Script Wrappers
@@ -469,7 +469,7 @@ def _to_alpha2(lang):
     return _lang
 
 
-def decode(str_data, encoding=None):
+def decode(str_data, encoding=None, lang=None):
     """
     Returns the unicode string of the data passed in
     otherwise it throws a ValueError() exception. This function makes
@@ -484,7 +484,7 @@ def decode(str_data, encoding=None):
         return str_data
 
     if encoding is None:
-        decoded = detect(str_data)
+        decoded = detect(str_data, lang)
         encoding = decoded['encoding']
 
     if isinstance(encoding, str):
@@ -711,7 +711,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         return guess
 
-    def convert_encoding(self, fname, encoding):
+    def convert_encoding(self, fname, encoding, lang):
         """Takes a filename and encoding and converts it's contents
         """
         self.logger.debug(
@@ -768,7 +768,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             return f.read(204800)
 
         for chunk in iter(readchunk, ''):
-            detected = detect(chunk)
+            detected = detect(chunk, lang)
             if detected['encoding'] is not None:
                 self.logger.debug(
                     "Detecting '%s' (%f confidence) subtitle encoding for %s" % (
@@ -1193,10 +1193,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                             ', '.join([ basename(_srt) \
                                        for _srt in _matches.keys() ]),
                     ))
-                    # File Conversion Option
-                    #if force_encoding:
-                    #    for _srt in _matches.keys():
-                    #        self.convert_encoding(_srt, force_encoding)
                     _lang.remove(l)
                     continue
 
@@ -1463,7 +1459,11 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
                 # File Conversion Option
                 if force_encoding:
-                    self.convert_encoding(expected_file, force_encoding)
+                    self.convert_encoding(
+                        expected_file,
+                        force_encoding,
+                        srt_lang,
+                    )
 
                 # increment counter
                 f_count += 1

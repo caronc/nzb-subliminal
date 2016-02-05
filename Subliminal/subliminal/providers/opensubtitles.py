@@ -7,13 +7,12 @@ import re
 import xmlrpclib
 import zlib
 import babelfish
-import charade
 import guessit
 from . import Provider
 from .. import __version__
 from ..exceptions import ProviderError, ProviderNotAvailable, InvalidSubtitle
 from ..subtitle import Subtitle, is_valid_subtitle, compute_guess_matches
-from ..subtitle import sanitize_string
+from ..subtitle import sanitize_string, detect
 from ..video import Episode, Movie
 
 
@@ -159,7 +158,8 @@ class OpenSubtitlesProvider(Provider):
         if not response['data']:
             raise ProviderError('Nothing to download')
         subtitle_bytes = zlib.decompress(base64.b64decode(response['data'][0]['data']), 47)
-        subtitle_text = subtitle_bytes.decode(charade.detect(subtitle_bytes)['encoding'], 'replace')
+        subtitle_text = subtitle_bytes.decode(
+            detect(subtitle_bytes, subtitle.language)['encoding'], 'replace')
         if not is_valid_subtitle(subtitle_text):
             raise InvalidSubtitle
         return subtitle_text

@@ -92,6 +92,7 @@ should be known that Subliminal.py depends on the following packages:
 | pyasn1                       | 0.1.7   | https://pypi.python.org/pypi/pyasn1/0.1.7                                            |
 | pyOpenSSL                    | 0.14    | https://pypi.python.org/pypi/pyOpenSSL/0.14                                          |
 | pyxdg                        | 0.25    | https://pypi.python.org/pypi/pyxdg/0.25                                              |
+| chared                       | 1.2.1   | https://code.google.com/archive/p/chared/                                            |
 | urllib3 **[P]**              | 1.12    | https://pypi.python.org/pypi/urllib3/1.12                                            |
 
 **Note:** The items above denoted with a **[P]** were patched in efforts to:

@@ -2,12 +2,11 @@
 from __future__ import unicode_literals
 import logging
 import babelfish
-import chardet
 import requests
 from . import Provider
 from .. import __version__
 from ..exceptions import InvalidSubtitle, ProviderNotAvailable, ProviderError
-from ..subtitle import Subtitle, is_valid_subtitle
+from ..subtitle import Subtitle, is_valid_subtitle, detect
 
 
 logger = logging.getLogger(__name__)
@@ -70,12 +69,13 @@ class TheSubDBProvider(Provider):
     def list_subtitles(self, video, languages):
         return [s for s in self.query(video.hashes['thesubdb']) if s.language in languages]
 
-    def download_subtitle(self, subtitle):
+    def download_subtitle(self, subtitle, language=None):
         params = {'action': 'download', 'hash': subtitle.hash, 'language': subtitle.language.alpha2}
         r = self.get(params)
         if r.status_code != 200:
             raise ProviderError('Request failed with status code %d' % r.status_code)
-        subtitle_text = r.content.decode(chardet.detect(r.content)['encoding'], 'replace')
+        subtitle_text = r.content.decode(
+            detect(r.content, subtitle.language)['encoding'], 'replace')
         if not is_valid_subtitle(subtitle_text):
             raise InvalidSubtitle
         return subtitle_text

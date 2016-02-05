@@ -3,12 +3,11 @@ from __future__ import unicode_literals
 import logging
 import babelfish
 import bs4
-import chardet
 import requests
 from . import Provider
 from ..cache import region
 from ..exceptions import ProviderConfigurationError, ProviderNotAvailable, InvalidSubtitle
-from ..subtitle import Subtitle, is_valid_subtitle, sanitize_string, extract_title_year
+from ..subtitle import Subtitle, is_valid_subtitle, sanitize_string, extract_title_year, detect
 from ..video import Episode
 
 
@@ -169,7 +168,8 @@ class Addic7edProvider(Provider):
             raise ProviderNotAvailable('Request failed with status code %d' % r.status_code)
         if r.headers['Content-Type'] == 'text/html':
             raise ProviderNotAvailable('Download limit exceeded')
-        subtitle_text = r.content.decode(chardet.detect(r.content)['encoding'], 'replace')
+        subtitle_text = r.content.decode(
+            detect(r.content, subtitle.language)['encoding'], 'replace')
         if not is_valid_subtitle(subtitle_text):
             raise InvalidSubtitle
         return subtitle_text

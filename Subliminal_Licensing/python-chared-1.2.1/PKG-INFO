@@ -1,0 +1,16 @@
+Metadata-Version: 1.1
+Name: chared
+Version: 1.2.1
+Summary: Character encoding detection tool
+Home-page: http://code.google.com/p/chared/
+Author: Vit Suchomel and Jan Pomikalek
+Author-email: chared@sketchengine.co.uk
+License: BSD
+Description: chared is a tool for detecting the character encoding
+            of a text in a known language. The language of the text has to be
+            specified as an input parameter so that correspondent language model
+            can be used. The package contains models for a wide range of languages. In
+            general, it should be more accurate than character encoding detection
+            algorithms with no language constraints.
+Platform: UNKNOWN
+Requires: lxml (>=2.2.4)

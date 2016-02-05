@@ -8,13 +8,12 @@ import xml.etree.ElementTree
 import zipfile
 import babelfish
 import bs4
-import chardet
 import guessit
 import requests
 from . import Provider
 from ..exceptions import InvalidSubtitle, ProviderNotAvailable, ProviderError
 from ..subtitle import Subtitle, is_valid_subtitle, compute_guess_matches
-from ..subtitle import sanitize_string, extract_title_year
+from ..subtitle import sanitize_string, extract_title_year, detect
 from ..video import Episode, Movie
 from urllib import quote
 
@@ -261,9 +260,9 @@ class PodnapisiProvider(Provider):
                     except UnicodeError:
                         releases = [
                             releases.string\
-                                    .decode(
-                                        chardet.detect(
-                                            releases.string)['encoding'],
+                                    .decode(detect(
+                                        releases.string,
+                                        language.alpha2)['encoding'],
                                         'replace',
                                     ),
                         ]
@@ -338,7 +337,8 @@ class PodnapisiProvider(Provider):
             if len(zf.namelist()) > 1:
                 raise ProviderError('More than one file to unzip')
             subtitle_bytes = zf.read(zf.namelist()[0])
-        subtitle_text = subtitle_bytes.decode(chardet.detect(subtitle_bytes)['encoding'], 'replace')
+        subtitle_text = subtitle_bytes.decode(
+            detect(subtitle_bytes, subtitle.language)['encoding'], 'replace')
         if not is_valid_subtitle(subtitle_text):
             raise InvalidSubtitle
         return subtitle_text
