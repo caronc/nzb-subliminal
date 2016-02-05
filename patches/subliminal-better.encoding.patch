@@ -1,0 +1,299 @@
+diff -Naur subliminal-0.7.5/requirements.txt subliminal-0.7.5.patched/requirements.txt
+--- subliminal-0.7.5/requirements.txt	2016-02-05 15:01:04.192623002 -0500
++++ subliminal-0.7.5.patched/requirements.txt	2016-02-05 15:37:56.583685114 -0500
+@@ -5,5 +5,6 @@
+ html5lib>=0.99
+ dogpile.cache>=0.5.2
+ babelfish>=0.5.0
+-charade>=1.0.3
+ pysrt>=0.5.0
++chardet>=2.0.0
++chared>=1.2.1
+diff -Naur subliminal-0.7.5/subliminal/providers/addic7ed.py subliminal-0.7.5.patched/subliminal/providers/addic7ed.py
+--- subliminal-0.7.5/subliminal/providers/addic7ed.py	2016-02-05 15:01:04.163624048 -0500
++++ subliminal-0.7.5.patched/subliminal/providers/addic7ed.py	2016-02-05 08:46:15.660263000 -0500
+@@ -3,12 +3,11 @@
+ import logging
+ import babelfish
+ import bs4
+-import charade
+ import requests
+ from . import Provider
+ from ..cache import region
+ from ..exceptions import ProviderConfigurationError, ProviderNotAvailable, InvalidSubtitle
+-from ..subtitle import Subtitle, is_valid_subtitle, sanitize_string, extract_title_year
++from ..subtitle import Subtitle, is_valid_subtitle, sanitize_string, extract_title_year, detect
+ from ..video import Episode
+ 
+ 
+@@ -169,7 +168,8 @@
+             raise ProviderNotAvailable('Request failed with status code %d' % r.status_code)
+         if r.headers['Content-Type'] == 'text/html':
+             raise ProviderNotAvailable('Download limit exceeded')
+-        subtitle_text = r.content.decode(charade.detect(r.content)['encoding'], 'replace')
++        subtitle_text = r.content.decode(
++            detect(r.content, subtitle.language.alpha2)['encoding'], 'replace')
+         if not is_valid_subtitle(subtitle_text):
+             raise InvalidSubtitle
+         return subtitle_text
+diff -Naur subliminal-0.7.5/subliminal/providers/opensubtitles.py subliminal-0.7.5.patched/subliminal/providers/opensubtitles.py
+--- subliminal-0.7.5/subliminal/providers/opensubtitles.py	2015-03-04 17:42:26.000000000 -0500
++++ subliminal-0.7.5.patched/subliminal/providers/opensubtitles.py	2016-02-05 08:48:13.284119000 -0500
+@@ -7,13 +7,12 @@
+ import xmlrpclib
+ import zlib
+ import babelfish
+-import charade
+ import guessit
+ from . import Provider
+ from .. import __version__
+ from ..exceptions import ProviderError, ProviderNotAvailable, InvalidSubtitle
+ from ..subtitle import Subtitle, is_valid_subtitle, compute_guess_matches
+-from ..subtitle import sanitize_string
++from ..subtitle import sanitize_string, detect
+ from ..video import Episode, Movie
+ 
+ 
+@@ -154,11 +153,13 @@
+         except xmlrpclib.ProtocolError:
+             raise ProviderNotAvailable
+         if response['status'] != '200 OK':
+-            raise ProviderError('Download failed with status %r' % response['status'])
++            raise ProviderError(
++                'Download failed with status %s' % str(response['status']))
+         if not response['data']:
+             raise ProviderError('Nothing to download')
+         subtitle_bytes = zlib.decompress(base64.b64decode(response['data'][0]['data']), 47)
+-        subtitle_text = subtitle_bytes.decode(charade.detect(subtitle_bytes)['encoding'], 'replace')
++        subtitle_text = subtitle_bytes.decode(
++            detect(subtitle_bytes, subtitle.language.alpha2)['encoding'], 'replace')
+         if not is_valid_subtitle(subtitle_text):
+             raise InvalidSubtitle
+         return subtitle_text
+diff -Naur subliminal-0.7.5/subliminal/providers/podnapisi.py subliminal-0.7.5.patched/subliminal/providers/podnapisi.py
+--- subliminal-0.7.5/subliminal/providers/podnapisi.py	2016-02-05 15:01:04.180623435 -0500
++++ subliminal-0.7.5.patched/subliminal/providers/podnapisi.py	2016-02-05 08:47:13.286233000 -0500
+@@ -8,13 +8,12 @@
+ import zipfile
+ import babelfish
+ import bs4
+-import charade
+ import guessit
+ import requests
+ from . import Provider
+ from ..exceptions import InvalidSubtitle, ProviderNotAvailable, ProviderError
+ from ..subtitle import Subtitle, is_valid_subtitle, compute_guess_matches
+-from ..subtitle import sanitize_string, extract_title_year
++from ..subtitle import sanitize_string, extract_title_year, detect
+ from ..video import Episode, Movie
+ from urllib import quote
+ 
+@@ -256,7 +255,17 @@
+                     releases = [ str(releases['title'].string.strip()), ]
+                 else:
+                     # store name
+-                    releases = [ str(releases.string.strip()), ]
++                    try:
++                        releases = [ str(releases.string.strip()), ]
++                    except UnicodeError:
++                        releases = [
++                            releases.string\
++                                    .decode(detect(
++                                        releases.string,
++                                        language.alpha2)['encoding'],
++                                        'replace',
++                                    ),
++                        ]
+ 
+                 # attempt to match against multi listings (if they exist)
+                 multi_release = cells[0].find_all('div', class_='release')
+@@ -328,7 +337,8 @@
+             if len(zf.namelist()) > 1:
+                 raise ProviderError('More than one file to unzip')
+             subtitle_bytes = zf.read(zf.namelist()[0])
+-        subtitle_text = subtitle_bytes.decode(charade.detect(subtitle_bytes)['encoding'], 'replace')
++        subtitle_text = subtitle_bytes.decode(
++            detect(subtitle_bytes, subtitle.language.alpha2)['encoding'], 'replace')
+         if not is_valid_subtitle(subtitle_text):
+             raise InvalidSubtitle
+         return subtitle_text
+diff -Naur subliminal-0.7.5/subliminal/providers/thesubdb.py subliminal-0.7.5.patched/subliminal/providers/thesubdb.py
+--- subliminal-0.7.5/subliminal/providers/thesubdb.py	2015-03-04 17:42:26.000000000 -0500
++++ subliminal-0.7.5.patched/subliminal/providers/thesubdb.py	2016-02-05 09:10:11.629447000 -0500
+@@ -2,12 +2,11 @@
+ from __future__ import unicode_literals
+ import logging
+ import babelfish
+-import charade
+ import requests
+ from . import Provider
+ from .. import __version__
+ from ..exceptions import InvalidSubtitle, ProviderNotAvailable, ProviderError
+-from ..subtitle import Subtitle, is_valid_subtitle
++from ..subtitle import Subtitle, is_valid_subtitle, detect
+ 
+ 
+ logger = logging.getLogger(__name__)
+@@ -75,7 +74,8 @@
+         r = self.get(params)
+         if r.status_code != 200:
+             raise ProviderError('Request failed with status code %d' % r.status_code)
+-        subtitle_text = r.content.decode(charade.detect(r.content)['encoding'], 'replace')
++        subtitle_text = r.content.decode(
++            detect(r.content, subtitle.language.alpha2)['encoding'], 'replace')
+         if not is_valid_subtitle(subtitle_text):
+             raise InvalidSubtitle
+         return subtitle_text
+diff -Naur subliminal-0.7.5/subliminal/providers/tvsubtitles.py subliminal-0.7.5.patched/subliminal/providers/tvsubtitles.py
+--- subliminal-0.7.5/subliminal/providers/tvsubtitles.py	2015-03-04 17:42:26.000000000 -0500
++++ subliminal-0.7.5.patched/subliminal/providers/tvsubtitles.py	2016-02-05 08:47:58.334646000 -0500
+@@ -7,12 +7,11 @@
+ import zipfile
+ import babelfish
+ import bs4
+-import charade
+ import requests
+ from . import Provider
+ from ..cache import region
+ from ..exceptions import InvalidSubtitle, ProviderNotAvailable, ProviderError
+-from ..subtitle import Subtitle, is_valid_subtitle, sanitize_string
++from ..subtitle import Subtitle, is_valid_subtitle, sanitize_string, detect
+ from ..video import Episode
+ 
+ IGNORE_DATEMATCH=re.compile('^(.*)[ \t0-9-._)(]*$')
+@@ -189,7 +188,8 @@
+             if len(zf.namelist()) > 1:
+                 raise ProviderError('More than one file to unzip')
+             subtitle_bytes = zf.read(zf.namelist()[0])
+-        subtitle_text = subtitle_bytes.decode(charade.detect(subtitle_bytes)['encoding'], 'replace')
++        subtitle_text = subtitle_bytes.decode(
++            detect(subtitle_bytes, subtitle.language.alpha2)['encoding'], 'replace')
+         if not is_valid_subtitle(subtitle_text):
+             raise InvalidSubtitle
+         return subtitle_text
+diff -Naur subliminal-0.7.5/subliminal/subtitle.py subliminal-0.7.5.patched/subliminal/subtitle.py
+--- subliminal-0.7.5/subliminal/subtitle.py	2016-02-05 15:01:04.164624012 -0500
++++ subliminal-0.7.5.patched/subliminal/subtitle.py	2016-02-05 09:10:51.628051000 -0500
+@@ -7,6 +7,64 @@
+ import re
+ from .video import Episode, Movie
+ 
++from chardet import detect as chardet_detect
++from chared.detector import get_model_path, EncodingDetector
++
++# A table used to map language codes to their respected chared decoding file
++# if a mapping isn't defined on this table, then the code simply falls back
++# to chardet encoding detection. chardet is not as accurate as chared, but
++# chared has more overhead. The table will be an add on demand (if something
++# is missing)
++CHARED_LANGUAGE_MAP = {
++    u'ar': u'arabic',
++    u'hy': u'armenian',
++    u'bn': u'bengali',
++    u'bg': u'bulgarian',
++    u'ca': u'catalan',
++    u'hr': u'croatian',
++    u'cs': u'czech',
++    u'nl': u'dutch',
++    u'en': u'english',
++    u'et': u'estonian',
++    u'fi': u'finnish',
++    u'fr': u'french',
++    u'de': u'german',
++    u'el': u'greek',
++    u'gu': u'gujarati',
++    u'hi': u'hindi',
++    u'hu': u'hungarian',
++    u'is': u'icelandic',
++    u'id': u'indonesian',
++    u'ga': u'irish',
++    u'it': u'italian',
++    u'ja': u'japanese',
++    u'ko': u'korean',
++    u'lv': u'latvian',
++    u'lt': u'lithuanian',
++    u'ml': u'malayalam',
++    u'ms': u'malay',
++    u'mt': u'maltese',
++    u'nb': u'norwegian_bokmal',
++    u'fa': u'persian',
++    u'pl': u'polish',
++    u'pt': u'portuguese',
++    u'ro': u'romanian',
++    u'ru': u'russian',
++    u'sr': u'serbian',
++    u'sk': u'slovak',
++    u'sl': u'slovene',
++    u'es': u'spanish',
++    u'sv': u'swedish',
++    u'ta': u'tamil',
++    u'te': u'telugu',
++    u'th': u'thai',
++    u'tr': u'turkish',
++    u'uk': u'ukrainian',
++    u'ur': u'urdu',
++    u'vi': u'vietnamese',
++    u'cy': u'welsh',
++}
++
+ STRING_SANITIZATION = {
+     'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
+     'Ǟ': 'A', 'Ǡ': 'A', 'Ȁ': 'A', 'Ȃ': 'A', 'Ǻ': 'A', 'Ǽ': 'AE',
+@@ -57,6 +115,57 @@
+ # Date parsing
+ STRIP_DATE_RE = re.compile('\s*(.+)\s*[\[(]?\s*([123][0-9]{3})\s*[\])]?\s*$')
+ 
++def detect(str_data, lang=None):
++    """
++    A wrapper to encoding detection since we try to make use of both
++    chardet and chared together.
++
++    The response is always geared to look like a chardet library call
++    thus the output is always like this:
++     {
++       'encoding': '<encoding type>',
++       'confidence': <float value between 0.0 and 100.0>,
++     }
++    """
++    if lang is not None:
++        try:
++            lang = CHARED_LANGUAGE_MAP[lang]
++
++        except KeyError:
++            # No lookup
++            lang = None
++
++    if lang is None:
++        # Without knowing the language, we need to make our best
++        # guess using chardet
++        return chardet_detect(str_data)
++
++    # If we reach here, we know the language associated with the str_data
++    # being provided.  We can make a better prediction this way.
++    try:
++        model_file = get_model_path(lang)
++    except:
++        # Return best guess
++        return chardet_detect(str_data)
++
++    try:
++        encoding_detector = EncodingDetector.load(model_file)
++    except:
++        # Return best guess
++        return chardet_detect(str_data)
++
++    # Classify our data
++    clas = encoding_detector.classify(str_data)
++    if not clas:
++        # Classification wasn't possible, return best guess
++        return chardet_detect(str_data)
++
++    # chared results (return as chardet would)
++    return {
++       'encoding': clas[0],
++       'confidence': 99.999999,
++    }
++
+ 
+ class Subtitle(object):
+     """Base class for subtitle
