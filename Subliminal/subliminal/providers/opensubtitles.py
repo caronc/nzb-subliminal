@@ -159,7 +159,7 @@ class OpenSubtitlesProvider(Provider):
             raise ProviderError('Nothing to download')
         subtitle_bytes = zlib.decompress(base64.b64decode(response['data'][0]['data']), 47)
         subtitle_text = subtitle_bytes.decode(
-            detect(subtitle_bytes, subtitle.language)['encoding'], 'replace')
+            detect(subtitle_bytes, subtitle.language.alpha2)['encoding'], 'replace')
         if not is_valid_subtitle(subtitle_text):
             raise InvalidSubtitle
         return subtitle_text

@@ -69,13 +69,13 @@ class TheSubDBProvider(Provider):
     def list_subtitles(self, video, languages):
         return [s for s in self.query(video.hashes['thesubdb']) if s.language in languages]
 
-    def download_subtitle(self, subtitle, language=None):
+    def download_subtitle(self, subtitle):
         params = {'action': 'download', 'hash': subtitle.hash, 'language': subtitle.language.alpha2}
         r = self.get(params)
         if r.status_code != 200:
             raise ProviderError('Request failed with status code %d' % r.status_code)
         subtitle_text = r.content.decode(
-            detect(r.content, subtitle.language)['encoding'], 'replace')
+            detect(r.content, subtitle.language.alpha2)['encoding'], 'replace')
         if not is_valid_subtitle(subtitle_text):
             raise InvalidSubtitle
         return subtitle_text

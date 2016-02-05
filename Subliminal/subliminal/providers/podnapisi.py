@@ -338,7 +338,7 @@ class PodnapisiProvider(Provider):
                 raise ProviderError('More than one file to unzip')
             subtitle_bytes = zf.read(zf.namelist()[0])
         subtitle_text = subtitle_bytes.decode(
-            detect(subtitle_bytes, subtitle.language)['encoding'], 'replace')
+            detect(subtitle_bytes, subtitle.language.alpha2)['encoding'], 'replace')
         if not is_valid_subtitle(subtitle_text):
             raise InvalidSubtitle
         return subtitle_text

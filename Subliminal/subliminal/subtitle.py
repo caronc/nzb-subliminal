@@ -127,14 +127,13 @@ def detect(str_data, lang=None):
        'confidence': <float value between 0.0 and 100.0>,
      }
     """
-    if isinstance(lang, basestring):
-        if len(lang) == 2:
-            try:
-                lang = CHARED_LANGUAGE_MAP[lang]
+    if lang is not None:
+        try:
+            lang = CHARED_LANGUAGE_MAP[lang]
 
-            except KeyError:
-                # No lookup
-                lang = None
+        except KeyError:
+            # No lookup
+            lang = None
 
     if lang is None:
         # Without knowing the language, we need to make our best

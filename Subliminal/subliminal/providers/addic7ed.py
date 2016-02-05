@@ -169,7 +169,7 @@ class Addic7edProvider(Provider):
         if r.headers['Content-Type'] == 'text/html':
             raise ProviderNotAvailable('Download limit exceeded')
         subtitle_text = r.content.decode(
-            detect(r.content, subtitle.language)['encoding'], 'replace')
+            detect(r.content, subtitle.language.alpha2)['encoding'], 'replace')
         if not is_valid_subtitle(subtitle_text):
             raise InvalidSubtitle
         return subtitle_text
