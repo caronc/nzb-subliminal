@@ -1952,10 +1952,15 @@ if __name__ == "__main__":
     _providers = options.providers
     _fetch_mode = options.fetch_mode
 
-    if _maxage:
+    if _maxage is not None:
         try:
             _maxage = str(abs(int(_maxage)))
             script.set('MaxAge', _maxage)
+            if _maxage == '0':
+                # remove ambiguity; allow setting maxage to 0 (zero)
+                # Setting maxage to zero implies scanning everything;
+                # so... toggle the force switch (same thing - for now)
+                _force = True
         except (ValueError, TypeError):
             script.logger.error(
                 'An invalid `maxage` (%s) was specified.' % (_maxage)
