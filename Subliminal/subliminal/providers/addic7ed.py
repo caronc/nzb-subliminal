@@ -51,6 +51,10 @@ class Addic7edSubtitle(Subtitle):
 
 
 class Addic7edProvider(Provider):
+    # Defaults
+    username = None
+    password = None
+
     languages = set([babelfish.Language('por', 'BR')]) | set([babelfish.Language(l)
                  for l in ['ara', 'aze', 'ben', 'bos', 'bul', 'cat', 'ces', 'dan', 'deu', 'ell', 'eng', 'eus', 'fas',
                            'fin', 'fra', 'glg', 'heb', 'hrv', 'hun', 'hye', 'ind', 'ita', 'jpn', 'kor', 'mkd', 'msa',
@@ -59,12 +63,71 @@ class Addic7edProvider(Provider):
     video_types = (Episode,)
     server = 'http://www.addic7ed.com'
 
+    def __init__(self, username=None, password=None):
+
+        self.logged_in = None
+        if username and password:
+            logger.info('Addic7ed using authentication serice.')
+            self.username = username
+            self.password = password
+            self.logged_in = False
+        else:
+            logger.info('Addic7ed using non-authenticated service.')
+
+
     def initialize(self):
         self.session = requests.Session()
         self.session.headers = {
             'User-Agent': self.random_user_agent,
             'Referer': self.server,
         }
+        if self.logged_in is False:
+            # Attempt to log in
+            logger.debug('Preparing to log into Addic7ed...')
+            data = {
+                'username': self.username,
+                'password': self.password,
+                'Submit': 'Log in',
+            }
+            try:
+                r = self.session.post(
+                    self.server + '/dologin.php', data, timeout=10,
+                    allow_redirects=False,
+                )
+            except requests.Timeout:
+                raise ProviderNotAvailable(
+                    'Addic7ed Authentication timeout',
+                )
+
+            if r.status_code == 302:
+                logger.debug('Successfully authenticated with Addic7ed.')
+                self.logged_in = True
+            else:
+                logger.warning('Failed to authenticate with Addic7ed!')
+
+    def terminate(self):
+        # logout
+        if self.logged_in:
+
+            # Toggle our flag reguardless of our success
+            self.logged_in = False
+            try:
+                r = self.session.get(self.server + '/logout.php', timeout=10)
+                logger.debug('Successfully logged out of Addic7ed.')
+            except requests.Timeout:
+                # No problem... we're done anyway
+                logger.warning('A timeout occured logging out of Addic7ed!')
+                return
+
+            if r.status_code != 200:
+                logger.warning(
+                    'Addic7ed returned the error code %d while logging out' %\
+                    r.status_code,
+                )
+                return
+
+        # Close our session
+        self.session.close()
 
     def get(self, url, params=None):
         """Make a GET request on `url` with the given parameters

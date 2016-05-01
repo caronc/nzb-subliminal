@@ -171,6 +171,12 @@ Options:
                         options are: 'ImpairedOnly', 'StandardOnly',
                         'BestScore', 'StandardFirst', 'ImpairedFirst'.  The
                         default value is: BestScore
+  --addic7ed-user=USER  Optionally use login credentials when accessing
+                        Addic7ed's server. This option is ignored if the
+                        --addic7ed-pass switch is not specified.
+  --addic7ed-pass=PASS  Optionally use login credentials when accessing
+                        Addic7ed's server. This option is ignored if the
+                        --addic7ed-user switch is not specified.
   -L FILE, --logfile=FILE
                         Send output to the specified logfile instead of
                         stdout.

@@ -33,9 +33,9 @@
 #
 # Info about this Subliminal NZB Script:
 # Author: Chris Caron (lead2gold@gmail.com).
-# Date: Sat, Feb 6th, 2016.
+# Date: Sun, May 1st, 2016.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-# Script Version: 0.9.8
+# Script Version: 0.9.9
 #
 # NOTE: This script requires Python to be installed on your system.
 #
@@ -284,6 +284,18 @@
 #
 # NOTE: This option is only applied to Scheduling.
 #MaxAge=24
+
+# Addic7ed Username
+#
+# If you wish to utilize the addic7ed provider, you are additionally required
+# to provide a username and password. Specify the `username` here.
+#Addic7edUser=
+
+# Addic7ed Password
+#
+# If you wish to utilize the addic7ed provider, you are additionally required
+# to provide a username and password. Specify the `password` here.
+#Addic7edPass=
 
 # Enable debug logging (yes, no).
 #
@@ -978,6 +990,16 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             ))
 
         provider_configs = {}
+
+        _addic7ed_user = self.get('Addic7edUser')
+        _addic7ed_pass = self.get('Addic7edPass')
+        if _addic7ed_user and _addic7ed_pass:
+            # Only if the credentials are set should we initialize
+            # them with the provider
+            provider_configs['addic7ed'] = {
+                'username': _addic7ed_user,
+                'password': _addic7ed_pass,
+            }
 
         lang = self.parse_list(self.get('Languages', 'en'))
         if not lang:
@@ -1887,6 +1909,22 @@ if __name__ == "__main__":
         metavar="MODE",
     )
     parser.add_option(
+        "--addic7ed-user",
+        dest="addic7ed_user",
+        help="Optionally use login credentials when accessing " + \
+        "Addic7ed's server. This option is ignored if the " + \
+        "--addic7ed-pass switch is not specified.",
+        metavar="USER",
+    )
+    parser.add_option(
+        "--addic7ed-pass",
+        dest="addic7ed_pass",
+        help="Optionally use login credentials when accessing " + \
+        "Addic7ed's server. This option is ignored if the " + \
+        "--addic7ed-user switch is not specified.",
+        metavar="PASS",
+    )
+    parser.add_option(
         "-L",
         "--logfile",
         dest="logfile",
@@ -1951,6 +1989,8 @@ if __name__ == "__main__":
     _force = options.force is True
     _providers = options.providers
     _fetch_mode = options.fetch_mode
+    _addic7ed_user = options.addic7ed_user
+    _addic7ed_pass = options.addic7ed_pass
 
     if _maxage is not None:
         try:
@@ -2024,6 +2064,10 @@ if __name__ == "__main__":
                 'Invalid FetchMode specified, using default: %s' %\
                 FETCH_MODE_DEFAULT)
             script.set('FetchMode', FETCH_MODE_DEFAULT)
+
+    if _addic7ed_user and _addic7ed_pass:
+        script.set('Addic7edUser', _addic7ed_user)
+        script.set('Addic7edPass', _addic7ed_pass)
 
     if not script.get('ScanDirectories') and scandir:
         # Set some defaults if they are not already set
