@@ -84,6 +84,73 @@ patch -d requests-2.3.0 -p1 < requests-use.global.deps.patch
 # You're done!
 ```
 
+### Subliminal v0.7.5
+The core app this tool provides a wrapper to
+
+| Patch | Description |
+| ----- | ----------- |
+| [subliminal-podnapisi.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-podnapisi.patch) | Podnapisi redesigned their website; this allows 0.7.5 to work with it.
+| [subliminal-unicode.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-unicode.patch) | Added better unicode support
+| [subliminal-guessit_requirements.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-guessit_requirements.patch) | upgraded guessit to a newer version
+| [subliminal-better.encoding.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-better.encoding.patch) | refactored entire encoding backend to do a better job 'guessing' encodings based on the language of the file.
+| [subliminal-addic7ed-optional-login.patch](https://github.com/caronc/nzbget-subliminal/blob/master/patches/subliminal-addic7ed-optional-login.patch) | added optional Addic7ed logins
+
+
+You can apply the patch as follows (Linux example):
+```bash
+# Assuming you have our dependencies fullfilled
+# - RedHat/CentOS/Fedora: yum install -y curl tar patch
+# - Ubuntu/Debian: sudo apt-get install curl tar patch
+#
+# Retrieve the package
+curl -L -O https://pypi.python.org/packages/source/s/subliminal/subliminal-0.7.5.tar.gz
+
+# Retrieve the patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-podnapisi.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-unicode.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-guessit_requirements.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-better.encoding.patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/subliminal-addic7ed-optional-login.patch
+
+# Extract our downloaded archive
+tar xvfz subliminal-0.7.5.tar.gz
+
+# Apply our patch
+patch -d subliminal-0.7.5 -p1 < subliminal-podnapisi.patch
+patch -d subliminal-0.7.5 -p1 < subliminal-unicode.patch
+patch -d subliminal-0.7.5 -p1 < subliminal-guessit_requirements.patch
+patch -d subliminal-0.7.5 -p1 < subliminal-better.encoding.patch
+patch -d subliminal-0.7.5 -p1 < subliminal-addic7ed-optional-login.patch
+
+# You're done!
+```
+
+| Request v2.3.0 Source |
+| --------------------- |
+| https://pypi.python.org/packages/source/r/requests/requests-2.3.0.tar.gz |
+
+You can apply the patch as follows (Linux example):
+```bash
+# Assuming you have our dependencies fullfilled
+# - RedHat/CentOS/Fedora: yum install -y curl tar patch
+# - Ubuntu/Debian: sudo apt-get install curl tar patch
+#
+# Retrieve the package
+curl -L -O https://pypi.python.org/packages/source/r/requests/requests-2.3.0.tar.gz
+
+# Retrieve the patch
+curl -L -O https://raw.githubusercontent.com/caronc/nzbget-subliminal/master/patches/requests-use.global.deps.patch
+
+# Extract our downloaded archive
+tar xvfz requests-2.3.0.tar.gz
+
+# Apply our patch
+patch -d requests-2.3.0 -p1 < requests-use.global.deps.patch
+
+# You're done!
+```
+
+
 ### Urllib3 v1.12
 Urllib3 is a dependency of Requests (identified above).  It provides web page
 interaction simplifying some common steps (which requests then further takes
