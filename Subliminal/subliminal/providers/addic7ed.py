@@ -225,6 +225,7 @@ class Addic7edProvider(Provider):
         try:
             r = self.session.get(self.server + subtitle.download_link, timeout=10,
                                  headers={'Referer': self.server + subtitle.referer})
+            logger.debug('Download URL: %s' % (self.server + subtitle.download_link))
         except requests.Timeout:
             raise ProviderNotAvailable('Timeout after 10 seconds')
         if r.status_code != 200:

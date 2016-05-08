@@ -150,6 +150,10 @@ class OpenSubtitlesProvider(Provider):
     def download_subtitle(self, subtitle):
         try:
             response = self.server.DownloadSubtitles(self.token, [subtitle.id])
+            logger.debug('Download URL: %s {token=%s, subid:%s}' % (
+                'http://api.opensubtitles.org/xml-rpc',
+                self.token, subtitle.id,
+            ))
         except xmlrpclib.ProtocolError:
             raise ProviderNotAvailable
         if response['status'] != '200 OK':

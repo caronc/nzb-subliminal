@@ -329,6 +329,7 @@ class PodnapisiProvider(Provider):
     def download_subtitle(self, subtitle):
         try:
             r = self.session.get(self.server + subtitle.link, timeout=10)
+            logger.debug('Download URL: %s' % (self.server + subtitle.link))
         except requests.Timeout:
             raise ProviderNotAvailable('Timeout after 10 seconds')
         if r.status_code != 200:

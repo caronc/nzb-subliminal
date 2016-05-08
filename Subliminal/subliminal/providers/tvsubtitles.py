@@ -180,6 +180,9 @@ class TVsubtitlesProvider(Provider):
         try:
             r = self.session.get(self.server + '/download-{subtitle_id}.html'.format(subtitle_id=subtitle.id),
                                  timeout=10)
+            logger.debug('Download URL: %s' % (
+                self.server + '/download-{subtitle_id}.html'\
+                .format(subtitle_id=subtitle.id)))
         except requests.Timeout:
             raise ProviderNotAvailable('Timeout after 10 seconds')
         if r.status_code != 200:

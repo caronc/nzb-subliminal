@@ -74,6 +74,9 @@ class TheSubDBProvider(Provider):
         r = self.get(params)
         if r.status_code != 200:
             raise ProviderError('Request failed with status code %d' % r.status_code)
+        logger.debug('Download URL: %s {lang=%s, hash:%s}' % (
+            'http://api.thesubdb.com', subtitle.hash, subtitle.language.alpha2,
+        ))
         subtitle_text = r.content.decode(
             detect(r.content, subtitle.language.alpha2)['encoding'], 'replace')
         if not is_valid_subtitle(subtitle_text):
