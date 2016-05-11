@@ -304,10 +304,10 @@
 # diagnosing the problem.
 #Debug=no
 
-# Tidy Sub Level (off, on).
+# Post Processing - Tidy Subtitles (on, off).
 #
 # Open the downloaded subtitle file and perform some additional optimizations
-# to it.  This is a work in progress feature.
+# to it. This is a work in progress, currently it does the following:
 #  - Correct all EOL (End of Lines) in the event they're inconsistent
 #TidySub=off
 
