@@ -304,6 +304,14 @@
 # diagnosing the problem.
 #Debug=no
 
+# Tidy Sub Level (off, on).
+#
+# Open the downloaded subtitle file and perform some additional optimizations
+# to it.  This is a work in progress feature.
+#  - Correct all EOL (End of Lines) in the event they're inconsistent
+#TidySub=off
+
+
 ### NZBGET POST-PROCESSING/SCHEDULER SCRIPT                                ###
 ##############################################################################
 
@@ -401,10 +409,12 @@ DEFAULT_UPDATE_PERMISSIONS = False
 DEFAULT_VIDEO_PERMISSIONS = 0o644
 DEFAULT_SINGLE = False
 DEFAULT_FORCE = 'no'
+DEFAULT_TIDYSUB = 'off'
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 DEFAULT_EMBEDDED_SUBS = 'no'
 DEFAULT_FORCE_ENCODING = 'None'
 DEFAULT_SYSTEM_ENCODING = 'UTF-8'
+
 
 # A list of compiled regular expressions identifying files to not parse ever
 IGNORE_FILELIST_RE = (
@@ -723,6 +733,145 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
         return guess
 
+    def tidy_subtitle(self, fname):
+        """post process applied to filename
+        """
+        self.logger.debug(
+            'Post processing subtitle %s' % \
+            basename(fname),
+        )
+
+        tmp_fname = '%s.tmp' % fname
+        old_fname = '%s.old' % fname
+        try:
+            unlink(tmp_fname)
+            #self.logger.debug(
+            #    'Removed temporary srt re-encode file : %s' % \
+            #    basename(tmp_fname),
+            #)
+        except:
+            # no problem
+            pass
+        try:
+            unlink(old_fname)
+            #self.logger.debug(
+            #    'Removed old srt re-encode file : %s' % \
+            #    basename(old_fname),
+            #)
+        except:
+            # no problem
+            pass
+
+        try:
+            f = open(fname, 'r')
+        except IOError:
+            self.logger.error(
+                'Could not open %s for post processing.' % \
+                basename(fname),
+            )
+            return False
+
+        try:
+            fw = open(tmp_fname, 'w')
+        except:
+            self.logger.error(
+                'Could not create new file %s.' % \
+                basename(tmp_fname),
+            )
+            try:
+                f.close()
+            except:
+                pass
+            return False
+
+        # Broken Lines
+        re_broken_lines = re.compile('\r\r\n+', re.MULTILINE)
+
+        def readchunk():
+            """Lazsy function (generator) to read a file piece by piece.
+            Default chunk size: 204800 bytes (200K)."""
+            return f.read(204800)
+
+        for chunk in iter(readchunk, ''):
+            processed = re_broken_lines.sub('\r\n\r\n', chunk)
+
+            try:
+                fw.write(processed)
+            except:
+                self.logger.error(
+                    'Could not write to new file %s.' % \
+                    basename(tmp_fname),
+                )
+                try:
+                    f.close()
+                except:
+                    pass
+                try:
+                    fw.close()
+                except:
+                    pass
+                return False
+
+        try:
+            f.close()
+        except:
+            pass
+        try:
+            fw.close()
+        except:
+            pass
+
+        try:
+            move(fname, old_fname)
+        except OSError:
+            self.logger.error(
+                'Could not move %s to %s' % (
+                    basename(fname),
+                    basename(old_fname),
+                )
+            )
+            try:
+                unlink(tmp_fname)
+            except:
+                pass
+            return False
+
+        try:
+            move(tmp_fname, fname)
+        except OSError:
+            self.logger.error(
+                'Could not move %s to %s' % (
+                    basename(tmp_fname),
+                    basename(fname),
+                )
+            )
+            try:
+                unlink(fname)
+            except:
+                pass
+            try:
+                move(old_fname, fname)
+            except:
+                pass
+            try:
+                unlink(tmp_fname)
+            except:
+                pass
+            return False
+
+        try:
+            unlink(old_fname)
+        except:
+            pass
+
+        self.logger.info(
+            "Post processing subtitles %s encoding." % (
+                basename(fname),
+            )
+        )
+        return True
+
+
     def convert_encoding(self, fname, encoding, lang):
         """Takes a filename and encoding and converts it's contents
         """
@@ -913,6 +1062,9 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         force_encoding = self.get('ForceEncoding', DEFAULT_FORCE_ENCODING)
         if force_encoding.lower() == 'none':
             force_encoding = None
+
+        # Tidy Subtitle
+        tidy_subtitle = self.get('TidySub', DEFAULT_TIDYSUB)
 
         # Minimum Score
         minscore = int(self.get('MinScore', DEFAULT_MIN_VIDEO_SCORE))
@@ -1487,6 +1639,12 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                         srt_lang,
                     )
 
+                # Post Processing Tidying
+                if tidy_subtitle:
+                    self.tidy_subtitle(
+                        expected_file,
+                    )
+
                 # increment counter
                 f_count += 1
 
@@ -1925,6 +2083,13 @@ if __name__ == "__main__":
         metavar="PASS",
     )
     parser.add_option(
+        "-t",
+        "--tidy-subs",
+        action="store_true",
+        dest="tidysub",
+        help="Post process tidying of subtitle.",
+    )
+    parser.add_option(
         "-L",
         "--logfile",
         dest="logfile",
@@ -1987,6 +2152,7 @@ if __name__ == "__main__":
     _basic_mode = options.basic_mode is True
     _xrefpath = options.xrefpath
     _force = options.force is True
+    _tidysub = options.tidysub is True
     _providers = options.providers
     _fetch_mode = options.fetch_mode
     _addic7ed_user = options.addic7ed_user
@@ -2028,6 +2194,9 @@ if __name__ == "__main__":
             exit(EXIT_CODE.FAILURE)
     if _overwrite:
         script.set('Overwrite', True)
+
+    if _tidysub:
+        script.set('TidySub', True)
 
     if _force_encoding:
         script.set('ForceEncoding', _force_encoding.lower())
