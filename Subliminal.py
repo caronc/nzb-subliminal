@@ -763,7 +763,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             pass
 
         try:
-            f = open(fname, 'r')
+            f = open(fname, 'rb')
         except IOError:
             self.logger.error(
                 'Could not open %s for post processing.' % \
@@ -772,7 +772,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             return False
 
         try:
-            fw = open(tmp_fname, 'w')
+            fw = open(tmp_fname, 'wb')
         except:
             self.logger.error(
                 'Could not create new file %s.' % \
@@ -902,7 +902,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             pass
 
         try:
-            f = open(fname, 'r')
+            f = open(fname, 'rb')
         except IOError:
             self.logger.error(
                 'Could not open %s for encoding testing' % \
@@ -911,7 +911,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             return False
 
         try:
-            fw = open(tmp_fname, 'w')
+            fw = open(tmp_fname, 'wb')
         except:
             self.logger.error(
                 'Could not create new file %s.' % \
