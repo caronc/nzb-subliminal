@@ -785,7 +785,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             return False
 
         # Broken Lines
-        re_broken_lines = re.compile('\r\r\n+', re.MULTILINE)
+        # These have been appearing in Python 2.7.11 results
+        re_broken_lines = re.compile('\r\r\n', re.MULTILINE)
 
         def readchunk():
             """Lazsy function (generator) to read a file piece by piece.
@@ -793,7 +794,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             return f.read(204800)
 
         for chunk in iter(readchunk, ''):
-            processed = re_broken_lines.sub('\r\n\r\n', chunk)
+            processed = re_broken_lines.sub('\r\n', chunk)
 
             try:
                 fw.write(processed)
@@ -902,7 +903,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             pass
 
         try:
-            f = open(fname, 'rb')
+            f = open(fname, 'r')
         except IOError:
             self.logger.error(
                 'Could not open %s for encoding testing' % \
@@ -911,7 +912,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             return False
 
         try:
-            fw = open(tmp_fname, 'wb')
+            fw = open(tmp_fname, 'w')
         except:
             self.logger.error(
                 'Could not create new file %s.' % \
