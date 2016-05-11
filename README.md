@@ -177,6 +177,7 @@ Options:
   --addic7ed-pass=PASS  Optionally use login credentials when accessing
                         Addic7ed's server. This option is ignored if the
                         --addic7ed-user switch is not specified.
+  -t, --tidy-subs       Post process tidying of subtitle.
   -L FILE, --logfile=FILE
                         Send output to the specified logfile instead of
                         stdout.
