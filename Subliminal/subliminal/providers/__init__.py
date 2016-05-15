@@ -4,6 +4,13 @@ import babelfish
 from ..video import Episode, Movie
 from .. import __version__
 from random import randint
+from os.path import exists
+from os.path import join
+from hashlib import md5
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Agent List
 AGENT_LIST = (
@@ -153,5 +160,75 @@ class Provider(object):
         """
         raise NotImplementedError
 
+    def debug_url(self, url, session=None, params=None, headers=None,
+                      timeout=10, get=True):
+        """A simple wrapper that should only be used for developers who
+        are testing new providers or debuging old ones.
+
+        Instead of calling self.session.get() or self.session.post()
+        where session is a requests.Session() object.
+
+        Just pass the URL and the content will be fetched and stored
+        to the /tmp folder.  Subsequent calls will read from the
+        file previously fetched instead of getting the data again.
+
+        This allows one to test the server without hitting it
+        over and over again.
+
+        If session isn't specified, then a request.Session() instance
+        is automatically created in it's stead.  If you've already
+        preconfigured a session variable, then pass it in as well
+        with this function so it'll use it's prepared data.
+        """
+        # Temporary debug path
+        path = '/tmp'
+
+        # hash by url to keep results unique
+        m = md5()
+        m.update(url)
+        result_file = join(path, '%s.tmp' % m.hexdigest())
+
+        if exists(result_file):
+            # Cache file exists, so lets use it
+            class DummyResponse(object):
+                def __init__(self, result_file):
+                    self.status_code = 200
+                    self.url = url
+                    self.content = ''
+
+                    # Retrieve Data
+                    fd = open(result_file, 'r')
+                    self.content = fd.read()
+                    logger.info('Using cached results for %s', url)
+                    fd.close()
+            return DummyResponse(result_file=result_file)
+
+        # If we get here we need to fetch the data for ourselves
+        if not session:
+            session = requests.Session()
+            self.session.headers = {
+               'User-Agent': self.random_user_agent,
+           }
+
+        r = session.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=timeout,
+        )
+
+        if r.status_code == 200:
+            fd = open(result_file, 'w')
+            fd.write(r.content)
+            fd.close()
+            logger.info('Caching results for url %s (%s).' % (
+                url, result_file,
+            ))
+
+        return r
+
+
     def __repr__(self):
-        return '<%s [%r]>' % (self.__class__.__name__, self.video_types)
+        return '<%s [%r]>' % (
+            self.__class__.__name__, self.video_types,
+        )
