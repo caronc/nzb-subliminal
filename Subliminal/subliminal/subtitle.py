@@ -113,7 +113,7 @@ IGNORED_CHARACTERS_RE = re.compile('[!@#$\'"]')
 PRINTABLE_ASCII_RE = re.compile(r'[^\x20-\x7E]+')
 
 # Date parsing
-STRIP_DATE_RE = re.compile('\s*(.+)\s*[\[(]?\s*([123][0-9]{3})\s*[\])]?\s*$')
+STRIP_DATE_RE = re.compile('^\s*([^\[(]+)[\s\[(]?\s*([123][0-9]{3})[\s\])]?\s*$')
 
 def detect(str_data, lang=None):
     """
@@ -283,7 +283,9 @@ def sanitize_string(str_in, strip_date=False):
 
     str_date_re = STRIP_DATE_RE.match(str_out)
     if str_date_re:
-        str_out = str_date_re.group(1)
+        str_out = str_date_re.group(1).strip()
+        if not strip_date and str_date_re.group(2):
+            str_out += ' ' + str_date_re.group(2)
 
     return str_out.strip()
 
