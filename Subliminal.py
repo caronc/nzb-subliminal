@@ -482,7 +482,7 @@ def _to_alpha2(lang):
 
     elif len(lang) == 2:
         try:
-            _lang = babelfish.Language.fromcode(lang, 'alpha2')
+            _lang = babelfish.Language.fromcode(lang.lower(), 'alpha2')
             return _lang
 
         except babelfish.exceptions.LanguageReverseError:
