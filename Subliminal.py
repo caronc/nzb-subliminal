@@ -3,7 +3,7 @@
 #
 # Subliminal post-processing script for NZBGet
 #
-# Copyright (C) 2015 Chris Caron <lead2gold@gmail.com>
+# Copyright (C) 2015-2017 Chris Caron <lead2gold@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published by
@@ -310,6 +310,9 @@
 # to it. This is a work in progress, currently it does the following:
 #  - Correct all EOL (End of Lines) in the event they're inconsistent
 #TidySub=off
+
+# You issue a scan of any directories you defined above here:
+#SubliminalScan@Scan Defined Paths
 
 
 ### NZBGET POST-PROCESSING/SCHEDULER SCRIPT                                ###
@@ -1853,6 +1856,15 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 deobfuscate=False,
                 use_nzbheaders=False,
             )
+
+    def action_subliminalscan(self, *args, **kwargs):
+        """
+        Execute the SubliminalScan Test Action
+        """
+        # The line below just forces a True return if None was
+        # detected
+        self.scheduler_main(self, *args, **kwargs)
+        return True
 
     def main(self, *args, **kwargs):
         """CLI
