@@ -1235,7 +1235,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             # ])
 
             srt_extract_re = re.compile(
-                '^(?<name>.*?)(?P<alpha>\.[a-z]{2}[a-z]?)?(?P<extension>\.srt))$',
+                '^(?<name>.*?)(?P<alpha>\.[a-z]{2}[a-z]?)?(?P<extension>'\
+                '\.(sub|idx|srt)))$',
                 re.IGNORECASE,
             )
             for key in xref_paths.keys():
@@ -1350,11 +1351,11 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 srt_file = basename(splitext(_entry)[0])
                 srt_file_re = re.escape(srt_file)
                 if l.alpha3t == l.alpha3b:
-                    srt_regex = '^(%s(\.(%s|%s))?.srt)$' % (
+                    srt_regex = '^(%s(\.(%s|%s))?.(idx|sub|srt))$' % (
                         srt_file_re, l.alpha3t, l.alpha2,
                     )
                 else:
-                    srt_regex = '^(%s(\.(%s|%s|%s))?.srt)$' % (
+                    srt_regex = '^(%s(\.(%s|%s|%s))?.(idx|sub|srt))$' % (
                         srt_file_re, l.alpha3t, l.alpha3b, l.alpha2,
                     )
 
