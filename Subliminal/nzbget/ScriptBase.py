@@ -2,7 +2,7 @@
 #
 # A base scripting class for NZBGet
 #
-# Copyright (C) 2014-2015 Chris Caron <lead2gold@gmail.com>
+# Copyright (C) 2014-2017 Chris Caron <lead2gold@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published by
@@ -59,6 +59,10 @@ functionality such as:
  * parse_nzbfile() - Parse an NZB-File and extract all of its meta
                      information from it. lxml must be installed on your
                      system for this to work correctly
+
+ * parse_nzbcontent() - Parse meta information from the specified NZB Content
+                     lxml must be installed on your system for this to work
+                     correctly.
 
  * parse_url()  - Parse a URL and extract the protocol, user, pass,
                   remote directory and hostname from the string.
@@ -125,6 +129,7 @@ Additionally all exception handling is wrapped to make debugging easier.
 
 import re
 from tempfile import gettempdir
+from tempfile import mkstemp
 from os import environ
 from os import makedirs
 from os import chdir
@@ -137,7 +142,6 @@ from os import R_OK
 from os import X_OK
 from os import kill
 from os import getpid
-from os import name as os_name
 from os.path import isdir
 from os.path import islink
 from os.path import isfile
@@ -151,16 +155,19 @@ from getpass import getuser
 from logging import Logger
 from datetime import datetime
 from Utils import tidy_path
-from urllib import unquote
+import ssl
+
+import traceback
+from sys import exc_info
 
 from Logger import VERBOSE_DEBUG
 from Logger import VERY_VERBOSE_DEBUG
 from Logger import init_logger
 from Logger import destroy_logger
 
-from Utils import ESCAPED_PATH_SEPARATOR
 from Utils import ESCAPED_WIN_PATH_SEPARATOR
 from Utils import ESCAPED_NUX_PATH_SEPARATOR
+from Utils import unescape_xml
 
 import signal
 
@@ -226,6 +233,7 @@ from base64 import standard_b64encode
 try:
     # Python 2
     from xmlrpclib import ServerProxy
+    from xmlrpclib import SafeTransport
 except ImportError:
     # Python 3
     from xmlrpc.client import ServerProxy
@@ -242,6 +250,7 @@ SKIP_DIRECTORIES = (
     '.AppleDouble',
     '__MACOSX',
 )
+
 
 class EXIT_CODE(object):
     """List of exit codes for post processing
@@ -260,32 +269,51 @@ class EXIT_CODE(object):
     NONE = 95
 
 EXIT_CODES = (
-   EXIT_CODE.PARCHECK_CURRENT,
-   EXIT_CODE.PARCHECK_ALL,
-   EXIT_CODE.SUCCESS,
-   EXIT_CODE.FAILURE,
-   EXIT_CODE.NONE,
+    EXIT_CODE.PARCHECK_CURRENT,
+    EXIT_CODE.PARCHECK_ALL,
+    EXIT_CODE.SUCCESS,
+    EXIT_CODE.FAILURE,
+    EXIT_CODE.NONE,
 )
+
+
+class NZBGetDuplicateMode(object):
+    """Defines Duplicate Mode. This is used when Adding NZB-Files directly
+    """
+    # This is default duplicate mode. Only nzb-files with higher scores
+    # (when already downloaded) are considered.
+    SCORE = u'SCORE'
+
+    # All NZB-Files regardless of their scores are downloaded
+    ALL = 'ALL'
+
+    # Force download and disable all duplicate checks.
+    FORCE = 'FORCE'
+
 
 class NZBGetExitException(Exception):
     def __init__(self, code=EXIT_CODE.NONE):
         # Now for your custom code...
         self.code = code
 
+
 class NZBGetSuccess(NZBGetExitException):
     def __init__(self):
         super(NZBGetExitException, self).\
             __init__(code=EXIT_CODE.SUCCESS)
+
 
 class NZBGetFailure(NZBGetExitException):
     def __init__(self):
         super(NZBGetExitException, self).\
             __init__(code=EXIT_CODE.FAILURE)
 
+
 class NZBGetParCheckCurrent(NZBGetExitException):
     def __init__(self):
         super(NZBGetExitException, self).\
             __init__(code=EXIT_CODE.PARCHECK_CURRENT)
+
 
 class NZBGetParCheckAll(NZBGetExitException):
     def __init__(self):
@@ -329,88 +357,88 @@ class Health(tuple):
             # Downloaded and par-checked or unpacked successfully. All
             # post-processing scripts were successful. The download is
             # completely OK.
-            u'ALL': {}, # Use all defaults
+            u'ALL': {},  # Use all defaults
             # The download was marked as good using mark(Mark.GOOD)
-            u'GOOD': {}, # Use all defaults
+            u'GOOD': {},  # Use all defaults
             # Download was successful, download health is 100.0%. No par-check
             # was made (there are no par-files). No unpack was made (there are
             # no archive files or unpack was disabled for that download or
             # globally).
-            u'HEALTH': {}, # Use all defaults
+            u'HEALTH': {},  # Use all defaults
             # The hidden history item has status SUCCESS.
-            u'HIDDEN': {}, # Use all defaults
+            u'HIDDEN': {},  # Use all defaults
             # Similar to SUCCESS/ALL but no post-processing scripts were
             # executed. Downloaded and par-checked successfully. No unpack was
             # made (there are no archive files or unpack was disabled for that
             # download or globally).
-            u'PAR': {}, # Use all defaults
+            u'PAR': {},  # Use all defaults
             # Similar to SUCCESS/ALL but no post-processing scripts were
             # executed. Downloaded and unpacked successfully. Par-check was
             # successful or was not necessary.
-            u'UNPACK': {}, # Use all defaults
+            u'UNPACK': {},  # Use all defaults
         },
 
         WARNING: {
             DEFAULT_SUB: {u'has_archive': True, u'is_unpacked': False, },
             # Par-check is required by is disabled in settings
             # (option ParCheck=Manual).
-            u'DAMAGED': {}, # Use all defaults
+            u'DAMAGED': {},  # Use all defaults
             # Download health is below 100.0%. No par-check was made (there
             # are no par-files). No unpack was made (there are no archive
             # files or unpack was disabled for that download or globally).
-            u'HEALTH': {}, # Use all defaults
+            u'HEALTH': {},  # Use all defaults
             # The hidden history item has status FAILURE.
-            u'HIDDEN': {}, # Use all defaults
+            u'HIDDEN': {},  # Use all defaults
             # Unpack has failed because the password was not provided or was
             # wrong. Only for rar5-archives.
-            u'PASSWORD': {}, # Use all defaults
+            u'PASSWORD': {},  # Use all defaults
             # Par-check has detected damage and has downloaded additional
             # par-files but the repair is disabled in settings
             # (option ParRepair=no).
-            u'REPAIRABLE': {}, # Use all defaults
+            u'REPAIRABLE': {},  # Use all defaults
             # The URL was fetched successfully but an error occurred during
             # scanning of the downloaded file. The downloaded file isn't a
             # proper nzb-file. This status usually means the web-server has
             # returned an error page (HTML page) instead of the nzb-file.
-            u'SCAN': {}, # Use all defaults
+            u'SCAN': {},  # Use all defaults
             # Downloaded successfully. Par-check and unpack were either
             # successful or were not performed. At least one of the
             # post-processing scripts has failed.
-            u'SCRIPT': {}, # Use all defaults
+            u'SCRIPT': {},  # Use all defaults
             # The URL was fetched successfully but downloaded file was not
             # nzb-file and was skipped by the scanner.
-            u'SKIPPED': {}, # Use all defaults
+            u'SKIPPED': {},  # Use all defaults
             # Unpack has failed due to not enough space on the drive.
-            u'SPACE': {}, # Use all defaults
+            u'SPACE': {},  # Use all defaults
         },
 
         FAILURE: {
             DEFAULT_SUB: {u'has_archive': True, u'is_unpacked': False, },
             # The download was marked as good using mark(Mark.BAD)
-            u'BAD': {}, # Use all defaults
+            u'BAD': {},  # Use all defaults
             # The download was aborted by history check.
             # Usual case is: download health is below critical health. No
             # par-check was made (there are no par-files). No unpack was made
             # (there are no archive files or unpack was disabled for that
             # download or globally).
-            u'HEALTH': {}, # Use all defaults
+            u'HEALTH': {},  # Use all defaults
             # An error has occurred when moving files from intermediate
             # directory into the final destination directory.
-            u'MOVE': {}, # Use all defaults
+            u'MOVE': {},  # Use all defaults
             # The par-check has failed.
-            u'PAR': {}, # Use all defaults
+            u'PAR': {},  # Use all defaults
             # The unpack has failed and there are no par-files.
-            u'UNPACK': {}, # Use all defaults
+            u'UNPACK': {},  # Use all defaults
         },
 
         DELETED: {
             DEFAULT_SUB: {u'has_archive': False, u'is_unpacked': False, },
             # The download was deleted by duplicate check.
-            u'DUPE': {}, # Use all defaults
+            u'DUPE': {},  # Use all defaults
             # Fetching of the URL has failed.
-            u'FETCH': {}, # Use all defaults
+            u'FETCH': {},  # Use all defaults
             # The download was manually deleted by user.
-            u'MANUAL': {}, # Use all defaults
+            u'MANUAL': {},  # Use all defaults
         }
     }
 
@@ -431,7 +459,7 @@ class Health(tuple):
         elif not isinstance(health, (tuple, list)):
             health = (category, subcategory)
 
-        health = [ h.upper() for h in filter(bool, health) ]
+        health = [h.upper() for h in filter(bool, health)]
 
         try:
             if health[0] in Health.HEALTH_MAP:
@@ -525,6 +553,33 @@ CFG_ENVIRO_ID = u'NZBPO_'
 # are found in the environment, they are saved to the `config` dictionary
 SHR_ENVIRO_ID = u'NZBR_'
 
+# Environment ID used when calling tests commands from NZBGet
+"""
+For example... the below would attempt to execute the function
+action_ConnectionTest
+
+If that didn't exist, it would attempt to execute action_connectiontest
+and if that didn't exist, nothing would happen.
+
+But the point is, it's very easy to simply add the below code and create
+a function map to it. This is a new feature introduced after NZBGet v18
+############################################################################
+### OPTIONS                                                              ###
+
+#
+# To check connection parameters click the button.
+# ConnectionTest@Send Test E-Mail
+#
+#
+# ...
+
+"""
+TST_ENVIRO_ID = u'NZBCP_'
+
+# The Key Environment Variable that is used to dermine the Test command
+# to call (called from NZBGet's Configuration Screen)
+TEST_COMMAND = u'%sCOMMAND' % TST_ENVIRO_ID
+
 # Environment ID used when pushing common variables to the server
 PUSH_ENVIRO_ID = u'NZBPR_'
 
@@ -543,6 +598,7 @@ NZBGET_MSG_PREFIX = u'[NZB] '
 SYS_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SYS_ENVIRO_ID)
 CFG_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % CFG_ENVIRO_ID)
 SHR_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SHR_ENVIRO_ID)
+TST_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % TST_ENVIRO_ID)
 DNZB_OPTS_RE = re.compile('^%s%s([A-Z0-9_]+)$' % (
     SHR_ENVIRO_ID,
     SHR_ENVIRO_DNZB_ID,
@@ -556,15 +612,15 @@ SHR_GUESS_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SHR_ENVIRO_GUESS_ID)
 # used.
 GUESS_KEY_MAP = {
     u'AUDIOCHANNELS': u'audioChannels', u'AUDIOCODEC': u'audioCodec',
-    u'AUDIOPROFILE': u'audioProfile', u'BONUSNUMBER':u'bonusNumber',
-    u'BONUSTITLE': u'bonusTitle', u'CONTAINER':u'container', u'DATE': u'date',
+    u'AUDIOPROFILE': u'audioProfile', u'BONUSNUMBER': u'bonusNumber',
+    u'BONUSTITLE': u'bonusTitle', u'CONTAINER': u'container', u'DATE': u'date',
     u'EDITION': u'edition', u'EPISODENUMBER': u'episodeNumber',
     u'FILMNUMBER': u'filmNumber', u'FILMSERIES': u'filmSeries',
     u'FORMAT': u'format', u'LANGUAGE': u'language',
     u'RELEASEGROUP': u'releaseGroup',  u'SCREENSIZE': u'screenSize',
     u'SEASON': u'season', u'SERIES': u'series', u'SPECIAL': u'special',
     u'SUBTITLELANGUAGE': u'subtitleLanguage', u'TITLE': u'title',
-    u'TYPE': u'type', u'VIDEOCODEC': u'videoCodec',u'VTYPE': u'vtype',
+    u'TYPE': u'type', u'VIDEOCODEC': u'videoCodec', u'VTYPE': u'vtype',
     u'WEBSITE': u'website', u'YEAR': u'year',
 }
 
@@ -590,6 +646,7 @@ NZBGET_DATABASE_FILENAME = "nzbget/nzbget.db"
 VALID_URL_RE = re.compile(r'^[\s]*([^:\s]+):[/\\]*([^?]+)(\?(.+))?[\s]*$')
 VALID_HOST_RE = re.compile(r'^[\s]*([^:/\s]+)')
 VALID_QUERY_RE = re.compile(r'^(.*[/\\])([^/\\]*)$')
+
 
 class SCRIPT_MODE(object):
     # After the download of nzb-file is completed NZBGet can call
@@ -629,6 +686,12 @@ class SCRIPT_MODE(object):
     # `ScriptDir`, then choose them in the option `FeedX.Script`.
     FEED = u'feed'
 
+    # To activate a test call to the script, we look for NZBCP_
+    # entries. These are populated through calls made available thorugh the
+    # configuration portion of NZBGet. v1.8 introduced the ability to
+    # test if your configuration is set up okay.
+    CONFIG_ACTION = u'action'
+
     # None is detected if you aren't using one of the above types
     NONE = ''
 
@@ -638,13 +701,17 @@ SCRIPT_MODES = (
     # The order these are listed is very important,
     # it identifies the order when preforming sanity
     # checking
+    SCRIPT_MODE.CONFIG_ACTION,
     SCRIPT_MODE.POSTPROCESSING,
     SCRIPT_MODE.SCAN,
     SCRIPT_MODE.QUEUE,
     SCRIPT_MODE.SCHEDULER,
     SCRIPT_MODE.FEED,
+
+    # None should always be the last entry
     SCRIPT_MODE.NONE,
 )
+
 
 class ScriptBase(object):
     """The intent is this is the script you run from within your script
@@ -661,6 +728,10 @@ class ScriptBase(object):
 
         # Initialize the default character set
         self.charset = None
+
+        # If a configuration test is being executed, this points to the
+        # function itself.  Otherwise this is set to None.
+        self._config_action = None
 
         # API by default is not configured; it is set up when a call to
         # an api function is made.
@@ -697,16 +768,21 @@ class ScriptBase(object):
         self.database_key = database_key
 
         # Fetch System Environment (passed from NZBGet)
-        self.system = dict([(SYS_OPTS_RE.match(k).group(1), v.strip()) \
+        self.system = dict([(SYS_OPTS_RE.match(k).group(1), v.strip())
             for (k, v) in environ.items() if SYS_OPTS_RE.match(k)])
 
         # Fetch/Load Script Specific Configuration
-        self.config = dict([(CFG_OPTS_RE.match(k).group(1), v.strip()) \
+        self.config = dict([(CFG_OPTS_RE.match(k).group(1), v.strip())
             for (k, v) in environ.items() if CFG_OPTS_RE.match(k)])
 
         # Fetch/Load Shared Configuration through push()
-        self.shared = dict([(SHR_OPTS_RE.match(k).group(1), v.strip()) \
+        self.shared = dict([(SHR_OPTS_RE.match(k).group(1), v.strip())
             for (k, v) in environ.items() if SHR_OPTS_RE.match(k)])
+
+        # Fetch/Load Test/Command Specific Configuration; This is used
+        # when issuing commands to a script from the configuration screen
+        self.test = dict([(TST_OPTS_RE.match(k).group(1), v.strip()) \
+            for (k, v) in environ.items() if TST_OPTS_RE.match(k)])
 
         # Preload nzbheaders based on any DNZB environment variables
         self.nzbheaders = self.pull_dnzb()
@@ -739,7 +815,6 @@ class ScriptBase(object):
         if self.debug is None:
             self.debug = self.parse_bool(
                 self.config.get('DEBUG', False))
-
 
         # Enabling Character Set as a flag by specifying in the configuration
         # section of your script
@@ -834,6 +909,9 @@ class ScriptBase(object):
             for k, v in self.shared.items():
                 self.logger.vvdebug('%s%s=%s' % (SHR_ENVIRO_ID, k, v))
 
+            for k, v in self.test.items():
+                self.logger.vvdebug('%s%s=%s' % (TST_ENVIRO_ID, k, v))
+
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Enforce system/global variables for script processing
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -846,7 +924,7 @@ class ScriptBase(object):
             environ['%sDEBUG' % SYS_ENVIRO_ID] = NZBGET_BOOL_FALSE
 
         if script_mode is not None:
-            if script_mode in self.script_dict.keys() + [SCRIPT_MODE.NONE,]:
+            if script_mode in self.script_dict.keys() + [SCRIPT_MODE.NONE, ]:
                 self.script_mode = script_mode
                 if self.script_mode is SCRIPT_MODE.NONE:
                     self.logger.debug('Script mode forced off.')
@@ -881,7 +959,7 @@ class ScriptBase(object):
                 chdir(self.tempdir)
             except OSError:
                 self.logger.warning(
-                    'Temporary directory is not ' + 'accessible: %s' % \
+                    'Temporary directory is not ' + 'accessible: %s' %
                     self.tempdir,
                 )
 
@@ -906,7 +984,7 @@ class ScriptBase(object):
             # we just gracefully move on if this happens
             pass
 
-    def is_unique_instance(self, pidfile=None,die_on_fail=True,
+    def is_unique_instance(self, pidfile=None, die_on_fail=True,
                            verbose=True):
         """
         Writes a PID file if one is not already present and returns
@@ -929,7 +1007,7 @@ class ScriptBase(object):
             otherwise it returns True if it was found running.
             """
             try:
-               kill(pid, 0)
+                kill(pid, 0)
             except OSError:
                 return False
             return True
@@ -938,9 +1016,9 @@ class ScriptBase(object):
             self.pidfile = pidfile
 
         if not self.pidfile:
-           self.pidfile = join(self.tempdir, '.run', '%s-%s.pid' % (
-               __name__, self.script_mode,
-           ))
+            self.pidfile = join(self.tempdir, '.run', '%s-%s.pid' % (
+                __name__, self.script_mode,
+            ))
 
         if self.pidfile_tstamp is not None:
             # PID-File already created and running; test
@@ -1015,7 +1093,7 @@ class ScriptBase(object):
                         self.pid,
                     ))
 
-            except (ValueError, TypeError), e:
+            except (ValueError, TypeError):
                 # Bad data
                 if verbose:
                     self.logger.info(
@@ -1081,7 +1159,7 @@ class ScriptBase(object):
             return False
 
         try:
-           fp.write("%s" % str(self.pid))
+            fp.write("%s" % str(self.pid))
         except:
             if verbose:
                 self.logger.warning('Could not write PID into PID-File.')
@@ -1123,7 +1201,7 @@ class ScriptBase(object):
         # We wrote our PID file successfully
         if verbose:
             self.logger.info(
-                 'Created PID-File: %s (pid=%d)' % (
+                'Created PID-File: %s (pid=%d)' % (
                      self.pidfile, self.pid,
             ))
         return True
@@ -1419,6 +1497,44 @@ class ScriptBase(object):
 
         return results
 
+    def parse_nzbcontent(self, nzbcontent):
+        """
+        Parses nzb-content (extracted from within an NZB-File)
+
+        This script first writes the contents of the NZB to a new file
+        so that we can parse it using the parse_nzbfile() which already
+        manages all the built in support for the several XML parsers
+        out there.
+
+        """
+        # Temporarily write content to a temporary file
+        fname = mkstemp(
+            suffix='.tmp.nzb', dir=self.tempdir, text=True,
+        )
+
+        try:
+            fd = open(fname)
+        except:
+            return {}
+
+        try:
+            fd.write(nzbcontent)
+
+        finally:
+            fd.close()
+
+        results = self.parse_nzbfile(fname)
+
+        try:
+            unlink(fname)
+        except:
+            if verbose:
+                self.logger.warning(
+                    'Failed to removed (temporary) NZB-File: %s' % \
+                    fname)
+
+        return results
+
     def parse_url(self, url, default_schema='http', qsd_auth=True):
         """A function that greatly simplifies the parsing of a url
         specified by the end user.
@@ -1516,7 +1632,7 @@ class ScriptBase(object):
         # Parse Query Arugments ?val=key&key=val
         # while ensureing that all keys are lowercase
         if qsdata:
-            result['qsd'] = dict([ (k.lower().strip(), v.strip()) \
+            result['qsd'] = dict([(k.lower().strip(), v.strip()) \
                                   for k, v in parse_qsl(
                 qsdata,
                 keep_blank_values=True,
@@ -1655,7 +1771,7 @@ class ScriptBase(object):
                     self.logger.debug('unset(database) %s"' % key)
 
                 elif isinstance(value, bool):
-                    # Convert boolean to integer (change True to 1 or False to 0)
+                    # Convert boolean to integer (True to 1 or False to 0)
                     self.database.set(key=key, value=int(value))
                     self.logger.debug('set(database) %s="%s"' % (
                         key,
@@ -1905,7 +2021,7 @@ class ScriptBase(object):
                     self.logger.debug('nzb_unset(database) %s"' % key)
 
                 elif isinstance(value, bool):
-                    # Convert boolean to integer (change True to 1 or False to 0)
+                    # Convert boolean to integer (True to 1 or False to 0)
                     self.database.set(
                         key=key, value=int(value), category=Category.NZB)
                     self.logger.debug('nzb_set(database) %s="%s"' % (
@@ -1916,7 +2032,8 @@ class ScriptBase(object):
                 else:
                     self.database.set(
                         key=key, value=value, category=Category.NZB)
-                    self.logger.debug('nzb_set(database) %s="%s"' % (key, value))
+                    self.logger.debug(
+                        'nzb_set(database) %s="%s"' % (key, value))
 
             except EnvironmentError:
                 # Database Access Problem
@@ -1937,7 +2054,11 @@ class ScriptBase(object):
 
             elif isinstance(value, bool):
                 # Convert boolean to integer (change True to 1 or False to 0)
-                self.database.set(key=key, value=int(value), category=Category.NZB)
+                self.database.set(
+                    key=key,
+                    value=int(value),
+                    category=Category.NZB,
+                )
                 self.logger.debug('nzb_set(database) %s="%s"' % (
                     key,
                     int(value),
@@ -1975,7 +2096,7 @@ class ScriptBase(object):
 
             if use_env:
                 if isinstance(value, bool):
-                    # Convert boolean to integer (change True to 1 or False to 0)
+                    # Convert boolean to integer (True to 1 or False to 0)
                     value = str(int(value))
 
                 elif not isinstance(value, basestring):
@@ -2024,7 +2145,8 @@ class ScriptBase(object):
                 value = self.database.get(key=key, category=Category.NZB)
                 if value is not None:
                     # only return if a key was found
-                    self.logger.debug('nzb_get(database) %s="%s"' % (key, value))
+                    self.logger.debug(
+                        'nzb_get(database) %s="%s"' % (key, value))
                     return value
 
             except EnvironmentError:
@@ -2245,16 +2367,48 @@ class ScriptBase(object):
             str(port),
         )
 
-        # Establish a connection to the server
+        # Establish a connection to the server; since most NZBGet secure
+        # servers can't verified since they're hosted internally, we set
+        # the CERT_NONE flag.
+
+        # Future TODO: make this an option for those who want to verify
+        # the host.
         try:
-            self.api = ServerProxy(xmlrpc_url)
+            # Python >= 2.7.9
+            context = ssl._create_unverified_context()
+            try:
+                self.api = ServerProxy(
+                    xmlrpc_url,
+                    verbose=False,
+                    use_datetime=True,
+                    context=context,
+                )
+            except:
+                self.logger.debug('API connection failed @ %s' % xmlrpc_url)
+                return False
+
+        except AttributeError:
+            # Python < 2.7.9
+            transport = SafeTransport(
+                use_datetime=True,
+                context=context,
+            )
+
+            try:
+                self.api = ServerProxy(
+                    xmlrpc_url,
+                    verbose=False,
+                    use_datetime=True,
+                    transport=transport,
+                )
+
+            except:
+                self.logger.debug('API connection failed @ %s' % xmlrpc_url)
+                return False
+
             self.logger.debug('API connected @ %s' % xmlrpc_url)
-        except:
-            self.logger.debug('API connection failed @ %s' % xmlrpc_url)
-            return False
 
         return True
-
 
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # Retrieve System Logs
@@ -2296,25 +2450,81 @@ class ScriptBase(object):
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # Add NZB File to Queue
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    def add_nzb(self, filename):
+    def add_nzb(self, filename, content=None, category=None,
+                priority=PRIORITY.NORMAL):
         """Simply add's an NZB file to NZBGet (via the API)
         """
         if not self.api_connect():
             # Could not connect
             return None
 
-        try:
-            f = open(filename, "r")
-        except:
-            return False
+        # Defaults
+        add_to_top = False
+        add_paused = False
+        dup_key = ''
+        dup_score = 0
+        dup_mode = NZBGetDuplicateMode.FORCE
 
-        content = f.read()
-        f.close()
+        if content is None:
+            if not category:
+                # Verify content is an NZB-File
+                meta = self.parse_nzbfile(filename)
+                category = unescape_xml(meta.get('CATEGORY', '').strip())
+
+            try:
+                f = open(filename, "r")
+
+            except:
+                self.logger.debug('API:NZB-File Could not open: %s' % filename)
+                return False
+
+            try:
+                content = f.read()
+
+            except:
+                self.logger.debug('API:NZB-File Could not read: %s' % filename)
+                return False
+
+            f.close()
+
+        elif not category:
+            # We have content already loaded; We need to convert it into an
+            # XML object for parsing
+            meta = self.parse_nzbcontent(content)
+            category = unescape_xml(meta.get('CATEGORY', '').strip())
+
+        # Encode content
         b64content = standard_b64encode(content)
+
         try:
-            return self.api.append(filename, 'software', False, b64content)
+            return self.api.append(
+                filename,
+                b64content,
+                category,
+                priority,
+                add_to_top,
+                add_paused,
+                dup_key,
+                dup_score,
+                dup_mode,
+            )
+
         except:
+            # Try to capture error
+            exc_type, exc_value, exc_traceback = exc_info()
+            lines = traceback.format_exception(
+                     exc_type, exc_value, exc_traceback)
+            if self.script_mode != SCRIPT_MODE.NONE:
+                # NZBGet Mode enabled
+                for line in lines:
+                    self.logger.error(line)
+            else:
+                # Display error as is
+                self.logger.error('API:NZB-File append() Exception:\n%s' % \
+                    ''.join('  ' + line for line in lines))
+
             return False
+        return True
 
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # File Retrieval
@@ -2700,9 +2910,6 @@ class ScriptBase(object):
         """The intent is this is the script you run from within your script
         after overloading the main() function of your class
         """
-        import traceback
-        from sys import exc_info
-
         # Default
         main_function = self.main
 
@@ -2713,9 +2920,14 @@ class ScriptBase(object):
         #  - scheduler_main()
         #  - queue_main()
         #  - feed_main()
-        #
+        #  - action_<configname>()
+
+        if self.script_mode is SCRIPT_MODE.CONFIG_ACTION:
+            # Line up our action_<name>() script
+            main_function = self._config_action
+
         # otherwise main() is executed
-        if hasattr(self, '%s_%s' % (self.script_mode, 'main')):
+        elif hasattr(self, '%s_%s' % (self.script_mode, 'main')):
             main_function = getattr(
                 self, '%s_%s' % (self.script_mode, 'main'))
 
@@ -2941,6 +3153,64 @@ class ScriptBase(object):
         # Handle other types
         return bool(arg)
 
+    def action_sanity_check(self):
+        """Sanity checking to ensure this really is a Config Test
+        """
+
+        if TEST_COMMAND not in environ:
+            # Nothing more to do
+            return False
+
+        # Extract our content
+        command = environ.get(TEST_COMMAND)
+        if not command:
+            # Nothing more to do
+            return False
+
+        if hasattr(self, '%s_%s' % (SCRIPT_MODE.CONFIG_ACTION, command)):
+            self._config_action = getattr(self, '%s_%s' % (
+                SCRIPT_MODE.CONFIG_ACTION,
+                command,
+            ))
+
+            if not callable(self._config_action):
+                self.logger.debug('The internal script variable '\
+                    '%s is not a function (type=%s)' % (
+                        (SCRIPT_MODE.CONFIG_ACTION, command()),
+                        type(self._config_action),
+                ))
+
+                # Reset it's variable
+                self._config_action = None
+                return False
+
+            # We're set
+            return True
+
+        elif hasattr(self, '%s_%s' % (
+            SCRIPT_MODE.CONFIG_ACTION, command.lower())):
+            self._config_action = getattr(self, '%s_%s' % (
+                SCRIPT_MODE.CONFIG_ACTION,
+                command.lower(),
+            ))
+
+            if not callable(self._config_action):
+                self.logger.debug('The internal script variable '\
+                    '%s is not a function (type=%s)' % (
+                        (SCRIPT_MODE.CONFIG_ACTION, command.lower()),
+                        type(self._config_action),
+                ))
+                # Reset it's variable
+                self._config_action = None
+                return False
+
+            # We're set
+            return True
+
+        self.logger.warning('The developer of this script did not'\
+            ' create test mapping to this command.')
+        return False
+
     def detect_mode(self):
         """
         Attempt to detect the script mode based on environment variables
@@ -2956,7 +3226,8 @@ class ScriptBase(object):
 
         if len(self.script_dict.keys()):
             for k in [ v for v in SCRIPT_MODES \
-                      if v in self.script_dict.keys() + [SCRIPT_MODE.NONE,]]:
+                      if v in self.script_dict.keys() + [
+                              SCRIPT_MODE.CONFIG_ACTION, SCRIPT_MODE.NONE,]]:
                 if hasattr(self, '%s_%s' % (k, 'sanity_check')):
                     if getattr(self, '%s_%s' % (k, 'sanity_check'))():
                         self.script_mode = k

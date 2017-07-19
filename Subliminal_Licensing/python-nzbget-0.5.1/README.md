@@ -4,26 +4,26 @@ Description
 =================
 This provides a python framework to design NZBGet scripts with. The intent
 was to greatly simplify the development and debugging process. It was
-initially designed to work with NZBGet v13 but was made to be compatible
-with versions 12 and 11 as well.
+initially designed to work with NZBGet v13, but was made to be compatible
+with versions 12 and 11 as well. Naturally it works with all newer versions as well (v14, v15, v16, etc).
 
 * It contains a built in meta tag parser to extract content from NZB-Files.
    _Note: This can only happen if lxml is installed on your system_.
 * It can preform very basic obfuscation support on filenames that can not be
   interpreted.
 * It creates a common SQLite database (optionally) to additionally write
-  content passed via the set() function.  This allows another script to later
+  content passed via the set() function. This allows another script to later
   call get() and retrieve the data set() by another.
 * It prepares logging right out of the box for you, there is no setup required
 * All return codes have been simplified to None/True/False (you can still
-  use the old ones if you want)
+  use the old ones if you want).
 * It handles all of the exception handling. By this I mean, your code can throw
   an except and it's traceback will be captured gracefully to logging. Then the
   framework will look after returning a correct failure error code to NZBGet.
 * It provides some very useful functions that are always being re-written
   inside of every other NZBGet script such as file scanning.
 * It greatly simplifies the handling of environment variables and interaction
-  to and from NZBGet
+  to and from NZBGet.
 
 Documentation
 =============
@@ -38,14 +38,14 @@ Simplified Development
 ======================
 The following are some of the functionality that is built in for you:
 
- * __validate()__ - handle environment checking, correct versioning as well
+ * __validate()__ - Handle environment checking, correct versioning as well
                 as if the expected configuration variables you specified
                 are present.
 
  * __health_check()__ - Checks the status of the retrieved content, currently
-                this is only useful during Post-Processing
+                this is only useful during Post-Processing.
 
- * __push()__ - pushes a variables to the NZBGet server
+ * __push()__ - Pushes a variables to the NZBGet server.
 
 
  * __set()/get()__ - Hash table get/set attributes that can be set in one script
@@ -57,7 +57,7 @@ The following are some of the functionality that is built in for you:
                 script.
 
  * __unset()__    - This allows you to unset values set by set() and get() as well
-                as ones set by push()
+                as ones set by push().
 
  * __nzb_set()__  - Similar to the set() function identified above except it
                 is used to build an nzb meta hash table which can be later
@@ -86,7 +86,7 @@ The following are some of the functionality that is built in for you:
 
  * __parse_nzbfile()__ - Parse an NZB-File and extract all of its meta
                      information from it. lxml must be installed on your
-                     system for this to work correctly
+                     system for this to work correctly.
 
  * __parse_list()__ - Takes a string (or more) as well as lists of strings as
                   input. It then cleans it up and produces an easy to
@@ -101,12 +101,12 @@ The following are some of the functionality that is built in for you:
  * __parse_bool()__ - Handles all of NZBGet's configuration options such as
                   'on' and 'off' as well as 'yes' or 'no', or 'True' and
                   'False'.  It greatly simplifies the checking of these
-                  variables passed in from NZBGet
+                  variables passed in from NZBGet.
 
 
  * __push_guess()__ - You can push a guessit dictionary (or one of your own
                   that can help identify your release for other scripts
-                  to use later after yours finishes
+                  to use later after yours finishes.
 
  * __pull_guess()__ - Pull a previous guess pushed by another script.
                   why redo grunt work if it's already done for you?
@@ -124,6 +124,9 @@ The following are some of the functionality that is built in for you:
  * __deobfuscate()__ - Take a filename and return it in a deobfuscated to the
                    best of its ability. (_PostProcessScript_ only)
 
+ * __is_unique_instance()__ - Allows you to ensure your instance of your script is
+                  unique. This is useful for Scheduled scripts which can be
+                  called and then run concurrently with NZBGet.
 How To Use
 ==========
 * Developers are only required to define a class that inherits the NZBGet class
@@ -178,9 +181,9 @@ class MyPostProcessScript(PostProcessScript):
         print 'STATUS %s' self.get('STATUS')
         print 'SCRIPTSTATUS %s' self.get('SCRIPTSTATUS')
 
-        # Set any variable you want by any key.  Note that if you use
+        # Set any variable you want by any key. Note that if you use
         # keys that were defined by the system (such as CATEGORY, DIRECTORY,
-        # etc, you may have some undesirable results.  Try to avoid reusing
+        # etc, you may have some undesirable results. Try to avoid reusing
         # system variables already defined (identified above):
         self.set('MY_KEY', 'MY_VALUE')
 
@@ -206,7 +209,7 @@ class MyPostProcessScript(PostProcessScript):
         # as follows:
         print 'DEBUG %s' self.get('DEBUG')
 
-        # Returns have been made easy.  Just return:
+        # Returns have been made easy. Just return:
         #   * True if everything was successful
         #   * False if there was a problem
         #   * None if you want to report that you've just gracefully
@@ -215,7 +218,7 @@ class MyPostProcessScript(PostProcessScript):
                   success status.
 
         # Feel free to use the actual exit codes as well defined by
-        # NZBGet on their website.  They have also been defined here
+        # NZBGet on their website. They have also been defined here
         # from nzbget import EXIT_CODE
 
         return True

@@ -1,10 +1,10 @@
 Metadata-Version: 1.1
 Name: pynzbget
-Version: 0.2.3
+Version: 0.5.1
 Author: Chris Caron
 Author-email: lead2gold at gmail com
 Home-page: http://github.com/caronc/pynzbget
-Download-url: https://github.com/caronc/pynzbget/archive/v0.2.3.tar.gz
+Download-url: https://github.com/caronc/pynzbget/archive/v0.5.1.tar.gz
 Summary: A framework for NZBGet scripting
 License: GPLv3
 Description: This is a framework to greatly easy the development and deployment of NZBGet scripts.
@@ -25,7 +25,7 @@ Description: This is a framework to greatly easy the development and deployment 
         For examples on how you can use this framework, visit: https://github.com/caronc/pynzbget/wiki
         
         For more information on NZBGet, visit http://nzbget.net
-Keywords: nzbget, script
+Keywords: nzbget, script, framework, nzb
 Platform: Posix; MacOS X; Windows
 Classifier: Development Status :: 5 - Production/Stable
 Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
