@@ -1416,7 +1416,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 video = scan_video(
                     full_path,
                     subtitles=not overwrite,
-                    embedded_subtitles=not skip_embedded,
+                    embedded_subtitles=skip_embedded,
                     video=video,
                 )
 
