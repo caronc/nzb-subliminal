@@ -95,19 +95,21 @@
 #             time and CPU.
 #SearchMode=advanced
 
-# Skip Embedded Subtitle Matching (yes, no).
+# Ignore Embedded Subtitle Matching (yes, no).
 #
 # Identify how you want to handle embedded subititles if they are detected
 # in the video file being scanned. If you set this value to 'no', you will
-# use match embedded subtitles instead and further no further script processing
+# use match embedded subtitles instead and no further script processing
 # will take place.
-# If you set this to 'yes', you will ignore the fact that embedded subtitles
-# were detected and just continue to exersice this tool to fetch some from
-# the providers identified.
+# If you set this to 'yes', The script will then attempt to detect any embedded
+# subtitles already present with the video (in addition to their languages). If
+# the language is already present then no further processing is done.
 # NOTE: Embedded subtitles can only be detected if you are using the advanced
 #       search mode identified above. Therefore this switch has no bearing
 #       on a Basic check.
-#SkipEmbedded=yes
+# NOTE: This feature can not detect hard-coded subtitles; these are ones that are
+#       permanently embedded in the video itself.
+#IgnoreEmbedded=yes
 
 # Minimum File Size (in MB)
 #
@@ -414,7 +416,7 @@ DEFAULT_SINGLE = False
 DEFAULT_FORCE = 'no'
 DEFAULT_TIDYSUB = 'off'
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
-DEFAULT_EMBEDDED_SUBS = 'no'
+DEFAULT_IGNORE_EMBEDDED = 'no'
 DEFAULT_FORCE_ENCODING = 'None'
 DEFAULT_SYSTEM_ENCODING = 'UTF-8'
 
@@ -1077,8 +1079,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             minscore = 0
 
         # Use Embedded Subtitles
-        skip_embedded = self.parse_bool(
-            self.get('SkipEmbedded', DEFAULT_EMBEDDED_SUBS),
+        ignore_embedded = self.parse_bool(
+            self.get('IgnoreEmbedded', DEFAULT_IGNORE_EMBEDDED),
         )
 
         # Search Mode
@@ -1416,7 +1418,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                 video = scan_video(
                     full_path,
                     subtitles=not overwrite,
-                    embedded_subtitles=skip_embedded,
+                    embedded_subtitles=not ignore_embedded,
                     video=video,
                 )
 
@@ -1428,7 +1430,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     # going.
                     video.subtitle_languages.remove(babelfish.Language('und'))
 
-                    if not skip_embedded:
+                    if not ignore_embedded:
                         self.logger.debug(
                             'Skipping - unknown embedded subtitle ' + \
                             'language(s) already exist for: %s' % basename(_entry),
@@ -1437,7 +1439,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
 
                 # Based on our results, we may need to skip searching
                 # further for subtitles
-                if not skip_embedded:
+                if not ignore_embedded:
                     # clean out languages we have already
                     for l in video.subtitle_languages:
                         if l in _lang:
@@ -1672,7 +1674,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MinScore',
             'Single',
             'Overwrite',
-            'SkipEmbedded',
+            'IgnoreEmbedded',
             'UpdateTimestamp',
             'UpdatePermissions',
             'VideoPermissions',
@@ -1786,7 +1788,7 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             'MinSize',
             'MinScore',
             'Single',
-            'SkipEmbedded',
+            'IgnoreEmbedded',
             'Providers',
             'MovieProviders',
             'TVShowProviders',
@@ -2038,8 +2040,8 @@ if __name__ == "__main__":
     )
     parser.add_option(
         "-k",
-        "--skip-embedded",
-        dest="skip_embedded",
+        "--ignore-embedded",
+        dest="ignore_embedded",
         action="store_true",
         help="If embedded subtitles were detected, choose not to use them " + \
         "and continue to search for the subtitles hosted by the " + \
@@ -2160,7 +2162,7 @@ if __name__ == "__main__":
     _minscore = options.minscore
     _single_mode = options.single_mode is True
     _overwrite = options.overwrite is True
-    _skip_embedded = options.skip_embedded is True
+    _ignore_embedded = options.ignore_embedded is True
     _basic_mode = options.basic_mode is True
     _xrefpath = options.xrefpath
     _force = options.force is True
@@ -2219,8 +2221,8 @@ if __name__ == "__main__":
     if _xrefpath:
         script.set('XRefPaths', _xrefpath)
 
-    if _skip_embedded:
-        script.set('SkipEmbedded', True)
+    if _ignore_embedded:
+        script.set('IgnoreEmbedded', True)
 
     if _single_mode:
         script.set('Single', True)
