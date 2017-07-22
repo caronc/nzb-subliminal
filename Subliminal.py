@@ -335,6 +335,7 @@ from os.path import isdir
 from os import unlink
 from os import chdir
 from os import makedirs
+from guessit import Guess
 import logging
 
 # This is required if the below environment variables
@@ -608,7 +609,10 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
                     guess['cpimdb'] = 'cp(' + guess['imdb'] + ')'
 
         if nzb_used:
-            self.logger.debug(guess.nice_string())
+            if isinstance(guess, Guess):
+                self.logger.debug(guess.nice_string())
+            else:
+                self.logger.debug(str(guess))
 
     def guess_info(self, filename, shared,
                    deobfuscate=True, use_nzbheaders=True):
