@@ -311,7 +311,7 @@
 #  - Correct all EOL (End of Lines) in the event they're inconsistent
 #TidySub=off
 
-# You issue a scan of any directories you defined above here:
+# Issue a scan of any directories you defined above here:
 #SubliminalScan@Scan Defined Paths
 
 
@@ -1862,8 +1862,6 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         """
         Execute the SubliminalScan Test Action
         """
-        # The line below just forces a True return if None was
-        # detected
         self.scheduler_main(self, *args, **kwargs)
         return True
 
