@@ -1241,8 +1241,8 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
             # ])
 
             srt_extract_re = re.compile(
-                '^(?<name>.*?)(?P<alpha>\.[a-z]{2}[a-z]?)?(?P<extension>'\
-                '\.(sub|idx|srt)))$',
+                '^(?P<name>.*?)(?P<alpha>\.[a-z]{2}[a-z]?)?(?P<extension>'\
+                '\.(sub|idx|srt))$',
                 re.IGNORECASE,
             )
             for key in xref_paths.keys():
