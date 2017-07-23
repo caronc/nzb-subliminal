@@ -335,7 +335,6 @@ from os.path import isdir
 from os import unlink
 from os import chdir
 from os import makedirs
-from guessit import Guess
 import logging
 
 # This is required if the below environment variables
@@ -345,6 +344,7 @@ sys.path.insert(0, join(abspath(dirname(__file__)), 'Subliminal'))
 
 # Script dependencies identified below
 from guessit import matcher
+from guessit import Guess
 from datetime import timedelta
 from datetime import datetime
 from subliminal import Video
