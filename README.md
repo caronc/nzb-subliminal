@@ -154,7 +154,8 @@ Options:
                         subtitle is no good and should be thrown away when
                         being compared against others. It currently defaults
                         to 20.
-  -k, --skip-embedded   If embedded subtitles were detected, choose not to use
+  -k, --ignore-embedded
+                        If embedded subtitles were detected, choose not to use
                         them and continue to search for the subtitles hosted
                         by the identified provider(s).
   -e ENCODING, --force-encoding=ENCODING
