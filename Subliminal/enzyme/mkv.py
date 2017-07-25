@@ -157,7 +157,7 @@ class Track(object):
         type = element.get('TrackType')  # @ReservedAssignment
         number = element.get('TrackNumber', 0)
         name = element.get('Name')
-        language = element.get('Language')
+        language = element.get('Language', 'eng')
         enabled = bool(element.get('FlagEnabled', 1))
         default = bool(element.get('FlagDefault', 1))
         forced = bool(element.get('FlagForced', 0))
