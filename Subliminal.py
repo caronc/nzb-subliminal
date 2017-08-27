@@ -109,7 +109,7 @@
 #       on a Basic check.
 # NOTE: This feature can not detect hard-coded subtitles; these are ones that are
 #       permanently embedded in the video itself.
-#IgnoreEmbedded=yes
+#IgnoreEmbedded=no
 
 # Minimum File Size (in MB)
 #
@@ -2135,6 +2135,7 @@ if __name__ == "__main__":
     debug = options.debug
 
     script_mode = None
+
     if options.scandir:
         scandir = options.scandir
 
@@ -2147,6 +2148,11 @@ if __name__ == "__main__":
         debug=debug,
         script_mode=script_mode,
     )
+
+    if script.script_mode is SCRIPT_MODE.NONE and len(_args):
+        # Support command line arguments too if no other script mode
+        # is detected NONE = CLI
+        scandir += ', '.join(_args)
 
     # We define a configuration file users can over-ride the defaults
     # with.
