@@ -336,6 +336,9 @@ from os import unlink
 from os import chdir
 from os import makedirs
 import logging
+from ConfigParser import ConfigParser
+from ConfigParser import Error as ConfigException
+from ConfigParser import NoOptionError as ConfigNoOption
 
 # This is required if the below environment variables
 # are not included in your environment already
@@ -357,6 +360,7 @@ from subliminal.subtitle import detect
 import babelfish
 
 # pynzbget Script Wrappers
+from nzbget import SABPostProcessScript
 from nzbget import PostProcessScript
 from nzbget import SchedulerScript
 from nzbget import EXIT_CODE
@@ -382,6 +386,15 @@ FETCH_MODE_DEFAULT = FETCH_MODE.BESTSCORE
 class SEARCH_MODE(object):
     BASIC = "basic"
     ADVANCED = "advanced"
+
+# A file that provides system defaults when populated that override
+# the defaults defined below in this file
+# the syntax looks like this
+# [main]
+# IgnoreEmbedded: Yes
+DEFAULTS_CONFIG_FILE = join(abspath(dirname(__file__)), 'Subliminal.ini')
+# Ensure everything is defined under this [main] heading
+DEFAULTS_CONFIG_FILE_SECTION = 'main'
 
 # Some Default Environment Variables (used with CLI)
 DEFAULT_EXTENSIONS = \
@@ -559,7 +572,8 @@ def decode(str_data, encoding=None, lang=None):
     return None
 
 
-class SubliminalScript(PostProcessScript, SchedulerScript):
+class SubliminalScript(SABPostProcessScript, PostProcessScript,
+                       SchedulerScript):
     """A wrapper to Subliminal written for NZBGet
     """
 
@@ -1667,6 +1681,13 @@ class SubliminalScript(PostProcessScript, SchedulerScript):
         # Nothing fetched, nothing gained or lost
         return None
 
+    def sabnzbd_postprocess_main(self, *args, **kwargs):
+        """
+        SABNZBd PostProcessing Support
+        """
+        return self.postprocess_main(*args, **kwargs)
+
+
     def postprocess_main(self, *args, **kwargs):
 
         if not self.health_check():
@@ -2123,7 +2144,6 @@ if __name__ == "__main__":
     )
     options, _args = parser.parse_args()
 
-
     logger = options.logfile
     if not logger:
         # True = stdout
@@ -2133,26 +2153,233 @@ if __name__ == "__main__":
     script_mode = None
     if options.scandir:
         scandir = options.scandir
-    elif len(_args):
-        # Support command line arguments too
-        scandir = ', '.join(_args)
+
     else:
         # No arguments at all specified
         scandir = ''
-
-    if scandir:
-        # By specifying a scandir, we know for sure the user is
-        # running this as a standalone script,
-
-        # Setting Script Mode to NONE forces main() to execute
-        # which is where the code for the cli() is defined
-        script_mode = SCRIPT_MODE.NONE
 
     script = SubliminalScript(
         logger=logger,
         debug=debug,
         script_mode=script_mode,
     )
+
+    # We define a configuration file users can over-ride the defaults
+    # with.
+    cfg = ConfigParser()
+    try:
+        cfg.read(DEFAULTS_CONFIG_FILE)
+
+        if options.encoding is None:
+            # Get Default
+            try:
+                options.encoding = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'SystemEncoding')
+
+            except ConfigNoOption:
+                pass
+
+        if options.language is None:
+            # Get Default
+            try:
+                options.language = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Languages')
+
+            except ConfigNoOption:
+                pass
+
+        if options.maxage is None:
+            # Get Default
+            try:
+                options.maxage = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MaxAge')
+
+            except ConfigNoOption:
+                pass
+
+        if options.force_encoding is None:
+            # Get Default
+            try:
+                options.force_encoding = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'ForceEncoding')
+
+            except ConfigNoOption:
+                pass
+
+        if options.minsize is None:
+            # Get Default
+            try:
+                options.minsize = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MinSize')
+
+            except ConfigNoOption:
+                pass
+
+        if options.minscore is None:
+            # Get Default
+            try:
+                options.minscore = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MinScore')
+
+            except ConfigNoOption:
+                pass
+
+        if options.single_mode is None:
+            # Get Default
+            try:
+                options.single_mode = script.parse_bool(
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Single'),
+                )
+            except ConfigNoOption:
+                pass
+
+        if options.overwrite is None:
+            # Get Default
+            try:
+                options.overwrite = script.parse_bool(
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Overwrite'),
+                )
+            except ConfigNoOption:
+                pass
+
+        if options.ignore_embedded is None:
+            # Get Default
+            try:
+                options.ignore_embedded = script.parse_bool(
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'IgnoreEmbedded'),
+                )
+            except ConfigNoOption:
+                pass
+
+        if options.basic_mode is None:
+            # Get Default
+            try:
+                options.basic_mode = script.parse_bool( \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'BasicMode'),
+                )
+
+            except ConfigNoOption:
+                pass
+
+        if options.xrefpath is None:
+            # Get Default
+            try:
+                options.xrefpath = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'XRefPaths')
+
+            except ConfigNoOption:
+                pass
+
+        if options.tidysub is None:
+            # Get Default
+            try:
+                options.tidysub = script.parse_bool( \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'TidySub'),
+                )
+
+            except ConfigNoOption:
+                pass
+
+        if options.providers is None:
+            # Get Default
+            try:
+                options.providers = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Providers')
+
+            except ConfigNoOption:
+                pass
+
+        if options.fetch_mode is None:
+            # Get Default
+            try:
+                options.fetch_mode = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'FetchMode')
+
+            except ConfigNoOption:
+                pass
+
+        if options.addic7ed_user is None:
+            # Get Default
+            try:
+                options.addic7ed_user = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Addic7edUser')
+
+            except ConfigNoOption:
+                pass
+
+        if options.addic7ed_pass is None:
+            # Get Default
+            try:
+                options.addic7ed_pass = \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Addic7edPass')
+
+            except ConfigNoOption:
+                pass
+
+        if options.debug is None:
+            # Get Default
+            try:
+                script.set_debugging(script.parse_bool( \
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Debug')
+                ))
+
+            except ConfigNoOption:
+                pass
+
+            try:
+                script.set('VideoExtensions',
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'VideoExtensions'))
+
+            except ConfigNoOption:
+                pass
+
+            try:
+                script.set('TvCategories',
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'TvCategories'))
+
+            except ConfigNoOption:
+                pass
+
+            try:
+                script.set('UpdateTimestamp',
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'UpdateTimestamp'))
+
+            except ConfigNoOption:
+                pass
+
+            try:
+                script.set('UpdatePermissions',
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'UpdatePermissions'))
+
+            except ConfigNoOption:
+                pass
+
+            try:
+                script.set('VideoPermissions',
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'VideoPermissions'))
+
+            except ConfigNoOption:
+                pass
+
+            try:
+                script.set('TVShowProviders',
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'TVShowProviders'))
+
+            except ConfigNoOption:
+                pass
+
+            try:
+                script.set('MovieProviders',
+                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MovieProviders'))
+
+            except ConfigNoOption:
+                pass
+
+    except ConfigException, e:
+            script.logger.warning(
+                'An exception occured parsing (%s): %s' % (
+                    DEFAULTS_CONFIG_FILE, str(e)),
+            )
 
     # We always enter this part of the code, so we have to be
     # careful to only set() values that have been set by an
@@ -2278,8 +2505,9 @@ if __name__ == "__main__":
         if not _fetch_mode:
             script.set('FetchMode', FETCH_MODE_DEFAULT)
 
-        # Force generic Video Extensions
-        script.set('VideoExtensions', DEFAULT_EXTENSIONS)
+        # Generic Video Extensions
+        if not script.get('VideoExtensions'):
+            script.set('VideoExtensions', DEFAULT_EXTENSIONS)
 
         # Finally set the directory the user specified for scanning
         script.set('ScanDirectories', scandir)

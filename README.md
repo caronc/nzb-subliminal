@@ -1,7 +1,7 @@
 __Note:__ This script was intended to be an [NZBGet](http://nzbget.net) _post-processing_
-and _scheduling_ script wrapper for _Subliminal_. However, it also works
-perfectly fine as a standalone script for others too.
-See the _Command Line_ section below for details how you can easily use this on it's own (without NZBGet).
+and _scheduling_ script wrapper for _Subliminal_. The script will work with [SABnzbd](http://sabnzbd.org) (starting at v2.0.0+) and can
+also work fine as a standalone script for others too.
+See the _Command Line_ section below for details how you can easily use this on it's own (without NZBGet or SABnzbd).
 
 Subliminal Processing Script
 ============================
@@ -34,7 +34,7 @@ Installation Instructions
 1. Ensure you have at least Python v2.6 or higher installed onto your system.
 2. Simply place the __Subliminal.py__ and __Subliminal__ directory together.
    * __NZBGet users__: you'll want to place these inside of your _nzbget/scripts_ directory. Please ensure you are running _(at least)_ NZBGet v11.0 or higher. You can acquire the latest version of of it from [here](http://nzbget.net/download).
-
+   * __SABnzbd users__: you'll want to place these inside of your _sabnzbd/scripts_ directory.
 The Non-NZBGet users can also use this script via a cron (or simply call it
 from the command line) to automatically poll directories for the latest
 subtitles for the video content within it. See the __Command Line__ section

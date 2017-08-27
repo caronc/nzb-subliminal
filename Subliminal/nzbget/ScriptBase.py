@@ -152,7 +152,6 @@ from os.path import basename
 from os.path import normpath
 from os.path import splitext
 from getpass import getuser
-from logging import Logger
 from datetime import datetime
 from Utils import tidy_path
 import ssl
@@ -160,6 +159,8 @@ import ssl
 import traceback
 from sys import exc_info
 
+from Logger import DETAIL as LOG_DETAIL
+from Logger import DEBUG as LOG_DEBUG
 from Logger import VERBOSE_DEBUG
 from Logger import VERY_VERBOSE_DEBUG
 from Logger import init_logger
@@ -170,6 +171,7 @@ from Utils import ESCAPED_NUX_PATH_SEPARATOR
 from Utils import unescape_xml
 
 import signal
+from logging import Logger
 
 # Initialize the default character set to use
 DEFAULT_CHARSET = u'utf-8'
@@ -252,6 +254,76 @@ SKIP_DIRECTORIES = (
 )
 
 
+class SCRIPT_MODE(object):
+    # After the download of nzb-file is completed NZBGet can call
+    # post-processing scripts (pp-scripts). The scripts can perform further
+    # processing of downloaded files such es delete unwanted files
+    # (*.url, etc.), send an e-mail notification, transfer the files to other
+    # application and do any other things.
+    POSTPROCESSING = u'postprocess'
+
+    # Scan scripts are called when a new file is found in the incoming nzb
+    # directory (option `NzbDir`). If a file is being added via web-interface
+    # or via RPC-API from a third-party app the file is saved into nzb
+    # directory and then processed. NZBGet loads only files with nzb-extension
+    # but it calls the scan scripts for every file found in the nzb directory.
+    # This allows for example for scan scripts which unpack zip-files
+    # containing nzb-files.
+
+    # To activate a scan script or multiple scripts put them into `ScriptDir`,
+    # then choose them in the option `ScanScript`.
+    SCAN = u'scan'
+
+    # Queue scripts are called after the download queue was changed. In the
+    # current version the queue scripts are called only after an nzb-file was
+    # added to queue. In the future they can be calledon other events too.
+
+    # To activate a queue script or multiple scripts put them into `ScriptDir`,
+    # then choose them in the option `QueueScript`.
+    QUEUE = u'queue'
+
+    # Scheduler scripts are called by scheduler tasks (setup by the user).
+
+    # To activate a scheduler script or multiple scripts put them into
+    # `ScriptDir`, then choose them in the option `TaskX.Script`.
+    SCHEDULER = u'scheduler'
+
+    # To activate a feed script or multiple scripts put them into
+    # `ScriptDir`, then choose them in the option `FeedX.Script`.
+    FEED = u'feed'
+
+    # To activate a test call to the script, we look for NZBCP_
+    # entries. These are populated through calls made available thorugh the
+    # configuration portion of NZBGet. v1.8 introduced the ability to
+    # test if your configuration is set up okay.
+    CONFIG_ACTION = u'action'
+
+    # SABnzbd Support
+    SABNZBD_POSTPROCESSING = u'sabnzbd_postprocess'
+
+    # None is detected if you aren't using one of the above types
+    NONE = ''
+
+# Depending on certain environment variables, a mode can be detected
+# a mode can be used to. When using a MultiScript
+SCRIPT_MODES = (
+    # The order these are listed is very important,
+    # it identifies the order when preforming sanity
+    # checking
+    SCRIPT_MODE.CONFIG_ACTION,
+    SCRIPT_MODE.POSTPROCESSING,
+    SCRIPT_MODE.SCAN,
+    SCRIPT_MODE.QUEUE,
+    SCRIPT_MODE.SCHEDULER,
+    SCRIPT_MODE.FEED,
+
+    # SABnzbd Support
+    SCRIPT_MODE.SABNZBD_POSTPROCESSING,
+
+    # None should always be the last entry
+    SCRIPT_MODE.NONE,
+)
+
 class EXIT_CODE(object):
     """List of exit codes for post processing
     """
@@ -276,6 +348,29 @@ EXIT_CODES = (
     EXIT_CODE.NONE,
 )
 
+SHELL_EXIT_CODE_MAP = {
+    # a mapping of the exit codes to they're shell
+    # based value
+    EXIT_CODE.PARCHECK_CURRENT: 0,
+
+    EXIT_CODE.PARCHECK_ALL: 0,
+
+    EXIT_CODE.SUCCESS: 0,
+
+    EXIT_CODE.FAILURE: 1,
+
+    EXIT_CODE.NONE: 0
+}
+
+# We define the modes to which we want to use the common
+# exit codes over the NZBGet ones
+COMMON_MODES = (
+    # SABnzbd Support
+    SCRIPT_MODE.SABNZBD_POSTPROCESSING,
+
+    # None should always be the last entry
+    SCRIPT_MODE.NONE,
+)
 
 class NZBGetDuplicateMode(object):
     """Defines Duplicate Mode. This is used when Adding NZB-Files directly
@@ -553,6 +648,9 @@ CFG_ENVIRO_ID = u'NZBPO_'
 # are found in the environment, they are saved to the `config` dictionary
 SHR_ENVIRO_ID = u'NZBR_'
 
+# SABnzbd Support
+SAB_ENVIRO_ID =u'SAB_'
+
 # Environment ID used when calling tests commands from NZBGet
 """
 For example... the below would attempt to execute the function
@@ -599,6 +697,7 @@ SYS_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SYS_ENVIRO_ID)
 CFG_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % CFG_ENVIRO_ID)
 SHR_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SHR_ENVIRO_ID)
 TST_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % TST_ENVIRO_ID)
+SAB_OPTS_RE = re.compile('^%s([A-Z0-9_]+)$' % SAB_ENVIRO_ID)
 DNZB_OPTS_RE = re.compile('^%s%s([A-Z0-9_]+)$' % (
     SHR_ENVIRO_ID,
     SHR_ENVIRO_DNZB_ID,
@@ -646,71 +745,6 @@ NZBGET_DATABASE_FILENAME = "nzbget/nzbget.db"
 VALID_URL_RE = re.compile(r'^[\s]*([^:\s]+):[/\\]*([^?]+)(\?(.+))?[\s]*$')
 VALID_HOST_RE = re.compile(r'^[\s]*([^:/\s]+)')
 VALID_QUERY_RE = re.compile(r'^(.*[/\\])([^/\\]*)$')
-
-
-class SCRIPT_MODE(object):
-    # After the download of nzb-file is completed NZBGet can call
-    # post-processing scripts (pp-scripts). The scripts can perform further
-    # processing of downloaded files such es delete unwanted files
-    # (*.url, etc.), send an e-mail notification, transfer the files to other
-    # application and do any other things.
-    POSTPROCESSING = u'postprocess'
-
-    # Scan scripts are called when a new file is found in the incoming nzb
-    # directory (option `NzbDir`). If a file is being added via web-interface
-    # or via RPC-API from a third-party app the file is saved into nzb
-    # directory and then processed. NZBGet loads only files with nzb-extension
-    # but it calls the scan scripts for every file found in the nzb directory.
-    # This allows for example for scan scripts which unpack zip-files
-    # containing nzb-files.
-
-    # To activate a scan script or multiple scripts put them into `ScriptDir`,
-    # then choose them in the option `ScanScript`.
-    SCAN = u'scan'
-
-    # Queue scripts are called after the download queue was changed. In the
-    # current version the queue scripts are called only after an nzb-file was
-    # added to queue. In the future they can be calledon other events too.
-
-    # To activate a queue script or multiple scripts put them into `ScriptDir`,
-    # then choose them in the option `QueueScript`.
-    QUEUE = u'queue'
-
-    # Scheduler scripts are called by scheduler tasks (setup by the user).
-
-    # To activate a scheduler script or multiple scripts put them into
-    # `ScriptDir`, then choose them in the option `TaskX.Script`.
-    SCHEDULER = u'scheduler'
-
-    # To activate a feed script or multiple scripts put them into
-    # `ScriptDir`, then choose them in the option `FeedX.Script`.
-    FEED = u'feed'
-
-    # To activate a test call to the script, we look for NZBCP_
-    # entries. These are populated through calls made available thorugh the
-    # configuration portion of NZBGet. v1.8 introduced the ability to
-    # test if your configuration is set up okay.
-    CONFIG_ACTION = u'action'
-
-    # None is detected if you aren't using one of the above types
-    NONE = ''
-
-# Depending on certain environment variables, a mode can be detected
-# a mode can be used to. When using a MultiScript
-SCRIPT_MODES = (
-    # The order these are listed is very important,
-    # it identifies the order when preforming sanity
-    # checking
-    SCRIPT_MODE.CONFIG_ACTION,
-    SCRIPT_MODE.POSTPROCESSING,
-    SCRIPT_MODE.SCAN,
-    SCRIPT_MODE.QUEUE,
-    SCRIPT_MODE.SCHEDULER,
-    SCRIPT_MODE.FEED,
-
-    # None should always be the last entry
-    SCRIPT_MODE.NONE,
-)
 
 
 class ScriptBase(object):
@@ -768,8 +802,12 @@ class ScriptBase(object):
         self.database_key = database_key
 
         # Fetch System Environment (passed from NZBGet)
-        self.system = dict([(SYS_OPTS_RE.match(k).group(1), v.strip())
-            for (k, v) in environ.items() if SYS_OPTS_RE.match(k)])
+        self.system = dict(
+            dict([(SYS_OPTS_RE.match(k).group(1), v.strip())
+            for (k, v) in environ.items() if SYS_OPTS_RE.match(k)]).items() +\
+            dict([(SAB_OPTS_RE.match(k).group(1), v.strip())
+            for (k, v) in environ.items() if SAB_OPTS_RE.match(k)]).items()
+        )
 
         # Fetch/Load Script Specific Configuration
         self.config = dict([(CFG_OPTS_RE.match(k).group(1), v.strip())
@@ -836,13 +874,21 @@ class ScriptBase(object):
         if self.vvdebug:
             self.debug = VERY_VERBOSE_DEBUG
 
+        # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        # Detect the script mode we're running in
+        # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        self.detect_mode(script_mode)
+        nzbget_mode = self.script_mode not in (
+            SCRIPT_MODE.NONE, SCRIPT_MODE.SABNZBD_POSTPROCESSING,
+        )
+
         if isinstance(self.logger, basestring):
             # Use Log File
             self.logger = init_logger(
                 name=self.logger_id,
                 logger=logger,
                 debug=self.debug,
-                nzbget_mode=False,
+                nzbget_mode=nzbget_mode,
             )
 
         elif not isinstance(self.logger, Logger):
@@ -853,7 +899,7 @@ class ScriptBase(object):
                     name=self.logger_id,
                     logger=None,
                     debug=self.debug,
-                    nzbget_mode=True,
+                    nzbget_mode=nzbget_mode,
                 )
             else:
                 # Use STDOUT for now
@@ -861,10 +907,12 @@ class ScriptBase(object):
                     name=self.logger_id,
                     logger=True,
                     debug=self.debug,
-                    nzbget_mode=True,
+                    nzbget_mode=nzbget_mode,
                 )
         else:
             self.logger_id = None
+
+        self.logger.debug('Script Mode: %s' % self.script_mode)
 
         # Track the current working directory
         try:
@@ -912,6 +960,8 @@ class ScriptBase(object):
             for k, v in self.test.items():
                 self.logger.vvdebug('%s%s=%s' % (TST_ENVIRO_ID, k, v))
 
+            for k, v in self.test.items():
+                self.logger.vvdebug('%s%s=%s' % (SAB_ENVIRO_ID, k, v))
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Enforce system/global variables for script processing
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -923,38 +973,9 @@ class ScriptBase(object):
         else:
             environ['%sDEBUG' % SYS_ENVIRO_ID] = NZBGET_BOOL_FALSE
 
-        if script_mode is not None:
-            if script_mode in self.script_dict.keys() + [SCRIPT_MODE.NONE, ]:
-                self.script_mode = script_mode
-                if self.script_mode is SCRIPT_MODE.NONE:
-                    self.logger.debug('Script mode forced off.')
-                else:
-                    self.logger.debug(
-                        'Script mode forced to: %s' % self.script_mode,
-                    )
-            else:
-                self.logger.warning(
-                    'Could not force script mode to: %s' % script_mode,
-                )
-
-        # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        # Detect the mode we're running in
-        # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        if self.script_mode is None:
-            self.detect_mode()
-
-        if self.script_mode == SCRIPT_MODE.NONE:
-            # Reload logging without NZBGet mode configured
-            self.logger = init_logger(
-                name=self.logger_id,
-                logger=self.logger,
-                debug=self.debug,
-
-                # NZBGet mode disabled
-                nzbget_mode=False,
-            )
-        else:
-            # An NZBGet Mode means we should work out of a writeable directory
+        if self.script_mode != SCRIPT_MODE.NONE:
+            # An NZBGet/SABnzbd Mode means we should work out of a writeable
+            # directory
             try:
                 chdir(self.tempdir)
             except OSError:
@@ -983,6 +1004,21 @@ class ScriptBase(object):
             # This can occur if calling the script from within a thread
             # we just gracefully move on if this happens
             pass
+
+    def set_debugging(self, enabled=True):
+        """
+        Provides a toggle to the debug function built into
+        the framework
+        """
+        if enabled and not self.debug:
+            self.debug = True
+            # Set debugging on logging
+            self.logger.setLevel(LOG_DEBUG)
+
+        elif not enabled and self.debug:
+            self.debug = False
+            # Set debugging on logging
+            self.logger.setLevel(LOG_DETAIL)
 
     def is_unique_instance(self, pidfile=None, die_on_fail=True,
                            verbose=True):
@@ -2915,6 +2951,7 @@ class ScriptBase(object):
 
         # Determine the function to use
         # multi-scripts need to define a
+        #  - sabnzbd_postprocess_main()
         #  - postprocess_main()
         #  - scan_main()
         #  - scheduler_main()
@@ -2985,6 +3022,15 @@ class ScriptBase(object):
                 'changing response to a failure (%d).' % (EXIT_CODE.FAILURE),
             )
             exit_code = EXIT_CODE.FAILURE
+
+        # Shell Mappings occur on return codes
+        if self.script_mode in (
+                SCRIPT_MODE.SABNZBD_POSTPROCESSING,
+                SCRIPT_MODE.NONE):
+            if exit_code in SHELL_EXIT_CODE_MAP:
+                exit_code = SHELL_EXIT_CODE_MAP[exit_code]
+
+        # Perform Shell Translation if requird
         self.logger.debug(
            'Exiting with return code: %d' % exit_code)
         return exit_code
@@ -3211,19 +3257,22 @@ class ScriptBase(object):
             ' create test mapping to this command.')
         return False
 
-    def detect_mode(self):
+    def detect_mode(self, mode=None):
         """
         Attempt to detect the script mode based on environment variables
         The modes are defied at the top and are determined by a certain
         set of global variables defined.
         """
+
+        if mode is not None:
+            self.script_mode = mode
+
         if self.script_mode is not None:
-            return self.script_mode
+            if script_mode in self.script_dict.keys() + [SCRIPT_MODE.NONE, ]:
+                return self.script_mode
 
-        if len(self.script_dict):
-            self.logger.vdebug('Detecting possible script mode from: %s' % \
-                         ', '.join(self.script_dict.keys()))
-
+        # If we reach here, self.script_mode is invalid and/or is not
+        # set; we need to detect it's value
         if len(self.script_dict.keys()):
             for k in [ v for v in SCRIPT_MODES \
                       if v in self.script_dict.keys() + [
@@ -3232,14 +3281,11 @@ class ScriptBase(object):
                     if getattr(self, '%s_%s' % (k, 'sanity_check'))():
                         self.script_mode = k
                         if self.script_mode != SCRIPT_MODE.NONE:
-                            self.logger.vdebug(
-                                'Script Mode: %s' % self.script_mode.upper())
                             return self.script_mode
 
-        self.logger.vdebug('Script Mode: STANDALONE')
         self.script_mode = SCRIPT_MODE.NONE
 
-        return self.script_mode
+        return
 
     def signal_quit(self, signum, frame):
         """

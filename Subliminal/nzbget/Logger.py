@@ -2,7 +2,7 @@
 #
 # A scripting wrapper for NZBGet Post and Pre Processing
 #
-# Copyright (C) 2014 Chris Caron <lead2gold@gmail.com>
+# Copyright (C) 2014-2017 Chris Caron <lead2gold@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published by
@@ -30,6 +30,7 @@ logging.raiseExceptions = 0
 
 # Logging Levels
 DETAIL = 19
+DEBUG = logging.DEBUG
 VERBOSE_DEBUG = 9
 VERY_VERBOSE_DEBUG = 8
 
@@ -196,17 +197,14 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
     elif debug in (False, None):
         # Default
         _logger.setLevel(DETAIL)
-        h1.setLevel(DETAIL)
     else:
         try:
             debug = int(debug)
             _logger.setLevel(debug)
-            h1.setLevel(debug)
 
         except (ValueError, TypeError):
             # Default
             _logger.setLevel(DETAIL)
-            h1.setLevel(DETAIL)
 
     # Format logger
     if not nzbget_mode:
