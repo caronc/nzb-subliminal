@@ -31,8 +31,8 @@ logging.raiseExceptions = 0
 # Logging Levels
 DETAIL = 19
 DEBUG = logging.DEBUG
-VERBOSE_DEBUG = 9
-VERY_VERBOSE_DEBUG = 8
+VERBOSE_DEBUG = logging.DEBUG-1
+VERY_VERBOSE_DEBUG = logging.DEBUG-2
 
 # Ensure Levels are Globally Added To logging module
 logging.addLevelName(DETAIL, "DETAIL")
@@ -125,20 +125,14 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
 
         if not nzbget_mode:
             logging.addLevelName(logging.DEBUG, 'DEBUG')
-            if isinstance(debug, int):
-                if debug <= VERBOSE_DEBUG:
-                    logging.addLevelName(VERBOSE_DEBUG, 'VDEBUG')
-                if debug <= VERY_VERBOSE_DEBUG:
-                    logging.addLevelName(VERY_VERBOSE_DEBUG, 'VVDEBUG')
+            logging.addLevelName(VERBOSE_DEBUG, 'VDEBUG')
+            logging.addLevelName(VERY_VERBOSE_DEBUG, 'VVDEBUG')
 
         else:
             # Level Name for [debug] has to be [info] or it simply won't print
             logging.addLevelName(logging.DEBUG, 'INFO] [DEBUG')
-            if isinstance(debug, int):
-                if debug <= VERBOSE_DEBUG:
-                    logging.addLevelName(VERBOSE_DEBUG, 'INFO] [VDEBUG')
-                if debug <= VERY_VERBOSE_DEBUG:
-                    logging.addLevelName(VERY_VERBOSE_DEBUG, 'INFO] [VVDEBUG')
+            logging.addLevelName(VERBOSE_DEBUG, 'INFO] [VDEBUG')
+            logging.addLevelName(VERY_VERBOSE_DEBUG, 'INFO] [VVDEBUG')
 
         return logger
 
@@ -197,14 +191,17 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
     elif debug in (False, None):
         # Default
         _logger.setLevel(DETAIL)
+        h1.setLevel(DETAIL)
     else:
         try:
             debug = int(debug)
             _logger.setLevel(debug)
+            h1.setLevel(debug)
 
         except (ValueError, TypeError):
             # Default
             _logger.setLevel(DETAIL)
+            h1.setLevel(DETAIL)
 
     # Format logger
     if not nzbget_mode:
@@ -212,22 +209,16 @@ def init_logger(name=None, logger=True, debug=False, nzbget_mode=True,
                 Formatter("%(asctime)s - " + str(getpid()) +
                     " - %(levelname)s - %(message)s"))
         logging.addLevelName(logging.DEBUG, 'DEBUG')
-        if isinstance(debug, int):
-            if debug <= VERBOSE_DEBUG:
-                logging.addLevelName(VERBOSE_DEBUG, 'VDEBUG')
-            if debug <= VERY_VERBOSE_DEBUG:
-                logging.addLevelName(VERY_VERBOSE_DEBUG, 'VVDEBUG')
+        logging.addLevelName(VERBOSE_DEBUG, 'VDEBUG')
+        logging.addLevelName(VERY_VERBOSE_DEBUG, 'VVDEBUG')
 
     else:
         h1.setFormatter(logging. \
                 Formatter("[%(levelname)s] %(message)s"))
         # Level Name for [debug] has to be [info] or it simply won't print
         logging.addLevelName(logging.DEBUG, 'INFO] [DEBUG')
-        if isinstance(debug, int):
-            if debug <= VERBOSE_DEBUG:
-                logging.addLevelName(VERBOSE_DEBUG, 'INFO] [VDEBUG')
-            if debug <= VERY_VERBOSE_DEBUG:
-                logging.addLevelName(VERY_VERBOSE_DEBUG, 'INFO] [VVDEBUG')
+        logging.addLevelName(VERBOSE_DEBUG, 'INFO] [VDEBUG')
+        logging.addLevelName(VERY_VERBOSE_DEBUG, 'INFO] [VVDEBUG')
 
     # Add Handler
     _logger.addHandler(h1)

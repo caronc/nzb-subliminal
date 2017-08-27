@@ -88,28 +88,22 @@ import re
 from os import chdir
 from os import environ
 from os.path import isdir
-from os.path import isfile
 from os.path import join
 from os.path import splitext
 from os.path import basename
-from os.path import dirname
 from os.path import abspath
 
-from socket import error as SocketError
 
 # Relative Includes
 from ScriptBase import ScriptBase
 from ScriptBase import SAB_ENVIRO_ID
-from ScriptBase import Health
 from ScriptBase import SCRIPT_MODE
 from ScriptBase import NZBGET_BOOL_FALSE
 from PostProcessCommon import OBFUSCATED_PATH_RE
 from PostProcessCommon import OBFUSCATED_FILE_RE
-from PostProcessCommon import SCRIPT_STATUS
-from PostProcessCommon import PAR_STATUS
-from PostProcessCommon import UNPACK_STATUS
 
 from Utils import os_path_split as split
+
 
 class TOTAL_STATUS(object):
     """Cumulative (Total) Status of NZB Processing
@@ -141,7 +135,7 @@ class PP_STATUS(object):
     # both verification and vunpack failed
     VERIFY_UNPACK_FAIL = 3
     # Failed Post Processing
-    FAIURE = -1
+    FAILURE = -1
 
 
 class SABPostProcessScript(ScriptBase):
@@ -166,10 +160,10 @@ class SABPostProcessScript(ScriptBase):
         # Fetch Script Specific Arguments
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         directory = kwargs.get('directory')
-        nzbname = kwargs.get('final_name')
+        nzbname = kwargs.get('nzbname')
         nzbfilename = kwargs.get('nzbfilename')
         category = kwargs.get('category')
-        status = kwargs.get('pp_status')
+        status = kwargs.get('status')
         parse_nzbfile = kwargs.get('parse_nzbfile', True)
         use_database = kwargs.get('use_database', True)
 
@@ -177,8 +171,19 @@ class SABPostProcessScript(ScriptBase):
         # This is the path to the destination directory for downloaded files.
         if directory is None:
             self.directory = environ.get(
+                '%sDIRECTORY' % SAB_ENVIRO_ID,
+            )
+            _final_directory = environ.get(
                 '%sCOMPLETE_DIR' % SAB_ENVIRO_ID,
             )
+            if self.directory and not isdir(self.directory):
+                if _final_directory and isdir(_final_directory):
+                    # adjust path
+                    self.directory = _final_directory
+
+            elif _final_directory and isdir(_final_directory):
+                # adjust path
+                self.directory = _final_directory
         else:
             self.directory = directory
 
@@ -191,7 +196,7 @@ class SABPostProcessScript(ScriptBase):
         # renamed, this parameter reflects the new name.
         if nzbname is None:
             self.nzbname = environ.get(
-                '%sNZBNAME' % SAB_ENVIRO_ID,
+                '%sFILENAME' % SAB_ENVIRO_ID,
             )
         else:
             self.nzbname = nzbname
@@ -205,7 +210,7 @@ class SABPostProcessScript(ScriptBase):
         # recommended for developers.
         if nzbfilename is None:
             self.nzbfilename = environ.get(
-                '%sFILENAME' % SAB_ENVIRO_ID,
+                '%sNZBNAME' % SAB_ENVIRO_ID,
             )
         else:
             self.nzbfilename = nzbfilename
@@ -220,27 +225,24 @@ class SABPostProcessScript(ScriptBase):
             self.category = category
 
         # self.status
-        # Complete status info for nzb-file: it consists of total status and
-        # status detail separated with slash. There are many combinations.
-        # Just few examples:
-        #         FAILURE/HEALTH
-        #         FAILURE/PAR
-        #         FAILURE/UNPACK
-        #         WARNING/REPAIRABLE
-        #         WARNING/SPACE
-        #         WARNING/PASSWORD
-        #         SUCCESS/ALL
-        #         SUCCESS/UNPACK
-        #
-        # For the complete list see description of method history in RPC API
-        # reference: http://nzbget.net/RPC_API_reference
         if status is None:
-            self.status = Health(environ.get(
-                '%sSTATUS' % SAB_ENVIRO_ID,
-            ))
-        else:
-            self.status = Health(status)
+            self.status = environ.get(
+                '%sPP_STATUS' % SAB_ENVIRO_ID,
+            )
 
+        try:
+            self.status = int(self.status)
+
+        except (ValueError, TypeError):
+            self.status = PP_STATUS.FAILURE
+
+        _err = environ.get(
+            '%sFAIL_MSG' % SAB_ENVIRO_ID,
+        )
+
+        self.logger.debug('SABnzbd PP Status: %s' % str(self.status))
+        if _err:
+            self.logger.debug('SABnzbd PP Error Message: %s' % str(_err))
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Error Handling
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -280,25 +282,24 @@ class SABPostProcessScript(ScriptBase):
             environ['%sDIRECTORY' % SAB_ENVIRO_ID] = \
                 self.directory
 
-        self.system['FILENAME'] = self.nzbfilename
-        if self.nzbfilename is not None:
+        self.system['FILENAME'] = self.nzbname
+        if self.nzbname is not None:
             environ['%sFILENAME' % SAB_ENVIRO_ID] = \
-                self.nzbfilename
+                self.nzbname
 
-        # Ensure our nzbname is the friendly version of our nzbfilename
+        self.system['NZBNAME'] = self.nzbfilename
         if self.nzbfilename is not None:
-            self.nzbname = splitext(basename(self.nzbfilename))[0]
-            if self.nzbname is not None:
-                environ['%sNZBNAME' % SAB_ENVIRO_ID] = self.nzbname
+            environ['%sNZBNAME' % SAB_ENVIRO_ID] = \
+                self.nzbfilename
 
         self.system['CAT'] = self.category
         if self.category is not None:
             environ['%sCAT' % SAB_ENVIRO_ID] = \
                 self.category
 
-        self.system['STATUS'] = str(self.status)
+        self.system['PP_STATUS'] = str(self.status)
         if self.status is not None:
-            environ['%sSTATUS' % SAB_ENVIRO_ID] = \
+            environ['%sPP_STATUS' % SAB_ENVIRO_ID] = \
                 str(self.status)
 
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -335,9 +336,11 @@ class SABPostProcessScript(ScriptBase):
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # Validatation
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    def sabnzbd_postprocess_validate(self, keys=None, min_version=2, *args, **kwargs):
+    def sabnzbd_postprocess_validate(self, keys=None, min_version=2,
+                                     *args, **kwargs):
         """validate against environment variables
         """
+
         is_okay = super(SABPostProcessScript, self)._validate(
             keys=keys,
             min_version=min_version,
@@ -355,7 +358,7 @@ class SABPostProcessScript(ScriptBase):
                 missing_opts = list(required_opts ^ found_opts)
                 self.logger.error(
                     'Validation - (v2.x) Directives not set: %s' % \
-                      missing_opts.join(', ')
+                      ', '.join(missing_opts),
                 )
                 is_okay = False
 
@@ -364,8 +367,8 @@ class SABPostProcessScript(ScriptBase):
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # Health Check
     # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    def sabnzbd_postprocess_health_check(self, is_unpacked=True, has_archive=False,
-                                 *args, **kwargs):
+    def sabnzbd_postprocess_health_check(self, is_unpacked=True,
+                                         has_archive=False, *args, **kwargs):
         """Similar to validate, except some scripts don't need to
         out right fail if the download health is bad. Some might just
         return silently, others may try to correct the health
@@ -437,7 +440,9 @@ class SABPostProcessScript(ScriptBase):
 
         if filename[0:len(ref_dir):] == ref_dir:
             new_name = filename[len(ref_dir)+1:]
-            self.logger.debug('Deobfuscate - Stripped filename down to: %s' % new_name)
+            self.logger.debug(
+                'Deobfuscate - Stripped filename down to: %s' % new_name,
+            )
         else:
             new_name = filename
 
@@ -463,7 +468,7 @@ class SABPostProcessScript(ScriptBase):
         if part_removed < len(parts):
             new_name = ''
             for x in range(0, len(parts)):
-                if parts[x] != None:
+                if parts[x] is not None:
                     new_name = join(new_name, parts[x])
             return new_name
 
@@ -485,8 +490,8 @@ class SABPostProcessScript(ScriptBase):
             if self.nzb_get('name'):
                 # We can pick from the nzb headers
                 nzb_name = self.nzb_get('name')
-                new_name = join(ref_dir, '%s%s' %(
-                    re.sub('[\s]+','.', nzb_name),
+                new_name = join(ref_dir, '%s%s' % (
+                    re.sub('[\s]+', '.', nzb_name),
                     splitext(basename(new_name))[1],
                 ))
 
@@ -497,8 +502,8 @@ class SABPostProcessScript(ScriptBase):
                 if self.nzb_get('movieyear'):
                     nzb_name += '(%s)' % self.nzb_get('movieyear')
 
-                new_name = join(ref_dir, '%s%s' %(
-                    re.sub('[\s]+','.', nzb_name),
+                new_name = join(ref_dir, '%s%s' % (
+                    re.sub('[\s]+', '.', nzb_name),
                     splitext(basename(new_name))[1],
                 ))
 
@@ -507,20 +512,20 @@ class SABPostProcessScript(ScriptBase):
                 nzb_name = self.nzb_get('propername')
                 if self.nzb_get('episodename'):
                     nzb_name += '-%s' % \
-                            self.nzb_get('episodename')
+                        self.nzb_get('episodename')
 
                 if subcategory == 'hd':
                     nzb_name += '-HDTV'
 
-                new_name = join(ref_dir, '%s%s' %(
-                    re.sub('[\s]+','.', nzb_name),
+                new_name = join(ref_dir, '%s%s' % (
+                    re.sub('[\s]+', '.', nzb_name),
                     splitext(basename(new_name))[1],
                 ))
 
             elif self.nzb_get('propername'):
                 nzb_name = self.nzb_get('propername')
-                new_name = join(ref_dir, '%s%s' %(
-                    re.sub('[\s]+','.', nzb_name),
+                new_name = join(ref_dir, '%s%s' % (
+                    re.sub('[\s]+', '.', nzb_name),
                     splitext(basename(filename))[1],
                 ))
             else:
@@ -528,7 +533,9 @@ class SABPostProcessScript(ScriptBase):
                 new_name = ''
 
         if new_name:
-            self.logger.debug('Deobfuscate - Generated filename: %s' % new_name)
+            self.logger.debug(
+                'Deobfuscate - Generated filename: %s' % new_name,
+            )
             return new_name
 
         # we're running out of new names :)... try the NZB-FileName
@@ -536,8 +543,8 @@ class SABPostProcessScript(ScriptBase):
             self.logger.info(
                 'All file path parts are obfuscated, using NZB-FileName',
             )
-            new_name = join(ref_dir, '%s%s' %(
-                re.sub('[\s]+','.',
+            new_name = join(ref_dir, '%s%s' % (
+                re.sub('[\s]+', '.',
                        splitext(basename(ref_nzbfile))[0]),
                 splitext(basename(filename))[1],
             ))

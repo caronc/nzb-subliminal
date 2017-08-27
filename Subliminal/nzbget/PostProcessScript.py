@@ -514,7 +514,7 @@ class PostProcessScript(ScriptBase):
                 missing_opts = list(required_opts ^ found_opts)
                 self.logger.error(
                     'Validation - (v13) Directives not set: %s' % \
-                      missing_opts.join(', ')
+                      ', '.join(missing_opts),
                 )
                 is_okay = False
 

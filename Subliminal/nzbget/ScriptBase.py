@@ -948,8 +948,12 @@ class ScriptBase(object):
             # Note: This is a very verbose process, so it is only performed
             #       if both the debug and vvdebug flags are set.
             # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-            for k, v in self.system.items():
-                self.logger.vvdebug('%s%s=%s' % (SYS_ENVIRO_ID, k, v))
+            if nzbget_mode:
+                for k, v in self.system.items():
+                    self.logger.vvdebug('%s%s=%s' % (SYS_ENVIRO_ID, k, v))
+            else:
+                for k, v in self.system.items():
+                    self.logger.vvdebug('%s%s=%s' % (SAB_ENVIRO_ID, k, v))
 
             for k, v in self.config.items():
                 self.logger.vvdebug('%s%s=%s' % (CFG_ENVIRO_ID, k, v))
@@ -960,8 +964,6 @@ class ScriptBase(object):
             for k, v in self.test.items():
                 self.logger.vvdebug('%s%s=%s' % (TST_ENVIRO_ID, k, v))
 
-            for k, v in self.test.items():
-                self.logger.vvdebug('%s%s=%s' % (SAB_ENVIRO_ID, k, v))
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Enforce system/global variables for script processing
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1008,17 +1010,41 @@ class ScriptBase(object):
     def set_debugging(self, enabled=True):
         """
         Provides a toggle to the debug function built into
-        the framework
+        the framework. You can also set enabled to the log level
+        you wish it to be at
         """
-        if enabled and not self.debug:
+
+        if enabled is True and not self.debug:
             self.debug = True
             # Set debugging on logging
             self.logger.setLevel(LOG_DEBUG)
+            for h in self.logger.handlers:
+                h.setLevel(LOG_DEBUG)
+            return
 
-        elif not enabled and self.debug:
+        elif enabled in (False, None) and self.debug:
             self.debug = False
             # Set debugging on logging
             self.logger.setLevel(LOG_DETAIL)
+            for h in self.logger.handlers:
+                h.setLevel(LOG_DETAIL)
+            return
+
+        # Convert to integer
+        try:
+            enabled = int(enabled)
+
+        except ValueError:
+            # user set enabled to non-int convertable (ValueError)
+            enabled = LOG_DETAIL
+
+        # Set the level based on what was specified
+        if enabled >= 0:
+            self.debug = (enabled <= LOG_DEBUG)
+            self.logger.setLevel(enabled)
+            for h in self.logger.handlers:
+                h.setLevel(enabled)
+        return
 
     def is_unique_instance(self, pidfile=None, die_on_fail=True,
                            verbose=True):
@@ -2318,7 +2344,9 @@ class ScriptBase(object):
 
         # Always a bad thing if SCRIPTDIR doesn't work since that is
         # introduced in v11 (the minimum version we support)
-        if not 'SCRIPTDIR' in self.system:
+        if self.script_mode not in (
+                SCRIPT_MODE.SABNZBD_POSTPROCESSING,
+                SCRIPT_MODE.NONE) and not 'SCRIPTDIR' in self.system:
             self.logger.error(
                 'Validation - (<v11) Directive not set: %s' % 'SCRIPTDIR',
             )
@@ -2805,9 +2833,15 @@ class ScriptBase(object):
         current_depth += 1
         self.logger.vdebug('Directory depth offset %d' % current_depth)
 
-        # Get Directory entries
-        dirents = [ d for d in listdir(search_dir) \
-                  if d not in ('..', '.') ]
+        try:
+            # Get Directory entries
+            dirents = [ d for d in listdir(search_dir) \
+                      if d not in ('..', '.') ]
+        except OSError, e:
+            # Uh oh, we have no access to the directories
+            self.logger.error('Could not access %s' % search_dir)
+            self.logger.error('Reason %s' % str(e))
+            return {}
 
         for dirent in dirents:
             # Store Path

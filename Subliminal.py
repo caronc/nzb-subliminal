@@ -1697,22 +1697,6 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         if not self.validate(keys=(
             'MinSize',
             'MinScore',
-            'Single',
-            'Overwrite',
-            'IgnoreEmbedded',
-            'UpdateTimestamp',
-            'UpdatePermissions',
-            'VideoPermissions',
-            'Providers',
-            'MovieProviders',
-            'TVShowProviders',
-            'SearchMode',
-            'FetchMode',
-            'TvCategories',
-            'VideoExtensions',
-            'XRefPaths',
-            'ForceEncoding',
-            'SystemEncoding',
             'Languages')):
 
             return False
@@ -2167,164 +2151,164 @@ if __name__ == "__main__":
     # We define a configuration file users can over-ride the defaults
     # with.
     cfg = ConfigParser()
-    try:
-        cfg.read(DEFAULTS_CONFIG_FILE)
+    if isfile(DEFAULTS_CONFIG_FILE):
+        try:
+            cfg.read(DEFAULTS_CONFIG_FILE)
 
-        if options.encoding is None:
-            # Get Default
-            try:
-                options.encoding = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'SystemEncoding')
+            if options.encoding is None:
+                # Get Default
+                try:
+                    options.encoding = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'SystemEncoding')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.language is None:
-            # Get Default
-            try:
-                options.language = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Languages')
+            if options.language is None:
+                # Get Default
+                try:
+                    options.language = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Languages')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.maxage is None:
-            # Get Default
-            try:
-                options.maxage = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MaxAge')
+            if options.maxage is None:
+                # Get Default
+                try:
+                    options.maxage = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MaxAge')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.force_encoding is None:
-            # Get Default
-            try:
-                options.force_encoding = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'ForceEncoding')
+            if options.force_encoding is None:
+                # Get Default
+                try:
+                    options.force_encoding = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'ForceEncoding')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.minsize is None:
-            # Get Default
-            try:
-                options.minsize = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MinSize')
+            if options.minsize is None:
+                # Get Default
+                try:
+                    options.minsize = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MinSize')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.minscore is None:
-            # Get Default
-            try:
-                options.minscore = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MinScore')
+            if options.minscore is None:
+                # Get Default
+                try:
+                    options.minscore = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MinScore')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.single_mode is None:
-            # Get Default
-            try:
-                options.single_mode = script.parse_bool(
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Single'),
-                )
-            except ConfigNoOption:
-                pass
+            if options.single_mode is None:
+                # Get Default
+                try:
+                    options.single_mode = script.parse_bool(
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Single'),
+                    )
+                except ConfigNoOption:
+                    pass
 
-        if options.overwrite is None:
-            # Get Default
-            try:
-                options.overwrite = script.parse_bool(
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Overwrite'),
-                )
-            except ConfigNoOption:
-                pass
+            if options.overwrite is None:
+                # Get Default
+                try:
+                    options.overwrite = script.parse_bool(
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Overwrite'),
+                    )
+                except ConfigNoOption:
+                    pass
 
-        if options.ignore_embedded is None:
-            # Get Default
-            try:
-                options.ignore_embedded = script.parse_bool(
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'IgnoreEmbedded'),
-                )
-            except ConfigNoOption:
-                pass
+            if options.ignore_embedded is None:
+                # Get Default
+                try:
+                    options.ignore_embedded = script.parse_bool(
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'IgnoreEmbedded'),
+                    )
+                except ConfigNoOption:
+                    pass
 
-        if options.basic_mode is None:
-            # Get Default
-            try:
-                options.basic_mode = script.parse_bool( \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'BasicMode'),
-                )
+            if options.basic_mode is None:
+                # Get Default
+                try:
+                    options.basic_mode = script.parse_bool( \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'BasicMode'),
+                    )
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.xrefpath is None:
-            # Get Default
-            try:
-                options.xrefpath = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'XRefPaths')
+            if options.xrefpath is None:
+                # Get Default
+                try:
+                    options.xrefpath = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'XRefPaths')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.tidysub is None:
-            # Get Default
-            try:
-                options.tidysub = script.parse_bool( \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'TidySub'),
-                )
+            if options.tidysub is None:
+                # Get Default
+                try:
+                    options.tidysub = script.parse_bool( \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'TidySub'),
+                    )
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.providers is None:
-            # Get Default
-            try:
-                options.providers = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Providers')
+            if options.providers is None:
+                # Get Default
+                try:
+                    options.providers = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Providers')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.fetch_mode is None:
-            # Get Default
-            try:
-                options.fetch_mode = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'FetchMode')
+            if options.fetch_mode is None:
+                # Get Default
+                try:
+                    options.fetch_mode = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'FetchMode')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.addic7ed_user is None:
-            # Get Default
-            try:
-                options.addic7ed_user = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Addic7edUser')
+            if options.addic7ed_user is None:
+                # Get Default
+                try:
+                    options.addic7ed_user = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Addic7edUser')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.addic7ed_pass is None:
-            # Get Default
-            try:
-                options.addic7ed_pass = \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Addic7edPass')
+            if options.addic7ed_pass is None:
+                # Get Default
+                try:
+                    options.addic7ed_pass = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Addic7edPass')
 
-            except ConfigNoOption:
-                pass
+                except ConfigNoOption:
+                    pass
 
-        if options.debug is None:
-            # Get Default
-            try:
-                script.set_debugging(script.parse_bool( \
-                    cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Debug')
-                ))
-
-            except ConfigNoOption:
-                pass
+            if options.debug is None:
+                # Get Default
+                try:
+                    script.set_debugging(script.parse_bool( \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Debug')
+                    ))
+                except ConfigNoOption:
+                    pass
 
             try:
                 script.set('VideoExtensions',
@@ -2375,9 +2359,9 @@ if __name__ == "__main__":
             except ConfigNoOption:
                 pass
 
-    except ConfigException, e:
+        except ConfigException, e:
             script.logger.warning(
-                'An exception occured parsing (%s): %s' % (
+                'An exception occured parsing %s: %s' % (
                     DEFAULTS_CONFIG_FILE, str(e)),
             )
 
@@ -2437,6 +2421,7 @@ if __name__ == "__main__":
                 'An invalid `minscore` (%s) was specified.' % (_minscore)
             )
             exit(EXIT_CODE.FAILURE)
+
     if _overwrite:
         script.set('Overwrite', True)
 
@@ -2483,32 +2468,32 @@ if __name__ == "__main__":
         script.set('Addic7edUser', _addic7ed_user)
         script.set('Addic7edPass', _addic7ed_pass)
 
+    # Set some defaults if they are not already set
+    if script.get('MaxAge') is None:
+        script.set('MaxAge', DEFAULT_MAXAGE)
+
+    if script.get('MinSize') is None:
+        script.set('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)
+
+    if script.get('MinScore') is None:
+        script.set('MinScore', DEFAULT_MIN_VIDEO_SCORE)
+
+    if script.get('Languages') is None:
+        # Force defaults if not set
+        script.set('Languages', DEFAULT_LANGUAGE)
+
+    if script.get('SystemEncoding') is None:
+        # Force defaults if not set
+        script.set('SystemEncoding', DEFAULT_SYSTEM_ENCODING)
+
+    if script.get('FetchMode') is None:
+        script.set('FetchMode', FETCH_MODE_DEFAULT)
+
+    # Generic Video Extensions
+    if not script.get('VideoExtensions'):
+        script.set('VideoExtensions', DEFAULT_EXTENSIONS)
+
     if not script.get('ScanDirectories') and scandir:
-        # Set some defaults if they are not already set
-        if not _maxage:
-            script.set('MaxAge', DEFAULT_MAXAGE)
-
-        if not _minsize:
-            script.set('MinSize', DEFAULT_MIN_VIDEO_SIZE_MB)
-
-        if not _minscore:
-            script.set('MinScore', DEFAULT_MIN_VIDEO_SCORE)
-
-        if not _language:
-            # Force defaults if not set
-            script.set('Languages', DEFAULT_LANGUAGE)
-
-        if not _encoding:
-            # Force defaults if not set
-            script.set('SystemEncoding', DEFAULT_SYSTEM_ENCODING)
-
-        if not _fetch_mode:
-            script.set('FetchMode', FETCH_MODE_DEFAULT)
-
-        # Generic Video Extensions
-        if not script.get('VideoExtensions'):
-            script.set('VideoExtensions', DEFAULT_EXTENSIONS)
-
         # Finally set the directory the user specified for scanning
         script.set('ScanDirectories', scandir)
 
