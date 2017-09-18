@@ -58,6 +58,9 @@ class MKV(object):
     def _parse_seekhead(self, seek_head, segment, stream, specs):
         for seek in seek_head:
             element_id = ebml.read_element_id(seek['SeekID'].data)
+            if element_id is None:
+                logger.debug('No elements defined.')
+                return
             element_name = specs[element_id][1]
             element_position = seek['SeekPosition'].data + segment.position
             if element_position in self._parsed_positions:

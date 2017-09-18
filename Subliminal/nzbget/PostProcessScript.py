@@ -161,11 +161,11 @@ from os.path import abspath
 from socket import error as SocketError
 
 # Relative Includes
-from ScriptBase import ScriptBase
-from ScriptBase import Health
-from ScriptBase import SCRIPT_MODE
-from ScriptBase import NZBGET_BOOL_FALSE
-from Utils import os_path_split as split
+from .ScriptBase import ScriptBase
+from .ScriptBase import Health
+from .ScriptBase import SCRIPT_MODE
+from .ScriptBase import NZBGET_BOOL_FALSE
+from .Utils import os_path_split as split
 
 from PostProcessCommon import OBFUSCATED_PATH_RE
 from PostProcessCommon import OBFUSCATED_FILE_RE
@@ -605,7 +605,7 @@ class PostProcessScript(ScriptBase):
             group = [ x for x in self.api.listgroups(0) \
                      if x['NZBID'] == nzbid ][0]
 
-        except SocketError, e:
+        except SocketError as e:
             self.logger.warning('RCP Connection Failure (%d): %s' % (
                 e[0], e[1]))
             return None
