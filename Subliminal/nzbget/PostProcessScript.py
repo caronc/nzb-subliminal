@@ -167,11 +167,11 @@ from .ScriptBase import SCRIPT_MODE
 from .ScriptBase import NZBGET_BOOL_FALSE
 from .Utils import os_path_split as split
 
-from PostProcessCommon import OBFUSCATED_PATH_RE
-from PostProcessCommon import OBFUSCATED_FILE_RE
-from PostProcessCommon import SCRIPT_STATUS
-from PostProcessCommon import PAR_STATUS
-from PostProcessCommon import UNPACK_STATUS
+from .PostProcessCommon import OBFUSCATED_PATH_RE
+from .PostProcessCommon import OBFUSCATED_FILE_RE
+from .PostProcessCommon import SCRIPT_STATUS
+from .PostProcessCommon import PAR_STATUS
+from .PostProcessCommon import UNPACK_STATUS
 
 
 class TOTAL_STATUS(object):

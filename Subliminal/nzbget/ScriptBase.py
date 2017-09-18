@@ -152,6 +152,7 @@ from os.path import basename
 from os.path import normpath
 from os.path import splitext
 from getpass import getuser
+from logging import Logger
 from datetime import datetime
 from .Utils import tidy_path
 import ssl
@@ -171,7 +172,6 @@ from .Utils import ESCAPED_NUX_PATH_SEPARATOR
 from .Utils import unescape_xml
 
 import signal
-from logging import Logger
 
 # Initialize the default character set to use
 DEFAULT_CHARSET = u'utf-8'
@@ -302,7 +302,7 @@ class SCRIPT_MODE(object):
     SABNZBD_POSTPROCESSING = u'sabnzbd_postprocess'
 
     # None is detected if you aren't using one of the above types
-    NONE = ''
+    NONE = 'shell'
 
 # Depending on certain environment variables, a mode can be detected
 # a mode can be used to. When using a MultiScript
@@ -331,14 +331,27 @@ class EXIT_CODE(object):
     # Request NZBGet to do par-check/repair for current nzb-file.
     # This code can be used by pp-scripts doing unpack on their own.
     PARCHECK_ALL = 92
-    # Post-process successful
+    # Action successful
     SUCCESS = 93
-    # Post-process failed
+    # Action failed
     FAILURE = 94
     # Process skipped. Use this code when your script determines that it is
     # neither a success or failure. Perhaps your just not processing anything
     # due to how content was parsed.
     NONE = 95
+
+class SHELL_EXIT_CODE(object):
+    """List of exit codes for shell execution
+    """
+    # Action successful
+    SUCCESS = 0
+    # Action failed
+    FAILURE = 1
+    # Process skipped. Use this code when your script determines that it is
+    # neither a success or failure. Perhaps your just not processing anything
+    # due to how content was parsed. For shell execution; this is just the same
+    # as a success as there is nothing good or bad to handle here
+    NONE = 0
 
 EXIT_CODES = (
     EXIT_CODE.PARCHECK_CURRENT,
@@ -649,7 +662,7 @@ CFG_ENVIRO_ID = u'NZBPO_'
 SHR_ENVIRO_ID = u'NZBR_'
 
 # SABnzbd Support
-SAB_ENVIRO_ID =u'SAB_'
+SAB_ENVIRO_ID = u'SAB_'
 
 # Environment ID used when calling tests commands from NZBGet
 """
@@ -877,7 +890,7 @@ class ScriptBase(object):
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Detect the script mode we're running in
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-        self.detect_mode(script_mode)
+        self.detect_mode(mode=script_mode)
         nzbget_mode = self.script_mode not in (
             SCRIPT_MODE.NONE, SCRIPT_MODE.SABNZBD_POSTPROCESSING,
         )
@@ -951,9 +964,14 @@ class ScriptBase(object):
             if nzbget_mode:
                 for k, v in self.system.items():
                     self.logger.vvdebug('%s%s=%s' % (SYS_ENVIRO_ID, k, v))
-            else:
+
+            elif self.script_mode is SCRIPT_MODE.SABNZBD_POSTPROCESSING:
                 for k, v in self.system.items():
                     self.logger.vvdebug('%s%s=%s' % (SAB_ENVIRO_ID, k, v))
+
+            else:
+                for k, v in self.system.items():
+                    self.logger.vvdebug('%s=%s' % (k, v))
 
             for k, v in self.config.items():
                 self.logger.vvdebug('%s%s=%s' % (CFG_ENVIRO_ID, k, v))
@@ -2331,8 +2349,7 @@ class ScriptBase(object):
             is_okay = False
 
         if self.script_mode == SCRIPT_MODE.NONE:
-            # Nothing more to process if not utilizaing
-            # NZBGet environment
+            # Nothing more to process if not utilizing the correct environment
             return is_okay
 
         if min_version > self.version:
@@ -3287,8 +3304,7 @@ class ScriptBase(object):
             # We're set
             return True
 
-        self.logger.warning('The developer of this script did not'\
-            ' create test mapping to this command.')
+        # no mapping
         return False
 
     def detect_mode(self, mode=None):
@@ -3302,7 +3318,7 @@ class ScriptBase(object):
             self.script_mode = mode
 
         if self.script_mode is not None:
-            if script_mode in self.script_dict.keys() + [SCRIPT_MODE.NONE, ]:
+            if self.script_mode in self.script_dict.keys() + [SCRIPT_MODE.NONE, ]:
                 return self.script_mode
 
         # If we reach here, self.script_mode is invalid and/or is not
@@ -3317,9 +3333,9 @@ class ScriptBase(object):
                         if self.script_mode != SCRIPT_MODE.NONE:
                             return self.script_mode
 
+        # Undetected; assume NONE
         self.script_mode = SCRIPT_MODE.NONE
-
-        return
+        return self.script_mode
 
     def signal_quit(self, signum, frame):
         """

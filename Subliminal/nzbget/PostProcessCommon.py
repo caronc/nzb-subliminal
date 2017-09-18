@@ -13,6 +13,7 @@ OBFUSCATED_FILE_RE = re.compile(
     re.IGNORECASE,
 )
 
+
 class TOTAL_STATUS(object):
     """Cumulative (Total) Status of NZB Processing
     """
@@ -32,6 +33,7 @@ class TOTAL_STATUS(object):
 # TOTALSTATUS Delimiter
 TOTALSTATUS_DELIMITER = '/'
 
+
 class SCRIPT_STATUS(object):
     """Summary status of the scripts executed before the current one
     """
@@ -42,6 +44,7 @@ class SCRIPT_STATUS(object):
     SUCCESS = 'SUCCESS'
     # at least one of the script has failed
     FAILURE = 'FAILURE'
+
 
 class PAR_STATUS(object):
     """This is a depricated flag (as of NZBGet v13) but previously
@@ -56,6 +59,7 @@ class PAR_STATUS(object):
     SUCCESS = 2
     # checked and can be repaired but repair is disabled
     DISABLED = 3
+
 
 class UNPACK_STATUS(object):
     """This is a depricated flag (as of NZBGet v13) but previously
