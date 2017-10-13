@@ -212,6 +212,15 @@ class SABPostProcessScript(ScriptBase):
             self.nzbfilename = environ.get(
                 '%sNZBNAME' % SAB_ENVIRO_ID,
             )
+            # Fallback Check
+            if not self.nzbfilename:
+                self.nzbfilename = environ.get(
+                    '%sURL' % SAB_ENVIRO_ID,
+                )
+            # last resort because we want to have this variable defined!
+            if not self.nzbfilename:
+                self.nzbfilename = self.nzbname
+
         else:
             self.nzbfilename = nzbfilename
 
