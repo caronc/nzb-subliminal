@@ -1,3 +1,6 @@
 *.pyc
 *.pyo
 .*sw?
+
+# Allow users to create their own Subliminal.ini
+Subliminal.ini
