@@ -73,6 +73,10 @@ functionality such as:
                   Hence: parse_list('.mkv, .avi') returns:
                       [ '.mkv', '.avi' ]
 
+ * parse_regex() - Takes a comma delimited list of regular expressions
+                   and returns a list of already pre-compiled regular
+                   expressions. Any entries that can't be parsed are logged.
+
  * parse_path_list() - Very smilar to parse_list() except that it is used
                   to handle directory paths while cleaning them up at the
                   same time.
@@ -3210,6 +3214,99 @@ class ScriptBase(object):
         # apply as well as make the list unique by converting it
         # to a set() first. filter() eliminates any empty entries
         return filter(bool, list(set([tidy_path(p) for p in result])))
+
+    def parse_regex(self, *args, **kwargs):
+        """
+        Parses a comma separated list of regular expressions.
+
+        You can append as many items to the argument listing for
+        parsing.
+
+        Hence: parse_regex('*.iso, *.avi, ??.srt', simple=True) compiles the
+               three regular expressions and returns a list.
+
+        By default the parsing uses commas and/or spaces as delimiters.
+
+        When simple is set to True, values like * and ? are used. Otherwise
+        the entries are compiled directly without any extra conversion
+
+        """
+
+        # Delimits our regular expressions
+        delimiter = re.compile('[ \t,]+')
+
+        # Allow the variable 'simple' to be passed in
+        try:
+            simple = bool(kwargs.get('simple', True))
+        except:
+            # Default
+            simple = True
+
+        result = []
+        for arg in args:
+            if isinstance(arg, basestring):
+                result += delimiter.split(arg)
+
+            elif isinstance(arg, re._pattern_type):
+                # Nothing further to do
+                result += arg
+
+            elif isinstance(arg, (list, tuple)):
+                for _arg in arg:
+                    if isinstance(arg, basestring):
+                        result += delimiter.split(arg)
+                    # A list inside a list? - use recursion
+                    elif isinstance(_arg, (list, tuple)):
+                        result += self.parse_regex(_arg)
+                    else:
+                        # Convert whatever it is to a string and work with it
+                        result += self.parse_regex(str(_arg))
+            else:
+                # Convert whatever it is to a string and work with it
+                result += self.parse_regex(str(arg))
+
+        result = filter(bool, list(set(result)))
+        results = []
+        for f in result:
+            if isinstance(f, re._pattern_type):
+                # We can just keep moving on with already compiled expressions
+                results.append(f)
+                continue
+
+            # iterate over our results and store those that compile
+            if simple:
+                # Convert content
+                # escape special characters reserved for regex
+                _f = f.replace('.', '\.');
+                _f = _f.replace('^', '\^');
+                _f = _f.replace('+', '\+');
+                _f = _f.replace('$', '\$');
+                _f = _f.replace('[', '\[');
+                _f = _f.replace(']', '\]');
+                _f = _f.replace('(', '\(');
+                _f = _f.replace(')', '\)');
+                _f = _f.replace('|', '\|');
+                # convert question marks
+                _f = _f.replace('?', '.');
+                # convert asterix's in to .*
+                _f = _f.replace('*', '.*');
+                self.logger.vdebug(
+                    'Built simple regex "%s" from "%s"' % (_f, f))
+            else:
+                _f = f
+
+            try:
+                results.append(re.compile(_f, flags=re.IGNORECASE))
+                self.logger.vdebug('Compiled regex "%s"' % _f)
+
+            except Exception as e:
+                self.logger.error(
+                    'Invalid regular expression: "%s"' % f,
+                )
+
+        # apply as well as make the list unique by converting it
+        # to a set() first. filter() eliminates any empty entries
+        return filter(bool, list(set(results)))
 
     def parse_bool(self, arg, default=False):
         """
