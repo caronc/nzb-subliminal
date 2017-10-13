@@ -2307,7 +2307,7 @@ if __name__ == "__main__":
                 except ConfigNoOption:
                     pass
 
-            if options.debug is None:
+            if debug is None:
                 # Get Default
                 try:
                     script.set_debugging(script.parse_bool( \
