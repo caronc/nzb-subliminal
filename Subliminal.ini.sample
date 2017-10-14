@@ -1,0 +1,47 @@
+# this is Subliminal.ini which resides in the same directory as Subliminal.py
+[main]
+# Update the timestamp of the file(s) just downloaded.  This is a really good
+# idea. It gives us a reference time to work with when trying to determine
+# if there are subtitles available for it.
+UpdateTimestamp: Yes
+
+# Identifie our languages you want to fetch subtitles for; separate multiple
+# entries (if more than one) with a comma and/or a space
+Languages: en
+
+# The Category (if detected from the NZB-File) to clasify the video as a
+# tv (vs a movie).  This just allows you more control later on when specifying
+# what providers to use.  The default below is perfectly okay; there is
+# no reason to change this value unless you know what you're doing.
+TvCategories: tv
+
+# Un comment these if you have a login you wish to use for Addi7ed
+# Addic7edUser: somedude
+# Addic7edPass: hispassword
+
+# If subtitles of your specified language was already detected in the video
+# do you want to ignore this and keep going anyway? Setting this to no
+# causes a bit more overhead (because the video needs to be scanned
+# to see if it has subtitles already in it), but it can be worth it as it will
+# prevent going off and fetching more subs later on.
+IgnoreEmbedded: no
+
+# The providers you want to explicilty reference.  By default all of them are
+# checked... but here you can filter the list if you choose:
+Providers: opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb
+
+# My version of subliminal is significantly forked/altered from the original one
+# so you can also help the filtering and accuracy of your response by telling
+# the tool what to use when the nzb is detected to be either a movie or tv show
+# by default these are not set (but it's really worth doing!) :)
+MovieProviders: opensubtitles, podnapisi, thesubdb
+
+# If we detect the video file is for TV Show's only, then we just search the
+# following providers.  Comment this entry out if you just want to use the
+# default values (defined by 'Providers' above).
+TVShowProviders: tvsubtitles, addic7ed
+
+# Setting this to yes before creating a ticket would 'really' help me debug
+# any strange issues you have.
+Debug: no
+

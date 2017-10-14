@@ -345,6 +345,9 @@ from ConfigParser import NoOptionError as ConfigNoOption
 import sys
 sys.path.insert(0, join(abspath(dirname(__file__)), 'Subliminal'))
 
+# For copying our configuration file
+from shutil import copy
+
 # Script dependencies identified below
 from guessit import matcher
 from guessit import Guess
@@ -393,6 +396,11 @@ class SEARCH_MODE(object):
 # [main]
 # IgnoreEmbedded: Yes
 DEFAULTS_CONFIG_FILE = join(abspath(dirname(__file__)), 'Subliminal.ini')
+
+# If our default configuration file isn't present, then we attempt to
+# gracefully copy a default configuration file in place.
+SAMPLE_CONFIG_FILE = join(abspath(dirname(__file__)), 'Subliminal.ini.sample')
+
 # Ensure everything is defined under this [main] heading
 DEFAULTS_CONFIG_FILE_SECTION = 'main'
 
@@ -2153,6 +2161,22 @@ if __name__ == "__main__":
         # Support command line arguments too if no other script mode
         # is detected NONE = CLI
         scandir += ', '.join(_args)
+
+    if script.script_mode == SCRIPT_MODE.SABNZBD_POSTPROCESSING:
+        # We're using SABnzbd.  Since there is no way to submit the many
+        # configuration options available to this script to the user.
+        # We want to at least try to make their life as easy as possible and
+        # move a sample configuration file into place they can edit with their
+        # own free-will.
+        if not isfile(DEFAULTS_CONFIG_FILE) and isfile(SAMPLE_CONFIG_FILE):
+            try:
+                copy(SAMPLE_CONFIG_FILE, DEFAULTS_CONFIG_FILE)
+                self.logger.info('Placed default configuration file: %s' % (
+                    DEFAULTS_CONFIG_FILE,
+                ))
+            except:
+                # copy is not possible, we don't panic; it is what it is
+                pass
 
     # We define a configuration file users can over-ride the defaults
     # with.
