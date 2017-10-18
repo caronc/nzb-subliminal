@@ -37,7 +37,7 @@ Installation Instructions
 1. Ensure you have at least Python v2.6 or higher installed onto your system.
 2. Simply place the __Subliminal.py__ and __Subliminal__ directory together.
    * __NZBGet users__: you'll want to place these inside of your _nzbget/scripts_ directory. Please ensure you are running _(at least)_ NZBGet v11.0 or higher. You can acquire the latest version of of it from [here](http://nzbget.net/download).
-   * __SABnzbd users__: you'll want to place these inside of your _sabnzbd/scripts_ directory. You may also want to [read this wiki link on maintaining your own Subliminal's Configuration file](https://github.com/caronc/nzb-subliminal/wiki).
+   * __SABnzbd users__: you'll want to place these inside of your _sabnzbd/scripts_ directory. You may also want to [read this wiki link on maintaining your own Subliminal's Configuration file](https://github.com/caronc/nzb-subliminal/wiki/Subliminal-Configuration-File).
    * The __Non-NZBGet and SABnzbd users__ can also use this script via a cron (or simply call it
 from the command line) to automatically poll directories for the latest
 subtitles for the video content within it. See the __Command Line__ section
