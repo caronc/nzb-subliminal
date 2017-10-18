@@ -86,13 +86,18 @@ if __name__ == "__main__":
 
 import re
 from os import chdir
+from os import unlink
 from os import environ
 from os.path import isdir
+from os.path import isfile
 from os.path import join
 from os.path import splitext
 from os.path import basename
 from os.path import abspath
 
+# NZB-File Compression Handling
+import gzip
+from tempfile import mkstemp
 
 # Relative Includes
 from .ScriptBase import ScriptBase
@@ -149,6 +154,9 @@ class SABPostProcessScript(ScriptBase):
             # Only define once
             self.script_dict = {}
         self.script_dict[SCRIPT_MODE.SABNZBD_POSTPROCESSING] = self
+
+        # Used to track a temporary NZB-File if we need one.
+        self._sab_temp_nzb = None
 
         # =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         # Initialize Parent
@@ -210,8 +218,12 @@ class SABPostProcessScript(ScriptBase):
         # recommended for developers.
         if nzbfilename is None:
             self.nzbfilename = environ.get(
-                '%sNZBNAME' % SAB_ENVIRO_ID,
+                '%sORIG_NZB_GZ' % SAB_ENVIRO_ID,
             )
+            if not self.nzbfilename:
+                self.nzbfilename = environ.get(
+                    '%sNZBNAME' % SAB_ENVIRO_ID,
+                )
             # Fallback Check
             if not self.nzbfilename:
                 self.nzbfilename = environ.get(
@@ -223,6 +235,8 @@ class SABPostProcessScript(ScriptBase):
 
         else:
             self.nzbfilename = nzbfilename
+
+        self.nzbfilename = self.handle_nzbfile(self.nzbfilename)
 
         # self.category
         # Category assigned to nzb-file (can be empty string).
@@ -462,7 +476,7 @@ class SABPostProcessScript(ScriptBase):
             fn = parts[x]
             if OBFUSCATED_PATH_RE.match(fn):
                 self.logger.info(
-                    'Detected obfuscated directory name %s,' % fn + \
+                    'Detected obfuscated directory name %s,' % fn +
                     ' removing from path',
                 )
                 parts[x] = None
@@ -470,7 +484,7 @@ class SABPostProcessScript(ScriptBase):
 
         if OBFUSCATED_FILE_RE.match(basename(filename)):
             self.logger.info(
-                'Detected obfuscated filename %s,' % basename(filename) + \
+                'Detected obfuscated filename %s,' % basename(filename) +
                 ' removing from path')
             parts[len(parts)-1] = '-' + splitext(filename)[1]
             part_removed += 1
@@ -487,7 +501,7 @@ class SABPostProcessScript(ScriptBase):
         # Check out NZB-Filename
         if len(self.nzb_items()):
             self.logger.info(
-                'All file path parts are obfuscated, using obfuscated ' + \
+                'All file path parts are obfuscated, using obfuscated ' +
                 'NZB-Headers',
             )
 
@@ -565,3 +579,82 @@ class SABPostProcessScript(ScriptBase):
 
         self.logger.debug('Deobfuscate - Generated filename: %s' % new_name)
         return new_name
+
+    def handle_nzbfile(self, nzbfile):
+        """
+        Takes an nzbfile and if it's compressed it creates a temporary
+        uncompressed version we can reference. The function returns
+        an uncompressed NZB-File if it can (obviously depends on what was
+        passed in.
+        """
+
+        if not nzbfile:
+            # Nothing we can do
+            return ''
+
+        # Handle .gz compressed NZB-Files and update our pointer accordingly
+        if not isfile(nzbfile):
+            # Nothing we can do; return what we started with
+            return nzbfile
+
+        # Extract our filename
+        result = re.match('^(?P<filename>.+\.nzb)\.gz$', nzbfile, re.I)
+        if not result:
+            # We're done; that was easy
+            return nzbfile
+
+        # Extract our file into a temporary directory
+        fo, self._sab_temp_nzb = mkstemp(dir=self.tempdir, suffix='.nzb')
+
+        # Our file descriptors
+        fi = None
+        try:
+            fi = gzip.open(nzbfile, "rb")
+
+        except Exception:
+            # Can't open the file
+            return nzbfile
+
+        try:
+            fo = open(self._sab_temp_nzb, 'wb')
+        except Exception:
+            # Can't open the file
+            return nzbfile
+
+        try:
+            while 1:
+                buf = fi.read(16384)
+                if not buf:
+                    # We're Done
+                    break
+                fo.write(buf)
+
+        except Exception:
+            # oh well..
+            unlink(self._sab_temp_nzb)
+            self._sab_temp_nzb = None
+
+        try:
+            fo.close()
+        except Exception:
+            pass
+
+        try:
+            fi.close()
+        except Exception:
+            pass
+
+        return self._sab_temp_nzb
+
+    def sabnzbd_postprocess_close(self):
+        """
+        Allow the graceful handling of our temporary NZB-File
+        """
+        if self._sab_temp_nzb and isfile(self._sab_temp_nzb):
+            try:
+                # Cleanup
+                unlink(self._sab_temp_nzb)
+                self._sab_temp_nzb = None
+            except:
+                # we tried...
+                pass
