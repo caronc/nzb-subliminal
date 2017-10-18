@@ -53,7 +53,7 @@
 # Language Setting
 #
 # Subtitles for multiple languages can be downloaded. Separate multiple
-# languages with some type of delmiter (space, comma, etc)
+# languages with some type of delimiter (space, comma, etc)
 # codes with commas. Example: en, fr
 #Languages=en
 

@@ -5,7 +5,7 @@
 # if there are subtitles available for it.
 UpdateTimestamp: Yes
 
-# Identifie our languages you want to fetch subtitles for; separate multiple
+# Identifies our languages you want to fetch subtitles for; separate multiple
 # entries (if more than one) with a comma and/or a space
 Languages: en
 
@@ -15,7 +15,7 @@ Languages: en
 # no reason to change this value unless you know what you're doing.
 TvCategories: tv
 
-# Un comment these if you have a login you wish to use for Addi7ed
+# Uncomment these if you have a login you wish to use for Addi7ed
 # Addic7edUser: somedude
 # Addic7edPass: hispassword
 
