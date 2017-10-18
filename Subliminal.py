@@ -707,7 +707,8 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                         if last_node != None and \
                                 node.guess.get('year') != None and \
                                 last_node.guess.get('series') != None:
-                            guess['series'] += ' ' + str(guess['year'])
+                            if 'year' in guess:
+                                guess['series'] += ' ' + str(guess['year'])
                             self.logger.debug('Detected year as part of title.')
                             self.logger.debug(guess.nice_string())
                             break
