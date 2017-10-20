@@ -640,6 +640,9 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                    deobfuscate=True, use_nzbheaders=True):
         """ Parses the filename using guessit-library """
 
+        # Year regular expression checker
+        year_re = re.compile('^[^(]+\((?P<year>[123][0-9]{3})\).+$')
+
         tv_categories = [
             cat.lower() for cat in \
             self.parse_list(self.get('TvCategories', [])) ]
@@ -660,6 +663,12 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             self.logger.debug('Guessing using: %s' % filename.encode('utf-8'))
         else:
             self.logger.debug('Guessing using: %s' % filename)
+
+        # Acquire a default year if we can
+        result = year_re.match(filename)
+        detected_year = None
+        if result:
+            detected_year = result.group('year')
 
         # Push Guess to NZBGet
         if shared:
@@ -708,11 +717,30 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                                 node.guess.get('year') != None and \
                                 last_node.guess.get('series') != None:
                             if 'year' in guess:
+                                if detected_year != str(guess['year']):
+                                    self.logger.debug(
+                                        'Detected year (%s) updated to %s!' % (
+                                            guess['year'], detected_year,
+                                    ))
+                                    # Apply override
+                                    guess['year'] = detected_year
+
                                 guess['series'] += ' ' + str(guess['year'])
                             self.logger.debug('Detected year as part of title.')
                             self.logger.debug(guess.nice_string())
                             break
                         last_node = node
+
+                if 'year' not in guess and detected_year:
+                    self.logger.debug(
+                        'Setting detected year %s!' % (
+                            detected_year,
+                    ))
+
+                    # Apply override
+                    guess['year'] = detected_year
+                    if 'series' in guess:
+                        guess['series'] += ' ' + str(guess['year'])
 
             if guess['type'] == 'movie':
                 category = self.get('CATEGORY', '').lower()
@@ -744,6 +772,24 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                     guess['vtype'] = 'othertv'
                 else:
                     guess['vtype'] = 'movie'
+
+                if detected_year:
+                    if 'year' not in guess:
+                        self.logger.debug(
+                            'Setting detected year %s!' % (
+                                detected_year,
+                        ))
+
+                        # Apply override
+                        guess['year'] = detected_year
+
+                    elif detected_year != str(guess['year']):
+                        self.logger.debug(
+                            'Detected year (%s) updated to %s!' % (
+                                guess['year'], detected_year,
+                        ))
+                        # Apply override
+                        guess['year'] = detected_year
 
             elif guess['type'] == 'episode':
                 guess['vtype'] = 'series'
