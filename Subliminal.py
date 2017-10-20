@@ -1703,11 +1703,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             # No sense scanning something that did not download successfully
             return None
 
-        if not self.validate(keys=(
-            'MinSize',
-            'MinScore',
-            'Languages')):
-
+        if not self.validate(keys=('Languages')):
             return False
 
         # Environment
