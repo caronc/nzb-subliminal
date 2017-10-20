@@ -1036,20 +1036,22 @@ class ScriptBase(object):
         you wish it to be at
         """
 
-        if enabled is True and not self.debug:
-            self.debug = True
-            # Set debugging on logging
-            self.logger.setLevel(LOG_DEBUG)
-            for h in self.logger.handlers:
-                h.setLevel(LOG_DEBUG)
+        if enabled is True:
+            if self.debug:
+                self.debug = True
+                # Set debugging on logging
+                self.logger.setLevel(LOG_DEBUG)
+                for h in self.logger.handlers:
+                    h.setLevel(LOG_DEBUG)
             return
 
-        elif enabled in (False, None) and self.debug:
-            self.debug = False
-            # Set debugging on logging
-            self.logger.setLevel(LOG_DETAIL)
-            for h in self.logger.handlers:
-                h.setLevel(LOG_DETAIL)
+        elif enabled in (False, None):
+            if self.debug:
+                self.debug = False
+                # Set debugging on logging
+                self.logger.setLevel(LOG_DETAIL)
+                for h in self.logger.handlers:
+                    h.setLevel(LOG_DETAIL)
             return
 
         # Convert to integer
