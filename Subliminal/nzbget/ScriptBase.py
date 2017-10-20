@@ -1846,6 +1846,7 @@ class ScriptBase(object):
                         NZBGET_DATABASE_FILENAME,
                     ),
                     logger=self.logger,
+                    debug=self.debug,
                 )
 
                 # Database is ready to go
@@ -1971,6 +1972,7 @@ class ScriptBase(object):
                         NZBGET_DATABASE_FILENAME,
                     ),
                     logger=self.logger,
+                    debug=self.debug,
                 )
 
                 # Database is ready to go
@@ -2033,6 +2035,7 @@ class ScriptBase(object):
                         NZBGET_DATABASE_FILENAME,
                     ),
                     logger=self.logger,
+                    debug=self.debug,
                 )
 
                 # Fetch from database first
@@ -2096,6 +2099,7 @@ class ScriptBase(object):
                         NZBGET_DATABASE_FILENAME,
                     ),
                     logger=self.logger,
+                    debug=self.debug,
                 )
 
                 # Database is ready to go
@@ -2223,6 +2227,7 @@ class ScriptBase(object):
                         NZBGET_DATABASE_FILENAME,
                     ),
                     logger=self.logger,
+                    debug=self.debug,
                 )
 
                 # Database is ready to go
@@ -2273,6 +2278,7 @@ class ScriptBase(object):
                         NZBGET_DATABASE_FILENAME,
                     ),
                     logger=self.logger,
+                    debug=self.debug,
                 )
 
                 # Fetch from database first

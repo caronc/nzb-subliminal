@@ -282,7 +282,6 @@ class SABPostProcessScript(ScriptBase):
                 self.nzbheaders = dict(
                     self.parse_nzbfile(
                         self.nzbfilename, check_queued=True)\
-                        .items() + self.pull_dnzb().items(),
                 )
 
         if self.directory:
