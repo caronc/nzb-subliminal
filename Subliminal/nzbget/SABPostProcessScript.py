@@ -495,7 +495,8 @@ class SABPostProcessScript(ScriptBase):
                     new_name = join(new_name, parts[x])
             return new_name
 
-        # If we reach here, we have a completely deobfuscated file
+        if OBFUSCATED_FILE_RE.match(new_name):
+            new_name = ''
 
         # Check out NZB-Filename
         if len(self.nzb_items()):
