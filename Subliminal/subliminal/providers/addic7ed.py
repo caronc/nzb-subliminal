@@ -158,8 +158,16 @@ class Addic7edProvider(Provider):
         soup = self.get('/shows.php')
         show_ids = {}
         for html_show in soup.select('td.version > h3 > a[href^="/show/"]'):
-            show_ids[sanitize_string(html_show.string)] = \
-                    int(html_show['href'][6:])
+            try:
+                show_ids[sanitize_string(html_show.string)] = \
+                        int(html_show['href'][6:])
+
+            except ValueError:
+                logger.debug("Invalid ID(%s) for show: %s" % (
+                    html_show['href'][6:],
+                    html_show.string,
+                ))
+
         return show_ids
 
     @region.cache_on_arguments()
@@ -179,7 +187,17 @@ class Addic7edProvider(Provider):
         if not suggested_shows:
             logger.info('Series %r not found', series)
             return None
-        return int(suggested_shows[0]['href'][6:])
+
+        try:
+            return int(suggested_shows[0]['href'][6:])
+
+        except ValueError:
+            # Lookup failed
+            logger.debug("Invalid ID(%s) for series search: %s" % (
+                suggested_shows[0]['href'][6:],
+                series,
+            ))
+        return None
 
     def query(self, series, season):
         show_ids = self.get_show_ids()
