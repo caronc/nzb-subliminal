@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #
-# Subliminal post-processing script for NZBGet
+# Subliminal post-processing script for NZBGet and SABnzbd
 #
 # Copyright (C) 2015-2017 Chris Caron <lead2gold@gmail.com>
 #
