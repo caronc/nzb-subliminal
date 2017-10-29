@@ -33,9 +33,9 @@
 #
 # Info about this Subliminal NZB Script:
 # Author: Chris Caron (lead2gold@gmail.com).
-# Date: Tue, Jul 25th, 2017.
+# Date: Sun, Oct 29th, 2017.
 # License: GPLv3 (http://www.gnu.org/licenses/gpl.html).
-# Script Version: 0.10.0
+# Script Version: 1.0.0
 #
 # NOTE: This script requires Python to be installed on your system.
 #
