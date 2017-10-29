@@ -271,7 +271,7 @@ class PodnapisiProvider(Provider):
                 multi_release = cells[0].find_all('div', class_='release')
                 if len(multi_release):
                     for r in multi_release:
-                        releases.append(str(r.get_text()))
+                        releases.append(r.get_text())
                 if isinstance(releases, basestring):
                     releases = [ releases, ]
 
