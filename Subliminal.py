@@ -692,6 +692,8 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                 for node in mtree.nodes():
                     if node.guess:
                         self.logger.vdebug(node.guess)
+
+                # Guess output prior to mangling it
                 self.logger.vdebug(guess.nice_string())
 
             # fix some strange guessit guessing:
@@ -706,7 +708,6 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                 self.logger.debug(
                     'An episode without episode # becomes a movie',
                 )
-                self.logger.debug(guess.nice_string())
 
             # detect if year is part of series name
             if guess['type'] == 'episode':
@@ -727,7 +728,6 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
 
                                 guess['series'] += ' ' + str(guess['year'])
                             self.logger.debug('Detected year as part of title.')
-                            self.logger.debug(guess.nice_string())
                             break
                         last_node = node
 
@@ -793,6 +793,9 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
 
             elif guess['type'] == 'episode':
                 guess['vtype'] = 'series'
+
+            self.logger.debug(guess.nice_string())
+
         else:
             self.logger.debug('Guessed content already provided by NZBGet!')
 
