@@ -60,8 +60,9 @@
 # Subliminal Single Mode Setting (yes, no).
 #
 # Download content without the language code in the subtitles filename.
-# NOTE: this is forced to 'no' in the event more then one Language
-# is specified.
+# NOTE: If multiple languages are specified while this flag is set, then then
+# the the search is ceased in the event that subtitles were found using at
+# least one of the specified languages.
 #Single=yes
 
 # Subtitle Fetch Mode (ImpairedOnly, StandardOnly, BestScore, ImpairedFirst, StandardFirst).
@@ -1239,13 +1240,6 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         if not lang:
             self.logger.error('No valid language was set')
             return False
-
-        if len(lang) > 1 and single_mode:
-            # More then 1 language specifies implies not to use single mode
-            single_mode = False
-            self.logger.warning(
-                'SingleMode disabled due to multiple languages specified.',
-            )
 
         # Set up some arguments based on the fetch mode specified
         fetch_mode = self.get('FetchMode', FETCH_MODE_DEFAULT)
