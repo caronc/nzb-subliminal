@@ -83,7 +83,7 @@ class PodnapisiProvider(Provider):
                            'nld', 'nor', 'pol', 'por', 'ron', 'rus', 'slk', 'slv', 'spa', 'sqi', 'srp', 'swe', 'tha',
                            'tur', 'ukr', 'vie', 'zho']])
     video_types = (Episode, Movie)
-    server = 'http://simple.podnapisi.net'
+    server = 'http://www.podnapisi.net'
     pre_link_re = re.compile('^.*(?P<link>/ppodnapisi/predownload/i/\d+/k/.*$)')
     link_re = re.compile('^.*(?P<link>/[a-zA-Z]{2}/ppodnapisi/download/i/\d+/k/.*$)')
 
