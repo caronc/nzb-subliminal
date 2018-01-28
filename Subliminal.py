@@ -322,6 +322,7 @@
 ##############################################################################
 
 import re
+from os import sep as os_sep
 from os.path import join
 from shutil import move
 from os import getcwd
@@ -1410,10 +1411,6 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                             'Skipping - Unknown character encoding: %s' % \
                             basename(entry))
 
-            # Now encode our file so that we're working with the same
-            # encoding as everything else.
-            entry = _entry.encode(system_encoding)
-
             # We want our file to be encoded for
             # Create a copy of the lang object
             _lang = set(lang)
@@ -1461,10 +1458,23 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                 ', '.join([ str(l) for l in _lang ]),
             ))
 
+            # Before we start our scan, we want to strip out any information
+            # in the directory that may obstruct our results since the directory
+            # information is sometimes used to help figure out things.
+            filename = split(_entry)[1]
+            matches = DETECT_TVSHOW_RE.match(filename)
+            if matches:
+                # Enforce TV Show (use last 2 directories)
+                _entry = os_sep.join(_entry.split(os_sep)[-3:])
+
+            else:
+                # Enforce Movie (use last directory only)
+                _entry = os_sep.join(_entry.split(os_sep)[-2:])
+
             try:
                 # Add Guessed Information
                 video = Video.fromguess(
-                    split(_entry)[1],
+                    filename,
                     self.guess_info(
                         _entry,
                         shared=shared,
