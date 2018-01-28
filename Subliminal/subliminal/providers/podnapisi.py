@@ -248,24 +248,27 @@ class PodnapisiProvider(Provider):
                 releases = cells[0].find('span', class_='release')
                 if not releases:
                     # Fall back to general name
-                    releases = [ str(cells[0].find('a', href=link[:-9]).string.strip()), ]
+                    release = cells[0].find('a', href=link[:-9]).string
 
                 # Store Title
                 elif 'title' in releases:
-                    releases = [ str(releases['title'].string.strip()), ]
+                    release = releases['title'].string
+
                 else:
-                    # store name
-                    try:
-                        releases = [ str(releases.string.strip()), ]
-                    except UnicodeError:
-                        releases = [
-                            releases.string\
-                                    .decode(detect(
-                                        releases.string,
-                                        language.alpha2)['encoding'],
-                                        'replace',
-                                    ),
-                        ]
+                    release = releases.string
+
+                try:
+                    release = unicode(release)
+
+                except UnicodeError:
+                    release = release.decode(detect(
+                        release,
+                        language.alpha2)['encoding'],
+                        'replace',
+                    )
+
+                # store name
+                releases = [ release.strip(), ]
 
                 # attempt to match against multi listings (if they exist)
                 multi_release = cells[0].find_all('div', class_='release')
