@@ -1141,6 +1141,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         # Get configuration
         cache_dir = self.get('CACHEDIR', self.get('TEMPDIR'))
         cache_file = join(cache_dir, 'subliminal.cache.dbm')
+        cache_sub_dir = join(cache_dir, 'srt')
 
         # Encoding
         force_encoding = self.get('ForceEncoding', DEFAULT_FORCE_ENCODING)
@@ -1174,6 +1175,15 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                 ))
                 return False
 
+        if not isdir(cache_sub_dir):
+            try:
+                makedirs(cache_sub_dir)
+            except:
+                self.logger.error('Could not create sub directory %s' % (
+                    cache_sub_dir,
+                ))
+                return False
+
         # Change to our cache directory; we do this because subliminal (the one
         # we wrap downloads content to the directory we're standing in at
         # first).  This causes a problem if we're in a system directory which
@@ -1181,10 +1191,10 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         # too).  Our cache directory acts as a good temporary location to work
         # out of.
         try:
-            chdir(cache_dir)
+            chdir(cache_sub_dir)
         except OSError:
             self.logger.error('Could not access directory %s' % (
-                cache_dir,
+                cache_sub_dir,
             ))
             return False
 
@@ -1388,7 +1398,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
 
             full_path = entry
             if search_mode == SEARCH_MODE.BASIC:
-                full_path = join(cache_dir, basename(entry))
+                full_path = join(cache_sub_dir, basename(entry))
 
             # Figure out the encoding of the file
             detected_encoding = system_encoding
@@ -1465,18 +1475,18 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             matches = DETECT_TVSHOW_RE.match(filename)
             if matches:
                 # Enforce TV Show (use last 2 directories)
-                _entry = os_sep.join(_entry.split(os_sep)[-3:])
+                _prevew = os_sep.join(_entry.split(os_sep)[-3:])
 
             else:
                 # Enforce Movie (use last directory only)
-                _entry = os_sep.join(_entry.split(os_sep)[-2:])
+                _prevew = os_sep.join(_entry.split(os_sep)[-2:])
 
             try:
                 # Add Guessed Information
                 video = Video.fromguess(
                     filename,
                     self.guess_info(
-                        _entry,
+                        _prevew,
                         shared=shared,
                         deobfuscate=deobfuscate,
                         use_nzbheaders=use_nzbheaders,
@@ -1646,7 +1656,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                 potential_files = list(set([ \
                     p for p in [
                         join(abspath(getcwd()), basename(expected_file)),
-                        join(cache_dir, basename(expected_file)),
+                        join(cache_sub_dir, basename(expected_file)),
                     ] if isfile(p) and p != expected_file
                 ]))
 
