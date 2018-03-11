@@ -986,7 +986,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             pass
 
         try:
-            f = open(fname, 'r')
+            f = open(fname, 'rb')
         except IOError:
             self.logger.error(
                 'Could not open %s for encoding testing' % \
@@ -995,7 +995,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             return False
 
         try:
-            fw = open(tmp_fname, 'w')
+            fw = open(tmp_fname, 'wb')
         except:
             self.logger.error(
                 'Could not create new file %s.' % \
@@ -2516,7 +2516,7 @@ if __name__ == "__main__":
         script.set('Overwrite', True)
 
     if _tidysub:
-        script.set('TidySub', True)
+        script.set('TidySub', False)
 
     if _force_encoding:
         script.set('ForceEncoding', _force_encoding.lower())
