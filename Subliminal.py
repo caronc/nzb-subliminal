@@ -438,7 +438,7 @@ DEFAULT_UPDATE_PERMISSIONS = False
 DEFAULT_VIDEO_PERMISSIONS = 0o644
 DEFAULT_SINGLE = False
 DEFAULT_FORCE = 'no'
-DEFAULT_TIDYSUB = 'off'
+DEFAULT_TIDYSUB = 'no'
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 DEFAULT_IGNORE_EMBEDDED = 'no'
 DEFAULT_FORCE_ENCODING = 'None'
@@ -949,7 +949,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             pass
 
         self.logger.info(
-            "Post processing subtitles %s encoding." % (
+            "Post processed subtitles %s encoding." % (
                 basename(fname),
             )
         )
@@ -2516,7 +2516,7 @@ if __name__ == "__main__":
         script.set('Overwrite', True)
 
     if _tidysub:
-        script.set('TidySub', False)
+        script.set('TidySub', True)
 
     if _force_encoding:
         script.set('ForceEncoding', _force_encoding.lower())

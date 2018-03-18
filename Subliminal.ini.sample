@@ -41,6 +41,13 @@ MovieProviders: opensubtitles, podnapisi, thesubdb
 # default values (defined by 'Providers' above).
 TVShowProviders: tvsubtitles, addic7ed
 
+# Tidy subtitle post processing.
+# Open the downloaded subtitle file and perform some additional optimizations
+# to it. This is a work in progress, currently it does the following:
+#  - Correct all EOL (End of Lines) in the event they're inconsistent
+#  - Enforces the system encoding specified (if done so)
+TidySub: no
+
 # Setting this to yes before creating a ticket would 'really' help me debug
 # any strange issues you have.
 Debug: no
