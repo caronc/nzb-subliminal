@@ -307,7 +307,7 @@
 # diagnosing the problem.
 #Debug=no
 
-# Post Processing - Tidy Subtitles (on, off).
+# Tidy Subtitles (on, off).
 #
 # Open the downloaded subtitle file and perform some additional optimizations
 # to it. This is a work in progress, currently it does the following:
@@ -1149,7 +1149,8 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             force_encoding = None
 
         # Tidy Subtitle
-        tidy_subtitle = self.get('TidySub', DEFAULT_TIDYSUB)
+        tidy_subtitle = self.parse_bool(
+            self.get('TidySub', DEFAULT_TIDYSUB))
 
         # Minimum Score
         minscore = int(self.get('MinScore', DEFAULT_MIN_VIDEO_SCORE))
