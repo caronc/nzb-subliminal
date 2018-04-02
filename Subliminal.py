@@ -312,6 +312,14 @@
 # required to provide a username and password. Specify the `password` here.
 #OpenSubtitlesPass=
 
+# Notify URLs
+#
+# Define as many Notification URLs as you want (separated by a space and/or
+# comma) to have services notified after a subtitle has been retrieved. For
+# Information on how to construct these URLs, visit:
+# https://github.com/caronc/apprise .
+#NotifyURLs=
+
 # Enable debug logging (yes, no).
 #
 # If subtitles are not downloaded as expected, activate debug logging
@@ -382,6 +390,12 @@ from nzbget import PostProcessScript
 from nzbget import SchedulerScript
 from nzbget import EXIT_CODE
 from nzbget import SCRIPT_MODE
+
+# Inherit Push Notification Scripts
+from apprise import Apprise
+from apprise import NotifyType
+from apprise import NotifyFormat
+from apprise import AppriseAsset
 
 class FETCH_MODE(object):
     IMPAIRED_ONLY = "ImpairedOnly"
@@ -598,6 +612,8 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                        SchedulerScript):
     """A wrapper to Subliminal written for NZBGet
     """
+    # Default theme to use
+    default_theme = 'general'
 
     # A list of possible subtitles to use found locally
     # that take priority over a check on the internet
@@ -1150,6 +1166,34 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         """This function fetches the subtitles
         """
 
+        # Apprise Asset Object
+        asset = AppriseAsset(theme=self.default_theme)
+        asset.app_id = 'NZB-Subliminal'
+        asset.app_desc = 'Subtitle Retrieval Notification'
+        asset.app_url = 'https://github.com/caronc/nzb-subliminal'
+
+        # Source Theme from GitHub Page
+        asset.image_url_mask = 'https://raw.githubusercontent.com' \
+                               '/caronc/nzb-subliminal/master/Subliminal' \
+                               '/apprise-theme/{THEME}/apprise-{TYPE}-{XY}.png'
+
+        asset.image_path_mask = join(
+            dirname(__file__),
+            'Subliminal', 'apprise-theme', '{THEME}',
+            'apprise-{TYPE}-{XY}.png')
+
+        # Create our apprise object
+        a = Apprise(asset=asset)
+
+        for url in self.parse_list(self.get('NotifyURLs', '')):
+            # Add our URL
+            if not a.add(url):
+                # Validation Failure
+                self.logger.error(
+                    'Could not initialize %s notification instance.' % url,
+                )
+                continue
+
         # Get configuration
         cache_dir = self.get('CACHEDIR', self.get('TEMPDIR'))
         cache_file = join(cache_dir, 'subliminal.cache.dbm')
@@ -1205,6 +1249,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         # out of.
         try:
             chdir(cache_sub_dir)
+
         except OSError:
             self.logger.error('Could not access directory %s' % (
                 cache_sub_dir,
@@ -1583,6 +1628,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
 
             # early match
             local_match = False
+            dst_file = ''
             if len(xref_paths) > 0:
                 # Check cross reference paths first
 
@@ -1640,6 +1686,15 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                 if local_match:
                     # increment counter
                     f_count += 1
+
+                    title = "Local Subtitle Set: %s" % basename(dst_file)
+                    body = "## Subtitle Location\n%s" % abspath(dst_file)
+
+                    # Notify our servers
+                    a.notify(
+                        body=body, title=title, notify_type=NotifyType.INFO,
+                        body_format=NotifyFormat.MARKDOWN,
+                    )
 
                     # Go back to top; we're done
                     continue
@@ -1767,6 +1822,15 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
 
                 # increment counter
                 f_count += 1
+
+                title = "Subtitle Retrieved: %s" % basename(expected_file)
+                body = "## Subtitle Location\n%s" % abspath(expected_file)
+
+                # Perform any notifications (if set to do so)
+                a.notify(
+                    body=body, title=title, notify_type=NotifyType.INFO,
+                    body_format=NotifyFormat.MARKDOWN,
+                )
 
         # When you're all done handling the file, just return
         # the error code that best represents how everything worked
@@ -2220,6 +2284,16 @@ if __name__ == "__main__":
         help="Post process tidying of subtitle.",
     )
     parser.add_option(
+        "-u",
+        "--notify-urls",
+        dest="notify_urls",
+        help="Specify 1 or more notification URLs in their URL format ie: " + \
+            "growl://mypass@localhost. " + \
+            "See https://github.com/caronc/apprise for more information " +\
+            "on the different kinds of supported Notification URLs.",
+        metavar="URL(s)",
+    )
+    parser.add_option(
         "-L",
         "--logfile",
         dest="logfile",
@@ -2316,6 +2390,15 @@ if __name__ == "__main__":
                 try:
                     options.force_encoding = \
                         cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'ForceEncoding')
+
+                except ConfigNoOption:
+                    pass
+
+            if options.notify_urls is None:
+                # Get Default
+                try:
+                    options.notify_urls = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'NotifyURLs')
 
                 except ConfigNoOption:
                     pass
@@ -2535,6 +2618,7 @@ if __name__ == "__main__":
     _addic7ed_pass = options.addic7ed_pass
     _opensubs_user = options.opensubs_user
     _opensubs_pass = options.opensubs_pass
+    _notify_urls = options.notify_urls
 
     if _maxage is not None:
         try:
@@ -2598,6 +2682,9 @@ if __name__ == "__main__":
     if _providers:
         script.set('Providers', _providers)
 
+    if _notify_urls:
+        script.set('NotifyURLs', _notify_urls)
+
     if _language:
         script.set('Languages', _language)
 
@@ -2660,6 +2747,12 @@ if __name__ == "__main__":
     logging.getLogger('subliminal').\
             addHandler(script.logger.handlers[0])
     logging.getLogger('subliminal').\
+            setLevel(script.logger.getEffectiveLevel())
+
+    # Attach Apprise logging to output by connecting to its namespace
+    logging.getLogger('apprise.plugins.NotifyBase').\
+            addHandler(script.logger.handlers[0])
+    logging.getLogger('apprise.plugins.NotifyBase').\
             setLevel(script.logger.getEffectiveLevel())
 
     # call run() and exit() using it's returned value

@@ -32,6 +32,9 @@ this tool do what I want to. Enhancments such as:
 
 Most of my changes actually made it back into the original source code ([pull request #404](https://github.com/Diaoul/subliminal/pull/404)). However I still like to maintain my own fork in case of an unforseen enhancment gets pushed upstream that breaks this wrapper.
 
+This tool can also notify you using [Apprise](https://github.com/caronc/apprise) when a subtitle has
+been retrieved too!
+
 Installation Instructions
 =========================
 1. Ensure you have at least Python v2.6 or higher installed onto your system.
@@ -97,6 +100,7 @@ should be known that Subliminal.py depends on the following packages:
 | pyxdg                        | 0.25    | https://pypi.python.org/pypi/pyxdg/0.25                                              |
 | chared                       | 1.2.1   | https://code.google.com/archive/p/chared/                                            |
 | urllib3 **[P]**              | 1.12    | https://pypi.python.org/pypi/urllib3/1.12                                            |
+| apprise                      | 0.0.7   | https://pypi.python.org/pypi/apprise/0.0.7                                            |
 
 **Note:** The items above denoted with a **[P]** were patched in efforts to:
 - Make their libaries compatible with Python v2.6.
@@ -181,7 +185,18 @@ Options:
   --addic7ed-pass=PASS  Optionally use login credentials when accessing
                         Addic7ed's server. This option is ignored if the
                         --addic7ed-user switch is not specified.
+  --opensubs-user=USER  Optionally use login credentials when accessing Open
+                        Subtitles's server. This option is ignored if the
+                        --opensubs-pass switch is not specified.
+  --opensubs-pass=PASS  Optionally use login credentials when accessing Open
+                        Subtitles's server. This option is ignored if the
+                        --opensubs-user switch is not specified.
   -t, --tidy-subs       Post process tidying of subtitle.
+  -u URL(s), --notify-urls=URL(s)
+                        Specify 1 or more notification URLs in their URL
+                        format ie: growl://mypass@localhost. See
+                        https://github.com/caronc/apprise for more information
+                        on the different kinds of supported Notification URLs.
   -L FILE, --logfile=FILE
                         Send output to the specified logfile instead of
                         stdout.
