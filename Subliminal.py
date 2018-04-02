@@ -300,6 +300,18 @@
 # to provide a username and password. Specify the `password` here.
 #Addic7edPass=
 
+# Open Subtitles Username
+#
+# If you wish to utilize the Open Subtitles provider, you are additionally
+# required to provide a username and password. Specify the `username` here.
+#OpenSubtitlesUser=
+
+# Open Subtitles Password
+#
+# If you wish to utilize the Open Subtitles provider, you are additionally
+# required to provide a username and password. Specify the `password` here.
+#OpenSubtitlesPass=
+
 # Enable debug logging (yes, no).
 #
 # If subtitles are not downloaded as expected, activate debug logging
@@ -1248,6 +1260,16 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                 'password': _addic7ed_pass,
             }
 
+        _opensubs_user = self.get('OpenSubtitlesUser')
+        _opensubs_pass = self.get('OpenSubtitlesPass')
+        if _opensubs_user and _opensubs_pass:
+            # Only if the credentials are set should we initialize
+            # them with the provider
+            provider_configs['opensubtitles'] = {
+                'username': _opensubs_user,
+                'password': _opensubs_pass,
+            }
+
         lang = self.parse_list(self.get('Languages', 'en'))
         if not lang:
             self.logger.error('No valid language was set')
@@ -2175,6 +2197,22 @@ if __name__ == "__main__":
         metavar="PASS",
     )
     parser.add_option(
+        "--opensubs-user",
+        dest="opensubs_user",
+        help="Optionally use login credentials when accessing " + \
+        "Open Subtitles's server. This option is ignored if the " + \
+        "--opensubs-pass switch is not specified.",
+        metavar="USER",
+    )
+    parser.add_option(
+        "--opensubs-pass",
+        dest="opensubs_pass",
+        help="Optionally use login credentials when accessing " + \
+        "Open Subtitles's server. This option is ignored if the " + \
+        "--opensubs-user switch is not specified.",
+        metavar="PASS",
+    )
+    parser.add_option(
         "-t",
         "--tidy-subs",
         action="store_true",
@@ -2392,6 +2430,24 @@ if __name__ == "__main__":
                 except ConfigNoOption:
                     pass
 
+            if options.opensubs_user is None:
+                # Get Default
+                try:
+                    options.opensubs_user = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'OpenSubtitlesUser')
+
+                except ConfigNoOption:
+                    pass
+
+            if options.opensubs_pass is None:
+                # Get Default
+                try:
+                    options.opensubs_pass = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'OpenSubtitlesPass')
+
+                except ConfigNoOption:
+                    pass
+
             if debug is None:
                 # Get Default
                 try:
@@ -2477,6 +2533,8 @@ if __name__ == "__main__":
     _fetch_mode = options.fetch_mode
     _addic7ed_user = options.addic7ed_user
     _addic7ed_pass = options.addic7ed_pass
+    _opensubs_user = options.opensubs_user
+    _opensubs_pass = options.opensubs_pass
 
     if _maxage is not None:
         try:
@@ -2558,6 +2616,10 @@ if __name__ == "__main__":
     if _addic7ed_user and _addic7ed_pass:
         script.set('Addic7edUser', _addic7ed_user)
         script.set('Addic7edPass', _addic7ed_pass)
+
+    if _opensubs_user and _opensubs_pass:
+        script.set('OpenSubtitlesUser', _opensubs_user)
+        script.set('OpenSubtitlesPass', _opensubs_pass)
 
     # Set some defaults if they are not already set
     if script.get('MaxAge') is None:
