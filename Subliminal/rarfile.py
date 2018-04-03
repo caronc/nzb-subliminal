@@ -2672,7 +2672,7 @@ def _parse_xtime(flag, data, pos, basetime=None):
 def is_filelike(obj):
     """Filename or file object?
     """
-    if isinstance(obj, (bytes, unicode)):
+    if isinstance(obj, str) or isinstance(obj, unicode):
         return False
     res = True
     for a in ('read', 'tell', 'seek'):
@@ -2947,8 +2947,5 @@ def _check_unrar_tool():
             # no usable tool, only uncompressed archives work
             pass
 
-try:
-    _check_unrar_tool()
-except:
-    pass
+_check_unrar_tool()
 
