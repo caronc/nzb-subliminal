@@ -4,7 +4,10 @@ from dogpile.cache import make_region  # @UnresolvedImport
 from dogpile.cache.backends.file import AbstractFileLock  # @UnresolvedImport
 from dogpile.cache.compat import string_type  # @UnresolvedImport
 from dogpile.core.readwrite_lock import ReadWriteMutex  # @UnresolvedImport
+from datetime import timedelta
 
+# Expiration Time
+SHOW_EXPIRATION_TIME = timedelta(weeks=3).total_seconds()
 
 #: Subliminal's cache version
 CACHE_VERSION = 3

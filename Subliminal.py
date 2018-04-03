@@ -144,7 +144,7 @@
 # against each video you scan. The specified subtitle providers should be
 # separated by a comma and or a space. The default (if none is
 # specified) are used: opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb
-#Providers=opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb
+#Providers=opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb, shooter, napiprojekt, legendastv, subscenter
 
 # Movie (Exclusive) Subtitle Providers
 #
@@ -153,7 +153,7 @@
 # Core Subtitle Providers (identified above) are used instead.
 #
 # Providers specified should be separated by a comma and or a space. An example
-# of what one might specify here is: opensubtitles, podnapisi, thesubdb
+# of what one might specify here is: opensubtitles, podnapisi, thesubdb, shooter, napiprojekt, subscenter
 #MovieProviders=
 
 # TV Show (Exclusive) Subtitle Providers
@@ -163,7 +163,7 @@
 # Core Subtitle Providers (identified above) are used instead.
 #
 # Providers specified should be separated by a comma and or a space.
-# An example of what one might specify here is: tvsubtitles, addic7ed
+# An example of what one might specify here is: tvsubtitles, addic7ed, napiprojekt, legendastv
 #TVShowProviders=
 
 # File extensions for video files.
@@ -463,6 +463,10 @@ DEFAULT_PROVIDERS = [
     'podnapisi',
     'addic7ed',
     'thesubdb',
+    'shooter',
+    'napiprojekt',
+    'legendastv',
+    'subscenter',
 ]
 
 # System Encodings

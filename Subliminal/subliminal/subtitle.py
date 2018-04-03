@@ -10,6 +10,8 @@ from .video import Episode, Movie
 from chardet import detect as chardet_detect
 from chared.detector import get_model_path, EncodingDetector
 
+SUBTITLE_EXTENSIONS = ('.srt', '.sub', '.smi', '.txt', '.ssa', '.ass', '.mpl')
+
 # A table used to map language codes to their respected chared decoding file
 # if a mapping isn't defined on this table, then the code simply falls back
 # to chardet encoding detection. chardet is not as accurate as chared, but
@@ -176,8 +178,14 @@ class Subtitle(object):
 
     """
     def __init__(self, language, hearing_impaired=False):
+        #: Language of the subtitle
         self.language = language
+
+        #: URL of the web page from which the subtitle can be downloaded
         self.hearing_impaired = hearing_impaired
+
+        #: Content as bytes
+        self.content = None
 
     def compute_matches(self, video):
         """Compute the matches of the subtitle against the `video`
