@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class Addic7edSubtitle(Subtitle):
+    """Addic7ed Subtitle."""
+
     provider_name = 'addic7ed'
 
     def __init__(self, language, series, season, episode, title, version, hearing_impaired, download_link, referer):
@@ -26,6 +28,10 @@ class Addic7edSubtitle(Subtitle):
         self.version = version
         self.download_link = download_link
         self.referer = referer
+
+    @property
+    def id(self):
+        return self.download_link
 
     def compute_matches(self, video):
         matches = set()

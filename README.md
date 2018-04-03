@@ -102,6 +102,7 @@ should be known that Subliminal.py depends on the following packages:
 | urllib3 **[P]**              | 1.12    | https://pypi.python.org/pypi/urllib3/1.12                                            |
 | apprise                      | 0.0.7   | https://pypi.python.org/pypi/apprise/0.0.7                                           |
 | decorator                    | 4.3.0   | https://pypi.org/project/decorator/4.3.0                                             |
+| pytz                         | 0.0.7   | https://pypi.python.org/pypi/apprise/0.0.7                                           |
 
 **Note:** The items above denoted with a **[P]** were patched in efforts to:
 - Make their libaries compatible with Python v2.6.
