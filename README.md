@@ -100,11 +100,13 @@ should be known that Subliminal.py depends on the following packages:
 | pyxdg                        | 0.25    | https://pypi.python.org/pypi/pyxdg/0.25                                              |
 | chared                       | 1.2.1   | https://code.google.com/archive/p/chared/                                            |
 | urllib3 **[P]**              | 1.12    | https://pypi.python.org/pypi/urllib3/1.12                                            |
+| apprise                      | 0.0.7   | https://pypi.python.org/pypi/apprise/0.0.7                                            |
+| pytz                         | 0.0.7   | https://pypi.python.org/pypi/apprise/0.0.7                                            |
 | apprise                      | 0.0.7   | https://pypi.python.org/pypi/apprise/0.0.7                                           |
 | decorator                    | 4.3.0   | https://pypi.org/project/decorator/4.3.0                                             |
 | oauthlib                     | 2.0.1   | https://pypi.org/project/oauthlib/2.0.1                                              |
 | requests-oauthlib            | 0.8.0   | https://pypi.org/project/requests-oauthlib/0.8.0                                     |
-| markdown                     | 2.5.1   | https://github.com/EnTeQuAk/Python-Markdown/tree/feature/py26                        |
+| markdown                   
 
 **Note:** The items above denoted with a **[P]** were patched in efforts to:
 - Make their libaries compatible with Python v2.6.

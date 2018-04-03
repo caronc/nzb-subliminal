@@ -19,6 +19,10 @@ class TheSubDBSubtitle(Subtitle):
         super(TheSubDBSubtitle, self).__init__(language)
         self.hash = hash
 
+    @property
+    def id(self):
+        return self.hash + '-' + str(self.language)
+
     def compute_matches(self, video):
         matches = set()
         # hash
@@ -33,8 +37,9 @@ class TheSubDBProvider(Provider):
 
     def initialize(self):
         self.session = requests.Session()
-        self.session.headers = {'User-Agent': 'SubDB/1.0 (subliminal/%s; https://github.com/Diaoul/subliminal)' %
-                                __version__}
+        self.session.headers = {
+            'User-Agent': self.primary_user_agent,
+        }
 
     def terminate(self):
         self.session.close()

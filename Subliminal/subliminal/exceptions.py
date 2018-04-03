@@ -17,6 +17,10 @@ class ProviderConfigurationError(ProviderError):
     pass
 
 
+class ProviderAuthenticationError(ProviderError):
+    """Exception raised by providers when authentication fails"""
+    pass
+
 class ProviderNotAvailable(ProviderError):
     """Exception raised by providers when unavailable"""
     pass
