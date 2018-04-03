@@ -64,6 +64,10 @@ location that content is retrieved from.
 | tvsubtitles | http://www.tvsubtitles.net/
 | podnapisi | http://www.podnapisi.net/
 | thesubdb | http://thesubdb.com/
+| shooter | https:///www.shooter.cn/
+| subscenter | http://www.subscenter.info/
+| napiprojekt | http://napiprojekt.pl/
+| legendastv | http://legendas.tv/
 
 Dependencies
 ============
@@ -105,7 +109,8 @@ should be known that Subliminal.py depends on the following packages:
 | oauthlib                     | 2.0.1   | https://pypi.org/project/oauthlib/2.0.1                                              |
 | requests-oauthlib            | 0.8.0   | https://pypi.org/project/requests-oauthlib/0.8.0                                     |
 | markdown                     | 2.5.1   | https://github.com/EnTeQuAk/Python-Markdown/tree/feature/py26                        |
-| pytz                         | 0.0.7   | https://pypi.python.org/pypi/apprise/0.0.7                                            |
+| pytz                         | 2017.2  | https://pypi.python.org/pypi/pytz/2017.2                                             |
+| rarfile                      | 3.0     | https://pypi.python.org/pypi/rarfile/3.0                                             |
 
 **Note:** The items above denoted with a **[P]** were patched in efforts to:
 - Make their libaries compatible with Python v2.6.
