@@ -4,11 +4,18 @@ opensubtitles = subliminal.providers.opensubtitles:OpenSubtitlesProvider
 addic7ed = subliminal.providers.addic7ed:Addic7edProvider
 podnapisi = subliminal.providers.podnapisi:PodnapisiProvider
 tvsubtitles = subliminal.providers.tvsubtitles:TVsubtitlesProvider
+legendastv = subliminal.providers.legendastv:LegendasTVProvider
+napiprojekt = subliminal.providers.napiprojekt:NapiProjektProvider
+subscenter = subliminal.providers.subscenter:SubsCenterProvider
+shooter = subliminal.providers.shooter:ShooterProvider
 
 [babelfish.language_converters]
 podnapisi = subliminal.converters.podnapisi:PodnapisiConverter
 addic7ed = subliminal.converters.addic7ed:Addic7edConverter
 tvsubtitles = subliminal.converters.tvsubtitles:TVsubtitlesConverter
+legendastv = subliminal.converters.legendastv:LegendasTVConverter
+shooter = subliminal.converters.shooter:ShooterConverter
+thesubdb = subliminal.converters.thesubdb:TheSubDBConverter
 
 [console_scripts]
 subliminal = subliminal.cli:subliminal
