@@ -68,6 +68,7 @@ location that content is retrieved from.
 | subscenter | http://www.subscenter.info/
 | napiprojekt | http://napiprojekt.pl/
 | legendastv | http://legendas.tv/
+| cinemast | http://www.cinemast.org/
 
 Dependencies
 ============
