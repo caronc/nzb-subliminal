@@ -143,8 +143,9 @@
 # Supply a core (master) list of subtitle providers you want to reference
 # against each video you scan. The specified subtitle providers should be
 # separated by a comma and or a space. The default (if none is
-# specified) are used: opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb
-#Providers=opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb, shooter, napiprojekt, legendastv, subscenter
+# specified) are used: opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb,
+# shooter, napiprojekt, legendastv, subscenter, cinemast
+#Providers=opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb, shooter, napiprojekt, legendastv, subscenter, cinemast
 
 # Movie (Exclusive) Subtitle Providers
 #
@@ -153,7 +154,7 @@
 # Core Subtitle Providers (identified above) are used instead.
 #
 # Providers specified should be separated by a comma and or a space. An example
-# of what one might specify here is: opensubtitles, podnapisi, thesubdb, shooter, napiprojekt, subscenter
+# of what one might specify here is: opensubtitles, podnapisi, thesubdb, shooter, napiprojekt, subscenter, cinemast
 #MovieProviders=
 
 # TV Show (Exclusive) Subtitle Providers
@@ -290,27 +291,52 @@
 
 # Addic7ed Username
 #
-# If you wish to utilize the addic7ed provider, you are additionally required
-# to provide a username and password. Specify the `username` here.
+# If you wish to utilize the addic7ed provider, you may additionally
+# provide a username and password to retrieve any account benifits and/or
+# perks. Specify the `username` here.
 #Addic7edUser=
 
 # Addic7ed Password
 #
-# If you wish to utilize the addic7ed provider, you are additionally required
-# to provide a username and password. Specify the `password` here.
+# If you wish to utilize the addic7ed provider, you may additionally
+# provide a username and password. Specify the `password` here.
 #Addic7edPass=
 
 # Open Subtitles Username
 #
-# If you wish to utilize the Open Subtitles provider, you are additionally
-# required to provide a username and password. Specify the `username` here.
+# If you wish to utilize the Open Subtitles provider, you may additionally
+# provide a username and password. Specify the `username` here.
 #OpenSubtitlesUser=
 
 # Open Subtitles Password
 #
-# If you wish to utilize the Open Subtitles provider, you are additionally
-# required to provide a username and password. Specify the `password` here.
+# If you wish to utilize the Open Subtitles provider, you may additionally
+# provide a username and password. Specify the `password` here.
 #OpenSubtitlesPass=
+
+# Cinemast Username
+#
+# If you wish to utilize the Cinemast provider, you are additionally
+# required to provide a username and password. Specify the `username` here.
+#CinemastUser=
+
+# Cinemast Password
+#
+# If you wish to utilize the Cinemast provider, you are additionally
+# required to provide a username and password. Specify the `password` here.
+#CinemastPass=
+
+# SubsCenter Username
+#
+# If you wish to utilize the SubsCenter provider, you are additionally
+# required to provide a username and password. Specify the `username` here.
+#SubsCenterUser=
+
+# SubsCenter Password
+#
+# If you wish to utilize the SubsCenter provider, you are additionally
+# required to provide a username and password. Specify the `password` here.
+#SubsCenterPass=
 
 # Notify URLs
 #
@@ -467,6 +493,7 @@ DEFAULT_PROVIDERS = [
     'napiprojekt',
     'legendastv',
     'subscenter',
+    'cinemast',
 ]
 
 # System Encodings
@@ -1337,6 +1364,26 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             provider_configs['opensubtitles'] = {
                 'username': _opensubs_user,
                 'password': _opensubs_pass,
+            }
+
+        _cinemast_user = self.get('CinemastUser')
+        _cinemast_pass = self.get('CinemastPass')
+        if _cinemast_user and _cinemast_pass:
+            # Only if the credentials are set should we initialize
+            # them with the provider
+            provider_configs['cinemast'] = {
+                'username': _cinemast_user,
+                'password': _cinemast_pass,
+            }
+
+        _subscenter_user = self.get('SubsCenterUser')
+        _subscenter_pass = self.get('SubsCenterPass')
+        if _subscenter_user and _subscenter_pass:
+            # Only if the credentials are set should we initialize
+            # them with the provider
+            provider_configs['subscenter'] = {
+                'username': _subscenter_user,
+                'password': _subscenter_pass,
             }
 
         lang = self.parse_list(self.get('Languages', 'en'))
@@ -2329,6 +2376,38 @@ if __name__ == "__main__":
         metavar="PASS",
     )
     parser.add_option(
+        "--cinemast-user",
+        dest="cinemast_user",
+        help="Login credentials are required when accessing " + \
+        "the Cinemast Subtitles's server. This option is ignored if the " + \
+        "--cinemast-pass switch is not specified.",
+        metavar="USER",
+    )
+    parser.add_option(
+        "--cinemast-pass",
+        dest="cinemast_pass",
+        help="Login credentials are required when accessing " + \
+        "the Cinemast Subtitles's server. This option is ignored if the " + \
+        "--cinemast-user switch is not specified.",
+        metavar="PASS",
+    )
+    parser.add_option(
+        "--subscenter-user",
+        dest="subscenter_user",
+        help="Login credentials are required when accessing " + \
+        "the SubsCenter Subtitles's server. This option is ignored if the " + \
+        "--subscenter-pass switch is not specified.",
+        metavar="USER",
+    )
+    parser.add_option(
+        "--subscenter-pass",
+        dest="subscenter_pass",
+        help="Login credentials are required when accessing " + \
+        "the SubsCenter Subtitles's server. This option is ignored if the " + \
+        "--subscenter-user switch is not specified.",
+        metavar="PASS",
+    )
+    parser.add_option(
         "-t",
         "--tidy-subs",
         action="store_true",
@@ -2629,6 +2708,42 @@ if __name__ == "__main__":
                 except ConfigNoOption:
                     pass
 
+            if options.cinemast_user is None:
+                # Get Default
+                try:
+                    options.cinemast_user = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'CinemastUser')
+
+                except ConfigNoOption:
+                    pass
+
+            if options.cinemast_pass is None:
+                # Get Default
+                try:
+                    options.cinemast_pass = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'CinemastPass')
+
+                except ConfigNoOption:
+                    pass
+
+            if options.subscenter_user is None:
+                # Get Default
+                try:
+                    options.subscenter_user = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'SubsCenterUser')
+
+                except ConfigNoOption:
+                    pass
+
+            if options.subscenter_pass is None:
+                # Get Default
+                try:
+                    options.subscenter_pass = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'SubsCenterPass')
+
+                except ConfigNoOption:
+                    pass
+
             if debug is None:
                 # Get Default
                 try:
@@ -2716,6 +2831,10 @@ if __name__ == "__main__":
     _addic7ed_pass = options.addic7ed_pass
     _opensubs_user = options.opensubs_user
     _opensubs_pass = options.opensubs_pass
+    _cinemast_user = options.cinemast_user
+    _cinemast_pass = options.cinemast_pass
+    _subscenter_user = options.subscenter_user
+    _subscenter_pass = options.subscenter_pass
     _notify_urls = options.notify_urls
     _throttle = options.throttle
     _threshold = options.threshold
@@ -2827,6 +2946,14 @@ if __name__ == "__main__":
     if _opensubs_user and _opensubs_pass:
         script.set('OpenSubtitlesUser', _opensubs_user)
         script.set('OpenSubtitlesPass', _opensubs_pass)
+
+    if _cinemast_user and _cinemast_pass:
+        script.set('CinemastUser', _cinemast_user)
+        script.set('CinemastPass', _cinemast_pass)
+
+    if _subscenter_user and _subscenter_pass:
+        script.set('SubsCenterUser', _subscenter_user)
+        script.set('SubsCenterPass', _subscenter_pass)
 
     # Set some defaults if they are not already set
     if script.get('ThrottleThreshold') is None:

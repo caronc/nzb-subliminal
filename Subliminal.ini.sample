@@ -17,7 +17,19 @@ TvCategories: tv
 
 # Uncomment these if you have a login you wish to use for Addi7ed
 # Addic7edUser: somedude
-# Addic7edPass: hispassword
+# Addic7edPass: thepassword
+
+# Uncomment these if you have a login you wish to use for Open Subtitles
+# OpenSubtitlesUser: somedude
+# OpenSubtitlesPass: thepassword
+
+# Uncomment these if you have a login for Cinemast
+# CinemastUser: somedude
+# CinemastPass: thepassword
+
+# Uncomment these if you have a login for SubsCenter
+# SubsCenterUser: somedude
+# SubsCenterPass: thepassword
 
 # If subtitles of your specified language was already detected in the video
 # do you want to ignore this and keep going anyway? Setting this to no
@@ -28,18 +40,18 @@ IgnoreEmbedded: no
 
 # The providers you want to explicilty reference.  By default all of them are
 # checked... but here you can filter the list if you choose:
-Providers: opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb
+Providers: opensubtitles, tvsubtitles, podnapisi, addic7ed, thesubdb, shooter, napiprojekt, legendastv, subscenter, cinemast
 
 # My version of subliminal is significantly forked/altered from the original one
 # so you can also help the filtering and accuracy of your response by telling
 # the tool what to use when the nzb is detected to be either a movie or tv show
 # by default these are not set (but it's really worth doing!) :)
-MovieProviders: opensubtitles, podnapisi, thesubdb
+MovieProviders: opensubtitles, podnapisi, thesubdb, shooter, napiprojekt, subscenter, cinemast
 
 # If we detect the video file is for TV Show's only, then we just search the
 # following providers.  Comment this entry out if you just want to use the
 # default values (defined by 'Providers' above).
-TVShowProviders: tvsubtitles, addic7ed
+TVShowProviders: tvsubtitles, addic7ed, legendastv
 
 # Tidy subtitle post processing.
 # Open the downloaded subtitle file and perform some additional optimizations
@@ -48,7 +60,15 @@ TVShowProviders: tvsubtitles, addic7ed
 #  - Enforces the system encoding specified (if done so)
 TidySub: no
 
+# Notifications on Successful Subtitle Retrievals
+#
+# Define as many Notification URLs as you want (separated by a space and/or
+# comma) to have services notified after a subtitle has been retrieved. For
+# Information on how to construct these URLs, visit:
+# https://github.com/caronc/apprise .
+NotifyURLs:
+
+#
 # Setting this to yes before creating a ticket would 'really' help me debug
 # any strange issues you have.
 Debug: no
-
