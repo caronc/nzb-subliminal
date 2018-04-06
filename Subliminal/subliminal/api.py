@@ -7,7 +7,7 @@ import operator
 import babelfish
 import pkg_resources
 from os.path import basename
-from .exceptions import ProviderNotAvailable, InvalidSubtitle
+from .exceptions import ProviderError, ProviderNotAvailable, InvalidSubtitle
 from .subtitle import get_subtitle_path
 from socket import error as socket_error
 
@@ -219,17 +219,29 @@ def download_best_subtitles(videos, languages, providers=None, provider_configs=
         if not [v for v in videos if Provider.check(v)]:
             logger.debug('Skipping provider %r: video type not hosted here.', provider_entry_point.name)
             continue
-        provider = Provider(**provider_configs.get(provider_entry_point.name, {}))
+
+        try:
+            provider = Provider(**provider_configs.get(provider_entry_point.name, {}))
+
+        except ProviderError as err:
+            # Some providers simply can't be initalized
+            logger.warning('Provider %r is not available, discarding it', provider_entry_point.name)
+            logger.debug('ProviderError: %r', str(err))
+            continue
+
         try:
             provider.initialize()
+
         except ProviderNotAvailable as err:
             logger.warning('Provider %r is not available, discarding it', provider_entry_point.name)
             logger.debug('ProviderNotAvailable error: %r', str(err))
             continue
+
         except socket_error as err:
             logger.warning('Provider %r is not responding, discarding it', provider_entry_point.name)
             logger.debug('Provider socket error: %r', str(err))
             continue
+
         except:
             logger.exception('Unexpected error in provider %r', provider_entry_point.name)
             continue
