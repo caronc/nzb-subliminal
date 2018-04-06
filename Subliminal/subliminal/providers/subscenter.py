@@ -80,8 +80,8 @@ class SubsCenterProvider(Provider):
     subtitle_class = SubsCenterSubtitle
 
     def __init__(self, username=None, password=None):
-        if username is not None and password is None or username is None and password is not None:
-            raise ConfigurationError('Username and password must be specified')
+        if not (username and password):
+            raise ConfigurationError('Username and password must be specified.')
 
         self.session = None
         self.username = username
