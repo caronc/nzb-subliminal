@@ -134,6 +134,9 @@ Additionally all exception handling is wrapped to make debugging easier.
 import re
 from tempfile import gettempdir
 from tempfile import mkstemp
+from platform import system as p_system
+from platform import python_version as p_version
+from platform import release as p_release
 from os import environ
 from os import makedirs
 from os import chdir
@@ -930,6 +933,8 @@ class ScriptBase(object):
             self.logger_id = None
 
         self.logger.debug('Script Mode: %s' % self.script_mode)
+        self.logger.debug('Python v%s' % p_version())
+        self.logger.debug('OS: %s %s' % (p_system(), p_release()))
 
         # Track the current working directory
         try:
@@ -2466,9 +2471,11 @@ class ScriptBase(object):
 
         # Future TODO: make this an option for those who want to verify
         # the host.
+        context = hasattr(ssl, '_create_unverified_context') \
+                and ssl._create_unverified_context() or None
+
         try:
             # Python >= 2.7.9
-            context = ssl._create_unverified_context()
             try:
                 self.api = ServerProxy(
                     xmlrpc_url,
@@ -2476,27 +2483,39 @@ class ScriptBase(object):
                     use_datetime=True,
                     context=context,
                 )
-            except:
-                self.logger.debug('API connection failed @ %s' % xmlrpc_url)
+            except Exception as e:
+                self.logger.debug(
+                    'API connection failed @ %s' % xmlrpc_url)
+                self.logger.debug('Failure Reason: %s' % str(e))
                 return False
 
         except AttributeError:
             # Python < 2.7.9
-            transport = SafeTransport(
-                use_datetime=True,
-                context=context,
-            )
-
             try:
                 self.api = ServerProxy(
                     xmlrpc_url,
                     verbose=False,
                     use_datetime=True,
-                    transport=transport,
+                    transport=SafeTransport(
+                        use_datetime=True,
+                        context=context,
+                    ),
                 )
+            except TypeError:
+                # One last try for the Python 2.6 users to Python v2.7.4
+                try:
+                    ServerProxy(xmlrpc_url)
 
-            except:
-                self.logger.debug('API connection failed @ %s' % xmlrpc_url)
+                except Exception as e:
+                    self.logger.debug(
+                        'Legacy API connection failed @ %s' % xmlrpc_url)
+                    self.logger.debug('Failure Reason: %s' % str(e))
+                    return False
+
+            except Exception as e:
+                self.logger.debug(
+                    'Fallback API connection failed @ %s' % xmlrpc_url)
+                self.logger.debug('Failure Reason: %s' % str(e))
                 return False
 
             self.logger.debug('API connected @ %s' % xmlrpc_url)
