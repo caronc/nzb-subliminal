@@ -87,19 +87,44 @@ class OpenSubtitlesSubtitle(Subtitle):
 
 
 class OpenSubtitlesProvider(Provider):
+    # Defaults
+    username = ''
+    password = ''
+
     languages = set([babelfish.Language.fromopensubtitles(l) for l in babelfish.language_converters['opensubtitles'].codes])
 
-    def __init__(self):
+    def __init__(self, username=None, password=None):
         self.server = xmlrpclib.ServerProxy('http://api.opensubtitles.org/xml-rpc')
         self.token = None
 
+        if username and password:
+            logger.info('Open Subtitles using authentication serice.')
+            self.username = username
+            self.password = password
+
+        else:
+            logger.info('Open Subtitles using non-authenticated service.')
+
     def initialize(self):
         try:
-            response = self.server.LogIn('', '', 'eng', 'subliminal v%s' % __version__)
+            response = self.server.LogIn(
+                self.username, self.password, 'eng', 'subliminal v%s' % __version__)
+
         except xmlrpclib.ProtocolError:
             raise ProviderNotAvailable
+
+        if response['status'].startswith('401'):
+            # Unauthorized login attempt
+            logger.warning('Failed to authenticate with Open Subtitles!')
+
+            # Reset and recursively try again
+            self.username = ''
+            self.password = ''
+            return self.initialize()
+
         if response['status'] != '200 OK':
             raise ProviderError('Login failed with status %r' % response['status'])
+
         self.token = response['token']
 
     def terminate(self):

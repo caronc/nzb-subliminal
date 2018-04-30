@@ -300,6 +300,26 @@
 # to provide a username and password. Specify the `password` here.
 #Addic7edPass=
 
+# Open Subtitles Username
+#
+# If you wish to utilize the Open Subtitles provider, you are additionally
+# required to provide a username and password. Specify the `username` here.
+#OpenSubtitlesUser=
+
+# Open Subtitles Password
+#
+# If you wish to utilize the Open Subtitles provider, you are additionally
+# required to provide a username and password. Specify the `password` here.
+#OpenSubtitlesPass=
+
+# Notify URLs
+#
+# Define as many Notification URLs as you want (separated by a space and/or
+# comma) to have services notified after a subtitle has been retrieved. For
+# Information on how to construct these URLs, visit:
+# https://github.com/caronc/apprise .
+#NotifyURLs=
+
 # Enable debug logging (yes, no).
 #
 # If subtitles are not downloaded as expected, activate debug logging
@@ -307,7 +327,7 @@
 # diagnosing the problem.
 #Debug=no
 
-# Post Processing - Tidy Subtitles (on, off).
+# Tidy Subtitles (on, off).
 #
 # Open the downloaded subtitle file and perform some additional optimizations
 # to it. This is a work in progress, currently it does the following:
@@ -370,6 +390,12 @@ from nzbget import PostProcessScript
 from nzbget import SchedulerScript
 from nzbget import EXIT_CODE
 from nzbget import SCRIPT_MODE
+
+# Inherit Push Notification Scripts
+from apprise import Apprise
+from apprise import NotifyType
+from apprise import NotifyFormat
+from apprise import AppriseAsset
 
 class FETCH_MODE(object):
     IMPAIRED_ONLY = "ImpairedOnly"
@@ -438,7 +464,7 @@ DEFAULT_UPDATE_PERMISSIONS = False
 DEFAULT_VIDEO_PERMISSIONS = 0o644
 DEFAULT_SINGLE = False
 DEFAULT_FORCE = 'no'
-DEFAULT_TIDYSUB = 'off'
+DEFAULT_TIDYSUB = 'no'
 DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 DEFAULT_IGNORE_EMBEDDED = 'no'
 DEFAULT_FORCE_ENCODING = 'None'
@@ -586,6 +612,8 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                        SchedulerScript):
     """A wrapper to Subliminal written for NZBGet
     """
+    # Default theme to use
+    default_theme = 'general'
 
     # A list of possible subtitles to use found locally
     # that take priority over a check on the internet
@@ -949,7 +977,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             pass
 
         self.logger.info(
-            "Post processing subtitles %s encoding." % (
+            "Post processed subtitles %s encoding." % (
                 basename(fname),
             )
         )
@@ -986,7 +1014,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             pass
 
         try:
-            f = open(fname, 'r')
+            f = open(fname, 'rb')
         except IOError:
             self.logger.error(
                 'Could not open %s for encoding testing' % \
@@ -995,7 +1023,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             return False
 
         try:
-            fw = open(tmp_fname, 'w')
+            fw = open(tmp_fname, 'wb')
         except:
             self.logger.error(
                 'Could not create new file %s.' % \
@@ -1138,6 +1166,34 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         """This function fetches the subtitles
         """
 
+        # Apprise Asset Object
+        asset = AppriseAsset(theme=self.default_theme)
+        asset.app_id = 'NZB-Subliminal'
+        asset.app_desc = 'Subtitle Retrieval Notification'
+        asset.app_url = 'https://github.com/caronc/nzb-subliminal'
+
+        # Source Theme from GitHub Page
+        asset.image_url_mask = 'https://raw.githubusercontent.com' \
+                               '/caronc/nzb-subliminal/master/Subliminal' \
+                               '/apprise-theme/{THEME}/apprise-{TYPE}-{XY}.png'
+
+        asset.image_path_mask = join(
+            dirname(__file__),
+            'Subliminal', 'apprise-theme', '{THEME}',
+            'apprise-{TYPE}-{XY}.png')
+
+        # Create our apprise object
+        a = Apprise(asset=asset)
+
+        for url in self.parse_list(self.get('NotifyURLs', '')):
+            # Add our URL
+            if not a.add(url):
+                # Validation Failure
+                self.logger.error(
+                    'Could not initialize %s notification instance.' % url,
+                )
+                continue
+
         # Get configuration
         cache_dir = self.get('CACHEDIR', self.get('TEMPDIR'))
         cache_file = join(cache_dir, 'subliminal.cache.dbm')
@@ -1149,7 +1205,8 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             force_encoding = None
 
         # Tidy Subtitle
-        tidy_subtitle = self.get('TidySub', DEFAULT_TIDYSUB)
+        tidy_subtitle = self.parse_bool(
+            self.get('TidySub', DEFAULT_TIDYSUB))
 
         # Minimum Score
         minscore = int(self.get('MinScore', DEFAULT_MIN_VIDEO_SCORE))
@@ -1192,6 +1249,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         # out of.
         try:
             chdir(cache_sub_dir)
+
         except OSError:
             self.logger.error('Could not access directory %s' % (
                 cache_sub_dir,
@@ -1245,6 +1303,16 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
             provider_configs['addic7ed'] = {
                 'username': _addic7ed_user,
                 'password': _addic7ed_pass,
+            }
+
+        _opensubs_user = self.get('OpenSubtitlesUser')
+        _opensubs_pass = self.get('OpenSubtitlesPass')
+        if _opensubs_user and _opensubs_pass:
+            # Only if the credentials are set should we initialize
+            # them with the provider
+            provider_configs['opensubtitles'] = {
+                'username': _opensubs_user,
+                'password': _opensubs_pass,
             }
 
         lang = self.parse_list(self.get('Languages', 'en'))
@@ -1560,6 +1628,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
 
             # early match
             local_match = False
+            dst_file = ''
             if len(xref_paths) > 0:
                 # Check cross reference paths first
 
@@ -1617,6 +1686,15 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                 if local_match:
                     # increment counter
                     f_count += 1
+
+                    title = "Local Subtitle Set: %s" % basename(dst_file)
+                    body = "## Subtitle Location\n%s" % abspath(dst_file)
+
+                    # Notify our servers
+                    a.notify(
+                        body=body, title=title, notify_type=NotifyType.INFO,
+                        body_format=NotifyFormat.MARKDOWN,
+                    )
 
                     # Go back to top; we're done
                     continue
@@ -1744,6 +1822,15 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
 
                 # increment counter
                 f_count += 1
+
+                title = "Subtitle Retrieved: %s" % basename(expected_file)
+                body = "## Subtitle Location\n%s" % abspath(expected_file)
+
+                # Perform any notifications (if set to do so)
+                a.notify(
+                    body=body, title=title, notify_type=NotifyType.INFO,
+                    body_format=NotifyFormat.MARKDOWN,
+                )
 
         # When you're all done handling the file, just return
         # the error code that best represents how everything worked
@@ -2174,11 +2261,37 @@ if __name__ == "__main__":
         metavar="PASS",
     )
     parser.add_option(
+        "--opensubs-user",
+        dest="opensubs_user",
+        help="Optionally use login credentials when accessing " + \
+        "Open Subtitles's server. This option is ignored if the " + \
+        "--opensubs-pass switch is not specified.",
+        metavar="USER",
+    )
+    parser.add_option(
+        "--opensubs-pass",
+        dest="opensubs_pass",
+        help="Optionally use login credentials when accessing " + \
+        "Open Subtitles's server. This option is ignored if the " + \
+        "--opensubs-user switch is not specified.",
+        metavar="PASS",
+    )
+    parser.add_option(
         "-t",
         "--tidy-subs",
         action="store_true",
         dest="tidysub",
         help="Post process tidying of subtitle.",
+    )
+    parser.add_option(
+        "-u",
+        "--notify-urls",
+        dest="notify_urls",
+        help="Specify 1 or more notification URLs in their URL format ie: " + \
+            "growl://mypass@localhost. " + \
+            "See https://github.com/caronc/apprise for more information " +\
+            "on the different kinds of supported Notification URLs.",
+        metavar="URL(s)",
     )
     parser.add_option(
         "-L",
@@ -2277,6 +2390,15 @@ if __name__ == "__main__":
                 try:
                     options.force_encoding = \
                         cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'ForceEncoding')
+
+                except ConfigNoOption:
+                    pass
+
+            if options.notify_urls is None:
+                # Get Default
+                try:
+                    options.notify_urls = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'NotifyURLs')
 
                 except ConfigNoOption:
                     pass
@@ -2391,6 +2513,24 @@ if __name__ == "__main__":
                 except ConfigNoOption:
                     pass
 
+            if options.opensubs_user is None:
+                # Get Default
+                try:
+                    options.opensubs_user = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'OpenSubtitlesUser')
+
+                except ConfigNoOption:
+                    pass
+
+            if options.opensubs_pass is None:
+                # Get Default
+                try:
+                    options.opensubs_pass = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'OpenSubtitlesPass')
+
+                except ConfigNoOption:
+                    pass
+
             if debug is None:
                 # Get Default
                 try:
@@ -2476,6 +2616,9 @@ if __name__ == "__main__":
     _fetch_mode = options.fetch_mode
     _addic7ed_user = options.addic7ed_user
     _addic7ed_pass = options.addic7ed_pass
+    _opensubs_user = options.opensubs_user
+    _opensubs_pass = options.opensubs_pass
+    _notify_urls = options.notify_urls
 
     if _maxage is not None:
         try:
@@ -2539,6 +2682,9 @@ if __name__ == "__main__":
     if _providers:
         script.set('Providers', _providers)
 
+    if _notify_urls:
+        script.set('NotifyURLs', _notify_urls)
+
     if _language:
         script.set('Languages', _language)
 
@@ -2557,6 +2703,10 @@ if __name__ == "__main__":
     if _addic7ed_user and _addic7ed_pass:
         script.set('Addic7edUser', _addic7ed_user)
         script.set('Addic7edPass', _addic7ed_pass)
+
+    if _opensubs_user and _opensubs_pass:
+        script.set('OpenSubtitlesUser', _opensubs_user)
+        script.set('OpenSubtitlesPass', _opensubs_pass)
 
     # Set some defaults if they are not already set
     if script.get('MaxAge') is None:
@@ -2597,6 +2747,12 @@ if __name__ == "__main__":
     logging.getLogger('subliminal').\
             addHandler(script.logger.handlers[0])
     logging.getLogger('subliminal').\
+            setLevel(script.logger.getEffectiveLevel())
+
+    # Attach Apprise logging to output by connecting to its namespace
+    logging.getLogger('apprise.plugins.NotifyBase').\
+            addHandler(script.logger.handlers[0])
+    logging.getLogger('apprise.plugins.NotifyBase').\
             setLevel(script.logger.getEffectiveLevel())
 
     # call run() and exit() using it's returned value
