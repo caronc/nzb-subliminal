@@ -201,6 +201,21 @@ Options:
                         format ie: growl://mypass@localhost. See
                         https://github.com/caronc/apprise for more information
                         on the different kinds of supported Notification URLs.
+  -T COUNT, --throttle-threshold=COUNT
+                        The threshold defines the number of concurrent
+                        requests made to the remote subtitle websites before a
+                        temporary wait/pause occurs (defined by --throttle).
+                        The goal of the threshold is to prevent one from being
+                        banned for abusing the server (which can happen if you
+                        make to many requests).  This setting is ideal for
+                        those users who are scanning and getting subtitles for
+                        a very large media library. Set this value to 0
+                        (zero) if you want to disable this feature. It
+                        currently defaults to 5.
+  -W SEC, --throttle=SEC
+                        Defines the number of seconds a throttle/block will
+                        occur for when/if a throttle threshold is reached. It
+                        currently defaults to 3.
   -L FILE, --logfile=FILE
                         Send output to the specified logfile instead of
                         stdout.

@@ -3,7 +3,7 @@
 #
 # Subliminal post-processing script for NZBGet and SABnzbd
 #
-# Copyright (C) 2015-2017 Chris Caron <lead2gold@gmail.com>
+# Copyright (C) 2015-2018 Chris Caron <lead2gold@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published by
@@ -320,6 +320,23 @@
 # https://github.com/caronc/apprise .
 #NotifyURLs=
 
+# Throttle Threshold.
+#
+# The threshold defines the number of concurrent requests made to the remote
+# subtitle websites before a temporary wait/pause occurs (defined by
+# Throttle). The goal of the threshold is to prevent one from being
+# banned for abusing the server (which can happen if you make to many
+# requests).  This setting is ideal for those users who are scanning and
+# getting subtitles for a very large media library. Set this value to 0 (zero)
+# if you want to disable this feature.
+#ThrottleThreshold=5
+
+# Throttle.
+#
+# Defines the number of seconds a throttle/block will occur for when/if
+# a Throttle Threshold is reached.
+#Throttle=3
+
 # Enable debug logging (yes, no).
 #
 # If subtitles are not downloaded as expected, activate debug logging
@@ -357,6 +374,8 @@ from os.path import isdir
 from os import unlink
 from os import chdir
 from os import makedirs
+from time import sleep
+
 import logging
 from ConfigParser import ConfigParser
 from ConfigParser import Error as ConfigException
@@ -469,7 +488,8 @@ DEFAULT_SEARCH_MODE = SEARCH_MODE.ADVANCED
 DEFAULT_IGNORE_EMBEDDED = 'no'
 DEFAULT_FORCE_ENCODING = 'None'
 DEFAULT_SYSTEM_ENCODING = 'UTF-8'
-
+DEFAULT_THROTTLE_THRESHOLD = 5
+DEFAULT_THROTTLE_WAITTIME = 3
 
 # A list of compiled regular expressions identifying files to not parse ever
 IGNORE_FILELIST_RE = (
@@ -1458,6 +1478,16 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         # Default system encoding
         system_encoding = self.get('SystemEncoding', DEFAULT_SYSTEM_ENCODING)
 
+        # Throttle
+        throttle_threshold = self.get(
+            'ThrottleThreshold', DEFAULT_THROTTLE_THRESHOLD)
+        if throttle_threshold <= 0:
+            # if set to zero; disable
+            throttle_threshold = None
+
+        throttle = self.get(
+            'Throttle', DEFAULT_THROTTLE_WAITTIME)
+
         for entry in files:
             if True in [ v.match(entry) is not None \
                         for v in IGNORE_FILELIST_RE ]:
@@ -1579,6 +1609,21 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                     embedded_subtitles=not ignore_embedded,
                     video=video,
                 )
+                if throttle_threshold is not None and throttle > 0:
+                    # Calculate our threshold
+                    if throttle_threshold > 0:
+                        # Adjust
+                        throttle_threshold -= 1
+
+                    if throttle_threshold <= 0:
+                        # Throttle
+                        self.logger.info(
+                            'Throttling connection for %ds' % throttle)
+                        sleep(throttle)
+
+                        # Reset our threshold value
+                        throttle_threshold = self.get(
+                            'ThrottleThreshold', DEFAULT_THROTTLE_THRESHOLD)
 
                 if babelfish.Language('und') in video.subtitle_languages:
                     # This means we found embedded subtitles, it causes the
@@ -2294,6 +2339,30 @@ if __name__ == "__main__":
         metavar="URL(s)",
     )
     parser.add_option(
+        "-T",
+        "--throttle-threshold",
+        dest="threshold",
+        help="The threshold defines the number of concurrent requests " + \
+        "made to the remote subtitle websites before a temporary " + \
+        "wait/pause occurs (defined by --throttle). The goal of the " + \
+        "threshold is to prevent one from being banned for abusing the " + \
+        "server (which can happen if you make to many requests).  This " + \
+        "setting is ideal for those users who are scanning and getting " + \
+        "subtitles for a very large media library. Set this value to 0 " + \
+        " (zero) if you want to disable this feature. It currently " + \
+        "defaults to %d." % DEFAULT_THROTTLE_THRESHOLD,
+        metavar="COUNT",
+    )
+    parser.add_option(
+        "-W",
+        "--throttle",
+        dest="throttle",
+        help="Defines the number of seconds a throttle/block will occur " + \
+        "for when/if a throttle threshold is reached. It currently " + \
+        "defaults to %d." % DEFAULT_THROTTLE_WAITTIME,
+        metavar="SEC",
+    )
+    parser.add_option(
         "-L",
         "--logfile",
         dest="logfile",
@@ -2417,6 +2486,24 @@ if __name__ == "__main__":
                 try:
                     options.minscore = \
                         cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'MinScore')
+
+                except ConfigNoOption:
+                    pass
+
+            if options.throttle is None:
+                # Get Default
+                try:
+                    options.throttle = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'Throttle')
+
+                except ConfigNoOption:
+                    pass
+
+            if options.threshold is None:
+                # Get Default
+                try:
+                    options.threshold = \
+                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'ThrottleThreshold')
 
                 except ConfigNoOption:
                     pass
@@ -2619,6 +2706,8 @@ if __name__ == "__main__":
     _opensubs_user = options.opensubs_user
     _opensubs_pass = options.opensubs_pass
     _notify_urls = options.notify_urls
+    _throttle = options.throttle
+    _threshold = options.threshold
 
     if _maxage is not None:
         try:
@@ -2635,7 +2724,7 @@ if __name__ == "__main__":
             )
             exit(EXIT_CODE.FAILURE)
 
-    if _minsize:
+    if _minsize is not None:
         try:
             _minsize = str(abs(int(_minsize)))
             script.set('MinSize', _minsize)
@@ -2645,13 +2734,33 @@ if __name__ == "__main__":
             )
             exit(EXIT_CODE.FAILURE)
 
-    if _minscore:
+    if _minscore is not None:
         try:
             _minscore = str(abs(int(_minscore)))
             script.set('MinScore', _minscore)
         except (ValueError, TypeError):
             script.logger.error(
                 'An invalid `minscore` (%s) was specified.' % (_minscore)
+            )
+            exit(EXIT_CODE.FAILURE)
+
+    if _threshold is not None:
+        try:
+            _threshold = abs(int(_threshold))
+            script.set('ThrottleThreshold', _threshold)
+        except (ValueError, TypeError):
+            script.logger.error(
+                'An invalid `throttle-threshold` (%s) was specified.' % (_threshold)
+            )
+            exit(EXIT_CODE.FAILURE)
+
+    if _throttle is not None:
+        try:
+            _throttle = abs(int(_throttle))
+            script.set('Throttle', _throttle)
+        except (ValueError, TypeError):
+            script.logger.error(
+                'An invalid `throttle` (%s) was specified.' % (_throttle)
             )
             exit(EXIT_CODE.FAILURE)
 
@@ -2709,6 +2818,12 @@ if __name__ == "__main__":
         script.set('OpenSubtitlesPass', _opensubs_pass)
 
     # Set some defaults if they are not already set
+    if script.get('ThrottleThreshold') is None:
+        script.set('ThrottleThreshold', DEFAULT_THROTTLE_THRESHOLD)
+
+    if script.get('Throttle') is None:
+        script.set('Throttle', DEFAULT_THROTTLE_WAITTIME)
+
     if script.get('MaxAge') is None:
         script.set('MaxAge', DEFAULT_MAXAGE)
 
