@@ -1479,14 +1479,14 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         system_encoding = self.get('SystemEncoding', DEFAULT_SYSTEM_ENCODING)
 
         # Throttle
-        throttle_threshold = self.get(
-            'ThrottleThreshold', DEFAULT_THROTTLE_THRESHOLD)
+        throttle_threshold = int(self.get(
+            'ThrottleThreshold', DEFAULT_THROTTLE_THRESHOLD))
         if throttle_threshold <= 0:
             # if set to zero; disable
             throttle_threshold = None
 
-        throttle = self.get(
-            'Throttle', DEFAULT_THROTTLE_WAITTIME)
+        throttle = int(self.get(
+            'Throttle', DEFAULT_THROTTLE_WAITTIME))
 
         for entry in files:
             if True in [ v.match(entry) is not None \
@@ -1622,8 +1622,8 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                         sleep(throttle)
 
                         # Reset our threshold value
-                        throttle_threshold = self.get(
-                            'ThrottleThreshold', DEFAULT_THROTTLE_THRESHOLD)
+                        throttle_threshold = int(self.get(
+                            'ThrottleThreshold', DEFAULT_THROTTLE_THRESHOLD))
 
                 if babelfish.Language('und') in video.subtitle_languages:
                     # This means we found embedded subtitles, it causes the
