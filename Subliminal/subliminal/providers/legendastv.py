@@ -171,8 +171,8 @@ class LegendasTVProvider(Provider):
         except rarfile.RarExecError:
             raise ProviderConfigurationError('UNRAR tool not available')
 
-        if any((username, password)) and not all((username, password)):
-            raise ProviderConfigurationError('Username and password must be specified')
+        if not (username and password):
+            raise ProviderConfigurationError('Username and password must be specified.')
 
         self.username = username
         self.password = password
@@ -354,8 +354,8 @@ class LegendasTVProvider(Provider):
                 if archive.pack and clean_name.startswith('(p)'):
                     clean_name = clean_name[3:]
 
-                # guess from name
-                guess = guess_info(clean_name)
+                # guess from name (add fake extension)
+                guess = guess_info(clean_name + '.mkv')
 
                 # episode
                 if season and episode:
@@ -420,9 +420,11 @@ class LegendasTVProvider(Provider):
         if is_rarfile(archive_stream):
             logger.debug('Identified rar archive')
             archive.content = RarFile(archive_stream)
+
         elif is_zipfile(archive_stream):
             logger.debug('Identified zip archive')
             archive.content = ZipFile(archive_stream)
+
         else:
             raise ValueError('Not a valid archive')
 

@@ -5,6 +5,7 @@ import os
 import re
 import struct
 import logging
+from guessit import matcher
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +161,68 @@ def timestamp(date):
     """
     return (date - datetime(1970, 1, 1)).total_seconds()
 
+
+def decode(str_data, encoding=None, lang=None):
+    """
+    Returns the unicode string of the data passed in
+    otherwise it throws a ValueError() exception. This function makes
+    use of the chardet library
+
+    If encoding == None then it is attempted to be detected by chardet
+    If encoding is a string, then only that encoding is used
+    If encoding is a list or tuple, then each item is tried before
+                giving up.
+    """
+    if isinstance(str_data, unicode):
+        return str_data
+
+    if encoding is None:
+        decoded = detect(str_data, lang)
+        encoding = decoded['encoding']
+
+    if isinstance(encoding, str):
+        encoding = ( encoding, )
+
+    if not isinstance(encoding, (tuple, list)):
+        return str_data
+
+    # Convert to unicode
+    for enc in encoding:
+        try:
+            str_data = str_data.decode(
+                enc,
+                errors='ignore',
+            )
+            return str_data
+        except UnicodeError:
+            raise ValueError(
+                '%s contains invalid characters' % (
+                    str_data,
+            ))
+        except KeyError:
+            raise ValueError(
+                '%s encoding could not be detected ' % (
+                    str_data,
+            ))
+        except TypeError:
+            try:
+                str_data = str_data.decode(
+                    enc,
+                    'ignore',
+                )
+                return str_data
+            except UnicodeError:
+                raise ValueError(
+                    '%s contains invalid characters' % (
+                        str_data,
+                ))
+            except KeyError:
+                raise ValueError(
+                    '%s encoding could not be detected ' % (
+                        str_data,
+                ))
+    return None
+
 def guess_info(filename, encoding='utf-8'):
     """ Parses the filename using guessit-library """
 
@@ -242,6 +305,8 @@ def guess_info(filename, encoding='utf-8'):
                 guess['series'] += ' ' + str(guess['year'])
 
     if guess['type'] == 'movie':
+        # Enforce TV Show
+        force_tv = False
         matches = DETECT_TVSHOW_RE.match(filename)
         if matches:
             # Enforce TV Show
