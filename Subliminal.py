@@ -2087,6 +2087,9 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         paths = self.parse_path_list(self.get('ScanDirectories'))
         self.xref_paths = self.parse_path_list(self.get('XRefPaths'))
 
+        # Append any absolute scan directories (avoiding the parse_path_list)
+        paths += script.get('AbsoluteScanDirectories', [])
+
         # Single Mode (don't download language extension)
         single_mode = self.parse_bool(
             self.get('Single', DEFAULT_SINGLE))
@@ -2399,10 +2402,14 @@ if __name__ == "__main__":
         script_mode=script_mode,
     )
 
+    # Define directories specified without use of the -S switch
+    # These directories are not later parsed further and can provide
+    # work-arounds to people wanting to scan directories containing
+    # comma's and or irregular spacing.
     if script.script_mode is SCRIPT_MODE.NONE and len(_args):
         # Support command line arguments too if no other script mode
         # is detected NONE = CLI
-        scandir += ', '.join(_args)
+        script.set('AbsoluteScanDirectories', _args)
 
     if script.script_mode == SCRIPT_MODE.SABNZBD_POSTPROCESSING:
         # We're using SABnzbd.  Since there is no way to submit the many
