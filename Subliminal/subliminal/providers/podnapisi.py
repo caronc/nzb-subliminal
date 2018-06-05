@@ -92,6 +92,7 @@ class PodnapisiProvider(Provider):
     def initialize(self):
         self.session = requests.Session()
         self.headers = {
+            'Accept': '*/*',
             'User-Agent': self.random_user_agent,
             'Referer': '%s/subtitles/search/advanced' % self.server
         }
