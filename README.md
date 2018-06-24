@@ -66,6 +66,7 @@ location that content is retrieved from.
 | thesubdb | http://thesubdb.com/
 | shooter | https:///www.shooter.cn/
 | subscenter | http://www.subscenter.info/
+| subscene | https://subscene.com/
 | napiprojekt | http://napiprojekt.pl/
 | legendastv | http://legendas.tv/
 | cinemast | http://www.cinemast.org/
@@ -150,7 +151,8 @@ Options:
                         Specify a list of providers (use commas as delimiters)
                         to identify the providers you wish to use. The
                         following will be used by default: 'opensubtitles,tvsu
-                        btitles,podnapisi,addic7ed,thesubdb'
+                        btitles,podnapisi,addic7ed,thesubdb,shooter,napiprojek
+                        t,legendastv,subscenter,cinemast,subscene'
   -s, --single          Download content without the language code in the
                         subtitle filename.
   -b, --basic           Do not attempt to parse additional information from
@@ -202,6 +204,20 @@ Options:
   --opensubs-pass=PASS  Optionally use login credentials when accessing Open
                         Subtitles's server. This option is ignored if the
                         --opensubs-user switch is not specified.
+  --cinemast-user=USER  Login credentials are required when accessing the
+                        Cinemast Subtitles's server. This option is ignored if
+                        the --cinemast-pass switch is not specified.
+  --cinemast-pass=PASS  Login credentials are required when accessing the
+                        Cinemast Subtitles's server. This option is ignored if
+                        the --cinemast-user switch is not specified.
+  --subscenter-user=USER
+                        Login credentials are required when accessing the
+                        SubsCenter Subtitles's server. This option is ignored
+                        if the --subscenter-pass switch is not specified.
+  --subscenter-pass=PASS
+                        Login credentials are required when accessing the
+                        SubsCenter Subtitles's server. This option is ignored
+                        if the --subscenter-user switch is not specified.
   -t, --tidy-subs       Post process tidying of subtitle.
   -u URL(s), --notify-urls=URL(s)
                         Specify 1 or more notification URLs in their URL

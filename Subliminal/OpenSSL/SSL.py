@@ -1215,7 +1215,9 @@ class Connection(object):
 
         :param name: A byte string giving the name.
         """
-        if not isinstance(name, bytes):
+        if isinstance(name, (unicode, str)):
+            name = bytes(name)
+        elif not isinstance(name, bytes):
             raise TypeError("name must be a byte string")
         elif b"\0" in name:
             raise TypeError("name must not contain NUL byte")

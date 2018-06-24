@@ -9,6 +9,7 @@ napiprojekt = subliminal.providers.napiprojekt:NapiProjektProvider
 subscenter = subliminal.providers.subscenter:SubsCenterProvider
 cinemast = subliminal.providers.cinemast:CinemastProvider
 shooter = subliminal.providers.shooter:ShooterProvider
+subscene = subliminal.providers.subscene:SubsceneProvider
 
 [babelfish.language_converters]
 podnapisi = subliminal.converters.podnapisi:PodnapisiConverter
