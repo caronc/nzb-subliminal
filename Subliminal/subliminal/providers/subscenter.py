@@ -81,7 +81,7 @@ class SubsCenterProvider(Provider):
 
     def __init__(self, username=None, password=None):
         if not (username and password):
-            raise ConfigurationError('Username and password must be specified.')
+            raise ProviderConfigurationError('Username and password must be specified.')
 
         self.session = None
         self.username = username
