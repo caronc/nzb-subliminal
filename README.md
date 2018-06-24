@@ -64,7 +64,7 @@ location that content is retrieved from.
 | tvsubtitles | http://www.tvsubtitles.net/
 | podnapisi | http://www.podnapisi.net/
 | thesubdb | http://thesubdb.com/
-| shooter | https:///www.shooter.cn/
+| shooter | https://www.shooter.cn/
 | subscenter | http://www.subscenter.info/
 | subscene | https://subscene.com/
 | napiprojekt | http://napiprojekt.pl/
