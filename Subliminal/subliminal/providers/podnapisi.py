@@ -329,6 +329,8 @@ class PodnapisiProvider(Provider):
             return [s for l in languages \
                     for s in self.query(l, title=video.title,
                                         year=video.year)]
+        # unsupported
+        return []
 
     def download_subtitle(self, subtitle):
         try:

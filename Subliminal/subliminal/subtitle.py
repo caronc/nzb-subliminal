@@ -10,6 +10,9 @@ from .video import Episode, Movie
 from chardet import detect as chardet_detect
 from chared.detector import get_model_path, EncodingDetector
 
+# Year regular expression checker used in fuzzy searching
+DETECTED_YEAR_RE = re.compile('^(?P<title>.+)\s+\(?(?P<year>[123][0-9]{3})\)?\s*$')
+
 SUBTITLE_EXTENSIONS = ('.srt', '.sub', '.smi', '.txt', '.ssa', '.ass', '.mpl')
 
 # A table used to map language codes to their respected chared decoding file
@@ -341,13 +344,14 @@ def is_valid_subtitle(subtitle_text):
     return False
 
 
-def compute_guess_matches(video, guess):
+def compute_guess_matches(video, guess, fuzzy=True):
     """Compute matches between a `video` and a `guess`
 
     :param video: the video to compute the matches on
     :type video: :class:`~subliminal.video.Video`
     :param guess: the guess to compute the matches on
     :type guess: :class:`guessit.Guess`
+    :param bool fuzzy: whether to be less strict on possible matches
     :return: matches of the `guess`
     :rtype: set
 
@@ -355,14 +359,40 @@ def compute_guess_matches(video, guess):
     matches = set()
     if isinstance(video, Episode):
         # Series
-        if video.series and 'series' in guess and guess['series'].lower() == video.series.lower():
-            matches.add('series')
+        if video.series and 'series' in guess:
+            if guess['series'].lower() == video.series.lower():
+                matches.add('series')
+
+            elif fuzzy:
+                # Disregard trailing years and test again
+                _vresult = DETECTED_YEAR_RE.match(video.series)
+                _gresult = DETECTED_YEAR_RE.match(guess['series'])
+
+                if _vresult:
+                    _vresult = _vresult.group('title').lower()
+                else:
+                    _vresult = video.series.lower()
+
+                if _gresult:
+                    _gresult = _gresult.group('title').lower()
+                else:
+                    _gresult = guess['series'].lower()
+
+                if _vresult == _gresult:
+                    matches.add('series')
+
         # Season
         if video.season and 'seasonNumber' in guess and guess['seasonNumber'] == video.season:
             matches.add('season')
+
+        elif video.season and 'season' in guess and guess['season'] == video.season:
+            # Support season keyword too which comes out of older versions of guessit
+            matches.add('season')
+
         # Episode
         if video.episode and 'episodeNumber' in guess and guess['episodeNumber'] == video.episode:
             matches.add('episode')
+
     elif isinstance(video, Movie):
         # Year
         if video.year and 'year' in guess and guess['year'] == video.year:

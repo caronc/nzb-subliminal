@@ -7,7 +7,7 @@ import os
 import struct
 import babelfish
 import enzyme
-import guessit
+from .utils import guess_info
 import re
 
 logger = logging.getLogger(__name__)
@@ -216,7 +216,7 @@ def scan_video(path, subtitles=True, embedded_subtitles=True, video=None):
     if not video:
         video = Video.fromguess(
             path.encode('utf-8'),
-            guessit.guess_file_info(path, info=['filename']),
+            guess_info(path, 'utf-8'),
         )
 
     video.size = os.path.getsize(path)

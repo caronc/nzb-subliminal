@@ -16,6 +16,10 @@ DETECT_TVSHOW_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Year regular expression checker
+DETECTED_YEAR_RE = re.compile('^[^(]+\((?P<year>[123][0-9]{3})\).+$')
+
+
 def hash_opensubtitles(video_path):
     """Compute a hash using OpenSubtitles' algorithm.
 
@@ -226,9 +230,6 @@ def decode(str_data, encoding=None, lang=None):
 def guess_info(filename, encoding='utf-8'):
     """ Parses the filename using guessit-library """
 
-    # Year regular expression checker
-    year_re = re.compile('^[^(]+\((?P<year>[123][0-9]{3})\).+$')
-
     if isinstance(filename, str):
         _filename = decode(filename, encoding)
         if not _filename:
@@ -244,7 +245,7 @@ def guess_info(filename, encoding='utf-8'):
         logger.debug('Guessing using: %s' % filename)
 
     # Acquire a default year if we can
-    result = year_re.match(filename)
+    result = DETECTED_YEAR_RE.match(filename)
     detected_year = None
     if result:
         detected_year = result.group('year')

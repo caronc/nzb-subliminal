@@ -313,6 +313,7 @@ def download_best_subtitles(videos, languages, providers=None, provider_configs=
                 try:
                     subtitle_text = provider.download_subtitle(subtitle)
                     downloaded_subtitles[video].append(subtitle)
+
                 except ProviderNotAvailable as err:
                     logger.warning('Provider %r is not available, discarding it', subtitle.provider_name)
                     logger.debug('ProviderNotAvailable error: %r', str(err))
@@ -324,6 +325,7 @@ def download_best_subtitles(videos, languages, providers=None, provider_configs=
                 except:
                     logger.exception('Unexpected error in provider %r', subtitle.provider_name)
                     continue
+
                 with io.open(subtitle_path, 'w', encoding='utf-8') as f:
                     f.write(subtitle_text)
                     downloaded_languages.add(subtitle.language)

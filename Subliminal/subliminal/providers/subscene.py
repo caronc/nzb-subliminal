@@ -12,8 +12,15 @@ import requests
 
 from . import Provider
 from ..subtitle import Subtitle
-from ..video import Video, Episode
+from ..utils import guess_info
+from ..video import Video, Episode, Movie
 from ..converters.subscene import supported_languages
+from ..exceptions import ProviderNotAvailable, InvalidSubtitle
+from ..subtitle import sanitize_string
+from ..subtitle import compute_guess_matches
+from ..subtitle import is_valid_subtitle
+from ..subtitle import detect
+
 
 logger = getLogger(__name__)
 
@@ -34,64 +41,40 @@ language_ids = {
 }
 
 
-def get_video_filename(video):
-    return splitext(basename(video.name))[0]
-
 
 class SubsceneSubtitle(Subtitle):
     """Subscene Subtitle."""
     provider_name = 'subscene'
+    server = 'https://subscene.com'
 
-    def __init__(self, language, hearing_impaired, page_link, name, year=None):
+    def __init__(self,  language, id, release, hearing_impaired, link,
+                 series=None, season=None, episode=None,
+                 title=None, year=None):
         super(SubsceneSubtitle, self).__init__(language, hearing_impaired)
-        self.name = name
-        self.page_link = page_link
+        self.id = id
+        self.hearing_impaired = hearing_impaired
+        self.link = link
+        self.release = release
 
-        self._info = guess_info(self.name)
-
-        if year:
-            # Over-ride default if specified
-            self._info["year"] = year
-
-        self.video = Video.fromname(name)
-
-    @property
-    def id(self):
-        i = self.page_link.rindex('/') + 1
-        return int(self.page_link[i:])
-
-    @property
-    def title(self):
-        return self._info["title"]
+        # Calculate the remaining fields
+        self.series = series
+        self.season = season
+        self.episode = episode
+        self.title = title
+        self.year = year
 
     def compute_matches(self, video):
-        matches = self._matches_for(video, 'title', 'year', 'format', 'release_group', 'video_codec', 'audio_codec')
-
-        if isinstance(video, Episode):
-            matches.update(self._matches_for(video, 'series', 'season', 'episode', 'hearing_impaired'))
-
-        if get_video_filename(video) == self.name:
-            matches.add("name")
-
-        return matches
-
-    def _matches_for(self, video, *attrs):
         matches = set()
-        for a in attrs:
-            if a not in self._info:
-                continue
+        matches |= compute_guess_matches(video, guess_info(self.release + '.mkv'))
 
-            v = getattr(video, a)
-            if v and v == self._info[a]:
-                matches.add(a)
         return matches
-
 
 class SubsceneProvider(Provider):
     """Subscene Provider."""
 
     server = 'https://subscene.com'
     languages = supported_languages
+    video_types = (Episode, Movie)
 
     def initialize(self):
         self.session = Session()
@@ -104,13 +87,14 @@ class SubsceneProvider(Provider):
         self.session.close()
 
     def query(self, video):
-        q = get_video_filename(video)
-        subtitles = self._simple_query(q)
+        """
+        Preforms a query for a show on subscene.com
+        """
+        subtitles = self._simple_query(splitext(basename(video.name))[0])
 
         if not subtitles:
             subtitles = self._extended_query(video)
 
-        logger.debug("%s subtitles found on Subscene" % len(subtitles))
         return subtitles
 
     def list_subtitles(self, video, languages):
@@ -120,19 +104,31 @@ class SubsceneProvider(Provider):
 
     def download_subtitle(self, subtitle):
         logger.debug("Downloading subscene subtitle %r", str(subtitle.id))
-        soup = self.get(subtitle.page_link)
+        soup = self.get(subtitle.link)
         url = soup.find("div", "download").a.get("href")
         r = self.session.get(self.server + url)
+
         with ZipFile(BytesIO(r.content)) as zf:
             fn = [n for n in zf.namelist() if n.endswith('.srt')][0]
-            content = zf.read(fn)
-        subtitle.content = content
+            subtitle_bytes = zf.read(fn)
 
-    def _simple_query(self, q):
+        subtitle_text = subtitle_bytes.decode(
+            detect(subtitle_bytes, subtitle.language.alpha2)['encoding'], 'replace')
+        if not is_valid_subtitle(subtitle_text):
+            raise InvalidSubtitle
+        return subtitle_text
+
+    def _simple_query(self, name):
         subtitles = []
 
-        logger.debug('Searching subscene for "%s"' % q)
-        soup = self.post('/subtitles/title', q)
+        # set language
+        parms = {
+            'q': name,
+            'l': '',
+        }
+
+        logger.debug('Searching subscene for "%s"' % name)
+        soup = self.get('/subtitles/title', parms)
 
         if 'Subtitle search by' in str(soup):
             subtitles = self._subtitles_from_soup(soup)
@@ -160,7 +156,7 @@ class SubsceneProvider(Provider):
         for subtitle in subtitles:
             if subtitle.title.lower() == video_title:
                 try:
-                    video_page = self.get(subtitle.page_link).find("div", "bread").a.get("href")
+                    video_page = self.get(subtitle.link).find("div", "bread").a.get("href")
                     break
                 except AttributeError:
                     continue
@@ -190,44 +186,37 @@ class SubsceneProvider(Provider):
             raise ProviderNotAvailable('Request failed with status code %d' % r.status_code)
         return bs4.BeautifulSoup(r.content, ['permissive'])
 
-    def post(self, url, params=None):
-        """Make a GET request on `url` with the given parameters
-
-        :param string url: part of the URL to reach with the leading slash
-        :param params: params of the request
-        :return: the response
-        :rtype: :class:`bs4.BeautifulSoup`
-        :raise: :class:`~subliminal.exceptions.ProviderNotAvailable`
-
-        """
-
-        try:
-            r = self.session.post(self.server + url, params=params, timeout=10)
-        except requests.Timeout:
-            raise ProviderNotAvailable('Timeout after 10 seconds')
-        if r.status_code != 200:
-            raise ProviderNotAvailable('Request failed with status code %d' % r.status_code)
-        return bs4.BeautifulSoup(r.content, ['permissive'])
-
     def _subtitles_from_soup(self, soup):
         subtitles = []
-        kwargs = {}
+
+        # Defaults
+        year = None
+        language = None
 
         try:
-            kwargs["year"] = int(soup.find("div", "header").strong.parent.text.strip()[5:].strip())
+            year = int(soup.find("div", "header").strong.parent.text.strip()[5:].strip())
         except AttributeError:
             pass
 
         for tr in soup.table.tbody.find_all("tr"):
             try:
-                kwargs["language"] = Language.fromsubscene(tr.span.text.strip())
+                language = Language.fromsubscene(tr.span.text.strip())
             except NotImplementedError:
                 continue
 
-            kwargs["page_link"] = tr.a.get("href")
-            kwargs["name"] = tr.span.find_next("span").text.strip()
-            kwargs["hearing_impaired"] = bool(tr.find("td", "a41"))
-            subtitles.append(SubsceneSubtitle(**kwargs))
+            link = tr.a.get("href")
+            id = int(link[link.rindex('/') + 1:])
+
+            release = tr.span.find_next("span").text.strip()
+            hearing_impaired = bool(tr.find("td", "a41"))
+            subtitles.append(SubsceneSubtitle(
+                language=language,
+                id=id,
+                release=release,
+                hearing_impaired=hearing_impaired,
+                link=link,
+                year=year,
+            ))
 
         logger.debug("%s subtitles found" % len(subtitles))
         return subtitles
