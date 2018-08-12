@@ -443,8 +443,10 @@ def move(src, dst):
                     unlink(src)
                 except:
                     raise OSError(errno.EPERM, "copyfile() failed.")
-            except:
-                raise
+
+            except OSError:
+                # most likely error 38 again (ENOSYS)
+                pass
 
         else:
             # the move failed...
