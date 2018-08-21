@@ -1380,6 +1380,10 @@ class ScriptBase(object):
         if not isinstance(nzbheaders, dict):
             return False
 
+        if self.script_mode in COMMON_MODES:
+            # Do Nothing
+            return True
+
         for k, v in nzbheaders.items():
             # Push content to NZB Server
             self.push('%s%s' % (
@@ -1393,6 +1397,9 @@ class ScriptBase(object):
         """pulls meta information stored in the DNZB environment
            variables and returns a dictionary
         """
+        if self.script_mode in COMMON_MODES:
+            return []
+
         # Preload nzbheaders based on any DNZB environment variables
         return dict([(DNZB_OPTS_RE.match(k).group(1).upper(), v.strip()) \
             for (k, v) in environ.items() if DNZB_OPTS_RE.match(k)])
@@ -1409,6 +1416,10 @@ class ScriptBase(object):
             # if set.
             return False
 
+        if self.script_mode in COMMON_MODES:
+            # Do Nothing
+            return True
+
         for key in guess.keys():
             if key.upper() in GUESS_KEY_MAP.keys():
                 # Push content to NZB Server
@@ -1422,6 +1433,9 @@ class ScriptBase(object):
     def pull_guess(self):
         """Retrieves guess content in a dictionary
         """
+        if self.script_mode in COMMON_MODES:
+            return []
+
         # Fetch/Load Guess Specific Content
         return dict([
             (GUESS_KEY_MAP[SHR_GUESS_OPTS_RE.match(k).group(1)], v.strip()) \
