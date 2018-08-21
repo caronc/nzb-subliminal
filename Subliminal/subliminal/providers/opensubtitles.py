@@ -91,10 +91,12 @@ class OpenSubtitlesProvider(Provider):
     username = ''
     password = ''
 
+    server_url = 'http://api.opensubtitles.org/xml-rpc'
+
     languages = set([babelfish.Language.fromopensubtitles(l) for l in babelfish.language_converters['opensubtitles'].codes])
 
     def __init__(self, username=None, password=None):
-        self.server = xmlrpclib.ServerProxy('http://api.opensubtitles.org/xml-rpc')
+        self.server = None
         self.token = None
 
         if username and password:
@@ -106,6 +108,7 @@ class OpenSubtitlesProvider(Provider):
             logger.info('Open Subtitles using non-authenticated service.')
 
     def initialize(self):
+        self.server = xmlrpclib.ServerProxy(self.server_url)
         try:
             response = self.server.LogIn(
                 self.username, self.password, 'eng', 'subliminal v%s' % __version__)
@@ -117,17 +120,26 @@ class OpenSubtitlesProvider(Provider):
             # Unauthorized login attempt
             logger.warning('Failed to authenticate with Open Subtitles!')
 
-            # Reset and recursively try again
-            self.username = ''
-            self.password = ''
-            return self.initialize()
+            if (self.username or self.password):
+                # Reset and recursively try again
+                self.username = ''
+                self.password = ''
+                return self.initialize()
 
         if response['status'] != '200 OK':
             raise ProviderError('Login failed with status %r' % response['status'])
 
         self.token = response['token']
 
+        if not self.token:
+            raise ProviderError('Failed to acquire a token for Open Subtitles!')
+
     def terminate(self):
+
+        if self.server is None:
+            # Nothing to do
+            return
+
         try:
             response = self.server.LogOut(self.token)
         except xmlrpclib.ProtocolError:
@@ -136,6 +148,11 @@ class OpenSubtitlesProvider(Provider):
             raise ProviderError('Logout failed with status %r' % response['status'])
 
     def query(self, languages, hash=None, size=None, imdb_id=None, query=None):  # @ReservedAssignment
+
+        if self.server is None:
+            # Nothing to do
+            return []
+
         searches = []
         if hash and size:
             searches.append({'moviehash': hash, 'moviebytesize': str(size)})
@@ -173,10 +190,15 @@ class OpenSubtitlesProvider(Provider):
                           query=query)
 
     def download_subtitle(self, subtitle):
+
+        if self.server is None:
+            # Nothing to do
+            raise ProviderError('Provider not initialized.')
+
         try:
             response = self.server.DownloadSubtitles(self.token, [subtitle.id])
             logger.debug('Download URL: %s {token=%s, subid:%s}' % (
-                'http://api.opensubtitles.org/xml-rpc',
+                self.server_url,
                 self.token, subtitle.id,
             ))
         except xmlrpclib.ProtocolError:
