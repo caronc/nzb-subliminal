@@ -2420,7 +2420,7 @@ if __name__ == "__main__":
         if not isfile(DEFAULTS_CONFIG_FILE) and isfile(SAMPLE_CONFIG_FILE):
             try:
                 copy(SAMPLE_CONFIG_FILE, DEFAULTS_CONFIG_FILE)
-                self.logger.info('Placed default configuration file: %s' % (
+                script.logger.info('Placed default configuration file: %s' % (
                     DEFAULTS_CONFIG_FILE,
                 ))
             except:

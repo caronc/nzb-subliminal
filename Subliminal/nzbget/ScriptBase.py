@@ -1042,7 +1042,7 @@ class ScriptBase(object):
         """
 
         if enabled is True:
-            if self.debug:
+            if not self.debug:
                 self.debug = True
                 # Set debugging on logging
                 self.logger.setLevel(LOG_DEBUG)
