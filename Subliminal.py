@@ -720,7 +720,7 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         if result:
             detected_year = result.group('year')
 
-        # Push Guess to NZBGet
+        # Pull Guess from NZBGet
         if shared:
             guess = self.pull_guess()
         else:
@@ -1889,10 +1889,11 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
         """
         SABNZBd PostProcessing Support
         """
-        return self.postprocess_main(*args, **kwargs)
+        search_mode = (self.get('SearchMode', DEFAULT_SEARCH_MODE) == SEARCH_MODE.ADVANCED)
+        return self.postprocess_main(use_nzbheaders=search_mode, shared=False, *args, **kwargs)
 
 
-    def postprocess_main(self, *args, **kwargs):
+    def postprocess_main(self, use_nzbheaders=True, shared=True, *args, **kwargs):
 
         if not self.health_check():
             # No sense scanning something that did not download successfully
@@ -1986,7 +1987,8 @@ class SubliminalScript(SABPostProcessScript, PostProcessScript,
                 _files,
                 single_mode=single_mode,
                 deobfuscate=True,
-                use_nzbheaders=True,
+                use_nzbheaders=use_nzbheaders,
+                shared=shared,
                 overwrite=overwrite,
             )
 
@@ -2545,9 +2547,8 @@ if __name__ == "__main__":
             if options.basic_mode is None:
                 # Get Default
                 try:
-                    options.basic_mode = script.parse_bool( \
-                        cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'BasicMode'),
-                    )
+                    options.basic_mode = \
+                        (str(cfg.get(DEFAULTS_CONFIG_FILE_SECTION, 'SearchMode')).lower() != SEARCH_MODE.ADVANCED)
 
                 except ConfigNoOption:
                     pass

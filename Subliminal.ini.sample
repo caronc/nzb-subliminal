@@ -48,6 +48,22 @@ TVShowProviders: tvsubtitles, addic7ed
 #  - Enforces the system encoding specified (if done so)
 TidySub: no
 
+# Search Mode (basic, advanced).
+#
+#  basic    - presumed subtitles are guessed based on the (deobsfucated)
+#             filename alone. If you're using SABnzbd and are using it's
+#             'sorting' feature (where it handles the deobsfucation for you),
+#             then you don't need to used the advance mode; basic will
+#             work fine.
+#  advanced - presumed subtiltes are guessed based on the (deobsfucated)
+#             filename (same as basic).  But further processing occurs to
+#             help obtain more accurate results. Meta data extracted from
+#             the actual video in question such as it's length, FPS, and
+#             encoding (including if subs are already included or not).
+#             This mode yields the best results but at the cost of additional
+#             time and CPU.
+SearchMode: advanced
+
 # Setting this to yes before creating a ticket would 'really' help me debug
 # any strange issues you have.
 Debug: no

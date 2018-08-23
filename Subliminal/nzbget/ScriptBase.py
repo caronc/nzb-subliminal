@@ -1398,7 +1398,7 @@ class ScriptBase(object):
            variables and returns a dictionary
         """
         if self.script_mode in COMMON_MODES:
-            return []
+            return dict()
 
         # Preload nzbheaders based on any DNZB environment variables
         return dict([(DNZB_OPTS_RE.match(k).group(1).upper(), v.strip()) \
@@ -1434,7 +1434,7 @@ class ScriptBase(object):
         """Retrieves guess content in a dictionary
         """
         if self.script_mode in COMMON_MODES:
-            return []
+            return dict()
 
         # Fetch/Load Guess Specific Content
         return dict([
