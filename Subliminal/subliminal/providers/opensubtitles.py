@@ -144,6 +144,10 @@ class OpenSubtitlesProvider(Provider):
             response = self.server.LogOut(self.token)
         except xmlrpclib.ProtocolError:
             raise ProviderNotAvailable
+        except xmlrpclib.ResponseNotReady:
+            logger.warning('ResponseNotReady exception thrown on logout.')
+            return
+
         if response['status'] != '200 OK':
             raise ProviderError('Logout failed with status %r' % response['status'])
 
