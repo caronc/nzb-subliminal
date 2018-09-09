@@ -361,7 +361,8 @@
 import re
 from os import sep as os_sep
 from os.path import join
-from shutil import move
+import errno
+from shutil import move as _move
 from os import getcwd
 from os.path import split
 from os.path import basename
@@ -388,6 +389,7 @@ sys.path.insert(0, join(abspath(dirname(__file__)), 'Subliminal'))
 
 # For copying our configuration file
 from shutil import copy
+from shutil import copyfile
 
 # Script dependencies identified below
 from guessit import matcher
@@ -415,6 +417,41 @@ from apprise import Apprise
 from apprise import NotifyType
 from apprise import NotifyFormat
 from apprise import AppriseAsset
+
+def move(src, dst):
+    """
+    This move() function was written for people using this script to write
+    their content in Linux to a fuse based filesystem that does not have
+    support for the move() command.
+
+    """
+
+    try:
+        # first try the standard approach
+        _move(src, dst)
+
+    except OSError, e:
+        if e[0] == errno.ENOSYS:
+            # Function not implimented error; try a copy/remove instead
+            # without tracking metadata (this is useful when we're
+            # moving files across different filesystems such as
+            # xfs -> fat32 or ext4 -> ntfs which can't preserve the
+            # linux modes and settings.
+            try:
+                copyfile(src, dst)
+                try:
+                    unlink(src)
+                except:
+                    raise OSError(errno.EPERM, "copyfile() failed.")
+
+            except OSError:
+                # most likely error 38 again (ENOSYS)
+                pass
+
+        else:
+            # the move failed...
+            raise
+    return
 
 class FETCH_MODE(object):
     IMPAIRED_ONLY = "ImpairedOnly"
