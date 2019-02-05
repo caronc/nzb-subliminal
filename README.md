@@ -4,7 +4,7 @@ also work fine as a standalone script for others too.
 See the _Command Line_ section below for details how you can easily use this on it's own (without NZBGet or SABnzbd).
 
 [![Paypal](http://repo.nuxref.com/pub/img/paypaldonate.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=MHANV39UZNQ5E)
-[![Patreon](http://repo.nuxref.com/pub/img/patreondonate.svg)](https://www.patreon.com/lead2gold)
+[![Patreon](http://repo.nuxref.com/pub/img/patreondonate.svg)](https://www.patreon.com/caronc)
 
 Subliminal Processing Script
 ============================
