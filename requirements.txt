@@ -1,0 +1,6 @@
+apprise >= 0.7.0
+requests
+markdown
+pynzbget
+chardet
+OpenSSL

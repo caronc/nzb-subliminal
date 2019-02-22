@@ -37,7 +37,11 @@ been retrieved too!
 
 Installation Instructions
 =========================
-1. Ensure you have at least Python v2.6 or higher installed onto your system.
+1. Ensure you have Python v2.7 installed onto your system.
+```bash
+# Pull in dependencies:
+pip install -i requirements.txt
+```
 2. Simply place the __Subliminal.py__ and __Subliminal__ directory together.
    * __NZBGet users__: you'll want to place these inside of your _nzbget/scripts_ directory. Please ensure you are running _(at least)_ NZBGet v11.0 or higher. You can acquire the latest version of of it from [here](http://nzbget.net/download).
    * __SABnzbd users__: you'll want to place these inside of your _sabnzbd/scripts_ directory. You may also want to [read this wiki link on maintaining your own Subliminal's Configuration file](https://github.com/caronc/nzb-subliminal/wiki/Subliminal-Configuration-File).
@@ -75,9 +79,7 @@ should be known that Subliminal.py depends on the following packages:
 | ---------------------------- |:------- |:------------------------------------------------------------------------------------ |
 | pysrt                        | 1.0.1   | https://pypi.python.org/pypi/pysrt/1.0.1                                             |
 | babelfish                    | 0.5.4   | https://pypi.python.org/pypi/babelfish/0.5.4                                         |
-| backports-ssl_match_hostname | 3.4.0.2 | https://pypi.python.org/pypi/backports.ssl_match_hostname/3.4.0.2                    |
 | beautifulsoup4               | 4.3.2   | https://pypi.python.org/pypi/beautifulsoup4/4.3.2                                    |
-| chardet                      | 2.3.1b  | https://github.com/chardet/chardet/archive/d7fae98a49ebaa68eb32db937017273edceb1bdc.zip |
 | python-dateutil              | 2.2     | https://pypi.python.org/packages/source/p/python-dateutil/python-dateutil-2.2.tar.gz |
 | dogpile-cache                | 0.5.4   | https://pypi.python.org/pypi/dogpile.cache/0.5.4                                     |
 | dogpile-core                 | 0.4.1   | https://pypi.python.org/pypi/dogpile.core/0.4.1                                      |
@@ -85,26 +87,17 @@ should be known that Subliminal.py depends on the following packages:
 | guesslanguage                | 0.2.1   | https://pypi.python.org/pypi/guesslanguage/0.2.1                                     |
 | guessit                      | 0.10.3  | https://pypi.python.org/pypi/guessit/0.10.3                                          |
 | html5lib                     | 0.999   | https://pypi.python.org/pypi/html5lib/0.999                                          |
-| ndg-httpsclient              | 0.3.2   | https://pypi.python.org/pypi/ndg-httpsclient/0.3.2                                   |
 | ordereddict                  | 1.1     | https://pypi.python.org/pypi/ordereddict/1.1                                         |
-| pynzbget                     | 0.6.1   | https://pypi.python.org/pypi/pynzbget/0.6.1                                          |
 | repoze.lru                   | 0.6     | https://pypi.python.org/pypi/repoze.lru/0.6                                          |
-| requests **[P]**             | 2.3.0   | https://pypi.python.org/pypi/requests/2.3.0                                          |
 | setuptools                   | 0.6.10  | http://svn.python.org/projects/sandbox/branches/setuptools-0.6/pkg_resources.py      |
 | silpa_common                 | 0.3     | https://pypi.python.org/pypi/silpa_common/0.3                                        |
 | six                          | 1.6.1   | https://pypi.python.org/pypi/six/1.6.1                                               |
 | stevedore                    | 0.14    | https://pypi.python.org/pypi/stevedore/0.14                                          |
 | subliminal **[P]**           | 0.7.5   | https://pypi.python.org/pypi/subliminal/0.7.5                                        |
 | pyasn1                       | 0.1.7   | https://pypi.python.org/pypi/pyasn1/0.1.7                                            |
-| pyOpenSSL                    | 0.14    | https://pypi.python.org/pypi/pyOpenSSL/0.14                                          |
 | pyxdg                        | 0.25    | https://pypi.python.org/pypi/pyxdg/0.25                                              |
 | chared                       | 1.2.1   | https://code.google.com/archive/p/chared/                                            |
-| urllib3 **[P]**              | 1.12    | https://pypi.python.org/pypi/urllib3/1.12                                            |
-| apprise                      | 0.5.0   | https://pypi.python.org/pypi/apprise/0.5.0                                           |
 | decorator                    | 4.3.0   | https://pypi.org/project/decorator/4.3.0                                             |
-| oauthlib                     | 2.0.1   | https://pypi.org/project/oauthlib/2.0.1                                              |
-| requests-oauthlib            | 0.8.0   | https://pypi.org/project/requests-oauthlib/0.8.0                                     |
-| markdown                     | 2.5.1   | https://github.com/EnTeQuAk/Python-Markdown/tree/feature/py26                        |
 
 **Note:** The items above denoted with a **[P]** were patched in efforts to:
 - Make their libaries compatible with Python v2.6.
