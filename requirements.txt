@@ -3,4 +3,5 @@ requests
 markdown
 pynzbget
 chardet
-OpenSSL
+pyOpenSSL
+setuptools

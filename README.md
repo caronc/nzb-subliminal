@@ -40,7 +40,7 @@ Installation Instructions
 1. Ensure you have Python v2.7 installed onto your system.
 ```bash
 # Pull in dependencies:
-pip install -i requirements.txt
+pip install -r requirements.txt
 ```
 2. Simply place the __Subliminal.py__ and __Subliminal__ directory together.
    * __NZBGet users__: you'll want to place these inside of your _nzbget/scripts_ directory. Please ensure you are running _(at least)_ NZBGet v11.0 or higher. You can acquire the latest version of of it from [here](http://nzbget.net/download).
